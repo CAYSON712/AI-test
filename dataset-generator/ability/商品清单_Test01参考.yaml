@@ -1,0 +1,155 @@
+# =====================================================================
+# Test01 店铺真实商品清单（参考基准）
+# =====================================================================
+# 来源：真实 MCP query_products_by_filter(merchantIds=[9088143804924933])
+# 时间：2026-08-13
+# 用途：数据集生成时的真实商品基准——测试用例的"商品名称"应使用
+#       本清单里的真实商品，避免用虚构名称导致执行时找不到商品。
+# 注意：这是动态数据，跑测试前建议重新拉取最新清单。
+# =====================================================================
+
+店铺:
+  MerchantId: "9088143804924933"
+  MerchantName: "Test01"
+  商品总数: 294
+
+商品清单:
+  - 名称: "Fried Shrimp Eggroll"
+    id: "9088145987404805"
+    price: 9.95
+    status: "Off"
+  - 名称: "Pan Fried Rice Flour Roll"
+    id: "9088145987535877"
+    price: 6.95
+    status: "Selling"
+  - 名称: "Fried Chicken Wings w. Pepper Salt"
+    id: "9088145987535878"
+    price: 10.5
+    status: "Selling"
+  - 名称: "Fried Wing"
+    id: "9088145987535879"
+    price: 10.5
+    status: "Selling"
+  - 名称: "HK Style Curry Fish Ball"
+    id: "9088145987535880"
+    price: 8.95
+    status: "Selling"
+  - 名称: "Ovaltine French Toast"
+    id: "9088145987535881"
+    price: 7.5
+    status: "Selling"
+  - 名称: "Spam & Egg In HK Style Bo-Law Bun"
+    id: "9088145987535883"
+    price: 9.5
+    status: "Selling"
+  - 名称: "Chicken Steak Chop In HK Style Bo-Law Bun"
+    id: "9088145987535884"
+    price: 9.5
+    status: "Selling"
+  - 名称: "Chicken Pork Chop In HK Style Bo-Law Bun"
+    id: "9088145987535885"
+    price: 9.5
+    status: "Selling"
+  - 名称: "HK Style Bo-Law Bun"
+    id: "9088145987535886"
+    price: 4.95
+    status: "Selling"
+  - 名称: "Spam & Eggs Sandwich In HK Style w. French Fries"
+    id: "9088145987535887"
+    price: 8.95
+    status: "Selling"
+  - 名称: "Pork Chop w. Curry Sauce"
+    id: "9088145987535889"
+    price: 12.95
+    status: "Selling"
+  - 名称: "Pork Chop Cutlet w. Curry Sauce"
+    id: "9088145987535890"
+    price: 13.95
+    status: "Selling"
+  - 名称: "Curry Chicken"
+    id: "9088145987535891"
+    price: 12.95
+    status: "Selling"
+  - 名称: "Curry Beef Brisket Flank"
+    id: "9088145987535892"
+    price: 13.95
+    status: "Selling"
+  - 名称: "Curry Fish Fillet"
+    id: "9088145987535893"
+    price: 12.95
+    status: "Selling"
+  - 名称: "Baked Bolognese"
+    id: "9088145987535894"
+    price: 12.95
+    status: "Selling"
+  - 名称: "Baked Pork Chop"
+    id: "9088145987535895"
+    price: 13.95
+    status: "Selling"
+  - 名称: "Baked Chicken Steak"
+    id: "9088145987535896"
+    price: 12.95
+    status: "Selling"
+  - 名称: "fried rice"
+    id: "9088145987535897"
+    price: 12.95
+    status: "Selling"
+  - 名称: "Australian Wagyu Beef Fried Rice w. Egg"
+    id: "9088145987535898"
+    price: 23.95
+    status: "Selling"
+  - 名称: "Salt & Pepper Pork Chop"
+    id: "9088145987535899"
+    price: 13.95
+    status: "Selling"
+  - 名称: "Hainan Style Chicken Rice"
+    id: "9088145987535900"
+    price: 12.95
+    status: "Selling"
+  - 名称: "Hot & Spicy Beef Tripe & Tendon Rice Platter"
+    id: "9088145987535901"
+    price: 13.95
+    status: "Selling"
+  - 名称: "Zhongshan Claypot Rice"
+    id: "9088145987535902"
+    price: 22.34
+    status: "Selling"
+  - 名称: "Chicken & Salted Fish Fried Rice"
+    id: "9088145987535903"
+    price: 12.95
+    status: "Selling"
+  - 名称: "Ketchup"
+    id: "9088145988322335"
+    price: 1.0
+    status: "Selling"
+  - 名称: "Soy Sauce"
+    id: "9088145988322331"
+    price: 1.0
+    status: "Selling"
+  - 名称: "Salt"
+    id: "9088145988322324"
+    price: 1.0
+    status: "Selling"
+  - 名称: "Sugar"
+    id: "9088145988322325"
+    price: 1.0
+    status: "Selling"
+  - 名称: "Oil"
+    id: "9088145988322323"
+    price: 1.0
+    status: "Selling"
+  - 名称: "Vinegar"
+    id: "9088145988322326"
+    price: 1.0
+    status: "Selling"
+  # 注：以下为之前测试运行新增/产生的商品（仅作记录，不用于基准用例）
+  - 名称: "我是新的菜品"
+    id: "13103751695434757"
+    price: 10.0
+    status: "Selling"
+    note: "测试新增产物"
+  - 名称: "suancaifish"
+    id: "13170234798375941"
+    price: 200.0
+    status: "Selling"
+    note: "测试新增产物"
