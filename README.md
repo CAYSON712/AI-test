@@ -1,157 +1,128 @@
 # AI 能力自动化测试平台
 
-一套**需求驱动**的 AI 能力测试框架：从需求出发，自动分析评测维度、生成数据集、执行测试、追踪 trace。支持 AI POS、客流统计、AI 摄像头等系统。
+基于《AI 测试方法体系手册》的 AI 测试框架，从需求出发，判断需求类型 → 生成测试数据集 → 执行测试 → Rubric 评分 → 生成评估报告。支持 AI POS、客流统计、AI 摄像头等系统。
 
 ---
 
-## 整体架构（两个独立目录 + trace 平台）
+## 整体架构
 
 ```
 20260805013102/
-├── .codebuddy/skills/
-│   ├── dataset-generator/                # 📁 Skill：生成数据集
-│   └── test-runner/                      # 📁 Skill：执行测试
+├── .codebuddy/skills/              # 📁 AI 测试 Skill（3 个）
+│   ├── ai-requirement-analysis/    #   Skill① 需求分析：判断需求类型 + 生成数据集
+│   ├── ai-test-execution/          #   Skill② 测试执行：执行器 + Rubric 评分
+│   └── ai-report-review/           #   Skill③ 报告复盘：评估报告 + 问题定位
 │
-├── dataset-generator/                    # 📁 生成端（自包含，仅需 LLM）
-│   ├── ability/                         #   能力目录（需求预定义，两端共享的单一数据源）
-│   │   ├── 能力目录_模板.yaml
-│   │   ├── 能力目录_POS数据查询.yaml
+├── ai-test-framework/              # 📁 AI 测试框架（核心）
+│   ├── dimensions/                 #   五类需求维度表（A-E，严格对齐手册）
+│   │   ├── A_MCP工具.yaml          #     MCP 工具（8 维）
+│   │   ├── B_Agent系统.yaml        #     Agent 系统（11 维）
+│   │   ├── C_AgentMCP集成.yaml     #     Agent+MCP 集成（20 维，A+B+集成4）
+│   │   ├── D_Skill原子能力.yaml    #     Skill 原子能力（6 维）
+│   │   └── E_RAG知识库.yaml        #     RAG/知识库（5 维）
+│   ├── rubric/                     #   Rubric 评分体系
+│   │   ├── rubric.py               #     5 分制评分 + 阈值 + 统计(通过率/置信区间)
+│   │   ├── llm_judge.py            #     LLM-as-Judge 评分器
+│   │   └── templates/              #     （预留）Rubric JSON 模板
+│   ├── executors/                  #   执行器（通用，不绑系统）
+│   │   ├── base.py                 #     执行器基类 + ExecResult
+│   │   ├── mock_executor.py        #     Mock 执行器（测 Agent/Skill 层）
+│   │   ├── generic_mcp_executor.py #     通用真实执行器（配置驱动，测 E2E）
+│   │   └── registry.py             #     执行器注册表（按需求类型+系统路由）
+│   ├── configs/                    #   系统配置（连接+工具schema，驱动真实执行器）
+│   │   └── POS_商品管理.yaml       #     POS 系统配置样板
+│   ├── scripts/                    #   工具脚本
+│   │   ├── generate_dataset.py     #     结构化生成数据集（维度表+能力+实体+规则模板）
+│   │   ├── run_test.py             #     测试执行 + Rubric 评分 + 统计
+│   │   ├── evaluate.py             #     评估入口
+│   │   ├── report.py               #     评估报告生成
+│   │   └── llm_client.py           #     LLM 封装（绕代理/JSON容错）
+│   ├── ability/                    #   能力目录 + 真实实体清单（按系统）
 │   │   ├── 能力目录_POS商品管理.yaml
-│   │   ├── 能力目录_客流统计.yaml
-│   │   └── 商品清单_Test01参考.yaml     #   真实商品清单（MCP 拉取，数据集生成基准）
-│   ├── scripts/                         #   生成脚本
-│   │   ├── pipeline_generate.py         #     LLM 维度推荐 + 生成数据集
-│   │   ├── build_dataset.py             #     基于真实商品清单生成数据集（能力×类型全覆盖）
-│   │   ├── yaml_to_md.py                #     YAML → MD 评审视图
-│   │   ├── check_dataset.py             #     数据集自检（维度/类型/能力×类型组合覆盖）
-│   │   ├── llm_client.py                #     公司大模型封装（绕代理/JSON容错）
-│   │   └── recommend_dimensions.py      #     维度推荐（关键词版，无 LLM 备用）
-│   ├── datasets/                        #   📦 产出物：数据集（数据源 YAML）
-│   │   └── POS商品管理_数据集.yaml
-│   ├── review/                          #   📦 产出物：评审视图（自动生成 MD）
-│   │   └── POS商品管理_数据集.md
-│   ├── .env                             #   LLM 配置 + MCP 配置（敏感，勿提交）
-│   ├── AI_评测维度规范表.md              #   维度定义（核心）
-│   ├── 数据集设计规范.md                 #   数据集设计规范
-│   └── 数据集完整性自检Checklist.md      #   自检清单
+│   │   ├── 能力目录_POS数据查询.yaml
+│   │   └── 商品清单_Test01参考.yaml
+│   ├── datasets/                   #   数据集（结构化生成）
+│   ├── results/                    #   执行结果
+│   ├── report/                     #   评估报告
+│   ├── docs/手册方法论落地.md       #   手册落地说明
+│   └── .env                        #   LLM + MCP 配置（敏感，勿提交）
 │
-├── test-runner/                         # 📁 执行端（自包含，依赖 trace 平台）
-│   ├── executors/                       #   执行器模块
-│   │   ├── base.py                      #     执行器基类 + ExecResult
-│   │   ├── mock_executor.py             #     Mock 执行器（读能力目录）
-│   │   ├── pos_mcp_executor.py          #     真实 POS MCP 执行器（LLM 解析 + 操作后校验）
-│   │   └── registry.py                  #     执行器注册表（按能力路由 + mock/real 模式）
-│   ├── scripts/                         #   执行脚本
-│   │   └── run_dataset.py               #     读数据集 → 调执行器 → 打分 → 上报 trace
-│   ├── scorer.py                        #   打分器（0.0~1.0 连续分）
-│   └── datasets/                        #   执行用数据集（由生成端产出）
-│
-└── trace_platform/                      # 📁 trace 平台（存储+展示，被动接收）
-    ├── app.py                           #   FastAPI 后端（接收 trace/查询/前端）
-    ├── db.py                            #   SQLite 建表
-    ├── upload_real_trace.py             #   手动上报 trace 工具
-    └── trace_platform.db                #   SQLite 数据库
+└── trace_platform/                 # 📁 trace 平台（存储+展示）
+    ├── app.py                      #   FastAPI 后端
+    ├── db.py                       #   SQLite 建表
+    └── trace_platform.db
 ```
 
-**两端关系**：
-- **生成端 `dataset-generator/`**：只产出 `datasets/*.yaml` + `review/*.md`，仅需 LLM，不依赖 trace 平台、不调用执行器。
-- **执行端 `test-runner/`**：消费生成端产出的 `datasets/*.yaml`，调用执行器执行、打分、上报 `trace_platform/` 并查看 trace。
-- **共享点**：能力目录 `ability/`（单一数据源，生成端维护，执行端执行器引用它）。
-- **衔接点**：`datasets/*.yaml`（生成端产出 → 执行端消费）。
+## 方法体系核心（手册）
 
-**Skill 与功能目录的对应**：
-- Skill 统一存放在 `.codebuddy/skills/`（CodeBuddy 标准加载位置），按名字对应到功能目录：
-  - `.codebuddy/skills/dataset-generator/` → 操作 `dataset-generator/` 目录
-  - `.codebuddy/skills/test-runner/` → 操作 `test-runner/` 目录
-- Skill 是编排入口，功能目录是实际代码/数据所在，两者通过名字一一对应。
+1. **AI 测试 = 统计学测试**：每条用例跑 ≥5 次，用通过率 + 置信区间，而非单次 pass/fail
+2. **Rubric 量化评分**：5 分制（优秀/良好/可接受/一般缺陷/严重缺陷）
+3. **LLM-as-Judge**：主观维度用 LLM 当裁判打分
+4. **需求类型驱动**：先判断 A/B/C/D/E，再用对应维度表
+5. **能力×类型覆盖**：每个能力覆盖正常/边界/异常/对抗/模糊
+6. **测试集分层**：L1 黄金集 60% + L2 场景演化 30%（L3 生产回放 10% 暂不接入）
+7. **结构化生成**：L1 用规则模板、L2 用确定性变异（**不用 LLM**），可复现可回溯
+8. **通用化**：能力目录 + 真实实体清单通过参数注入，真实执行器由系统配置驱动，可复用到任意系统
+
+## 五类需求类型
+
+| 类型 | 名称 | 维度数 | 判断依据 |
+|---|---|---|---|
+| A | MCP 工具 | 8 | 纯 MCP 工具/接口 |
+| B | Agent 系统 | 11 | 对话 Agent（无外部工具） |
+| C | Agent+MCP 集成 | 20 | **Agent 决策 + 真实 MCP**（如 POS 商品管理）★ 常用 |
+| D | Skill 原子能力 | 6 | 某个原子子能力 |
+| E | RAG/知识库 | 5 | 文档检索增强生成 |
 
 ---
 
-## 快速开始
+## 快速开始（3 个 Skill 流程）
 
-### 1. 配置 LLM（`dataset-generator/.env`）
-```ini
-LLM_API_BASE=http://zsgw.sjdistributor.com:40000
-LLM_API_KEY=sk-xxx
-LLM_MODEL=metis-coder
-LLM_NO_PROXY=true
-```
-
-### 2. 生成数据集（无需 trace 平台）
+### Skill① 需求分析：判断类型 + 生成数据集（L1/L2 分层）
 ```powershell
-cd dataset-generator/scripts
-python pipeline_generate.py --req "需求描述..." --name "数据集名"
-# 或基于真实商品清单：python build_dataset.py
-# 产出 dataset-generator/datasets/<名>.yaml + review/<名>.md + 自检报告
+cd ai-test-framework/scripts
+# 完整版：指定 需求类型 + 能力目录 + 实体清单
+python generate_dataset.py ^
+  --req-type <A|B|C|D|E> ^
+  --ability ../ability/能力目录_<系统>.yaml ^
+  --products ../ability/<实体清单>.yaml ^
+  --out ../datasets/<类型>_<系统>.yaml
+
+# 降级版：只传 req-type + system（自动发现能力目录）
+python generate_dataset.py --req-type C --system <系统名> --out ../datasets/<类型>_<系统>.yaml
 ```
 
-### 3. 人工评审
-打开 `dataset-generator/review/<数据集名>.md`，修正/补充用例。
-
-### 4. 自检覆盖
+### Skill② 测试执行：执行 + Rubric 评分
 ```powershell
-cd dataset-generator/scripts
-python check_dataset.py --yaml ../datasets/<数据集名>.yaml
+cd ai-test-framework/scripts
+# Mock（测 Agent/Skill 层，零配置）
+python run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor mock
+# 真实 MCP（测 E2E，需 configs/ 系统配置 + .env 配 token）
+python run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor real --runs 5
+# 系统名自动从数据集识别，也可手动指定
+python run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor real --system <系统名>
 ```
 
-**到此数据集已就绪**：你可以只做生成，先停在此处评审。是否执行测试自行决定。
-
-### 5. （执行测试才需要）启动 trace 平台
+### Skill③ 报告复盘：生成评估报告
 ```powershell
-cd trace_platform
-python -m uvicorn app:app --port 8000
-# 浏览器打开 http://127.0.0.1:8000
+cd ai-test-framework/scripts
+python report.py --result ../results/result_<类型>.yaml --out ../report/<报告名>.md
 ```
-
-### 6. 执行测试（读生成端产出的数据集）
-```powershell
-cd test-runner/scripts
-python run_dataset.py --yaml ../../dataset-generator/datasets/<数据集名>.yaml
-# 指定执行器模式：--executor real(真实MCP) / mock(模拟)
-```
-
-### 7. 看 trace / 打分 / 定位问题
-浏览器打开 `http://127.0.0.1:8000`。
-
-> 执行端可选：`executors/` 默认用 Mock 执行器；要接真实 POS MCP，在 `.env` 配置
-> `POS_MCP_URL / POS_MCP_TOKEN / POS_MCP_COMPANY_ID / POS_MERCHANT_ID` 后，用 `--executor real`。
 
 ---
 
-## 关键脚本归属
+## 系统配置与连接
 
-| 脚本 | 归属 | 作用 |
+**通用化接入任何系统需要两份配置 + 一份 env 密钥**：
+
+| 配置 | 位置 | 内容 |
 |---|---|---|
-| `pipeline_generate.py` | 生成端 | LLM 推荐维度 → 分批生成数据集 → 存 YAML → 生成 MD → 自检 |
-| `build_dataset.py` | 生成端 | 基于真实商品清单生成数据集（能力×类型全覆盖） |
-| `recommend_dimensions.py` | 生成端 | 关键词版维度推荐（无 LLM 时用） |
-| `yaml_to_md.py` | 生成端 | YAML → Markdown 表格（评审用） |
-| `check_dataset.py` | 生成端 | 自检维度/类型/能力×类型组合覆盖 |
-| `llm_client.py` | 生成端 | 公司大模型封装（含绕代理、JSON容错） |
-| `run_dataset.py` | 执行端 | 读数据集 → 执行器 → 打分 → 上报平台 |
-| `executors/*` | 执行端 | 执行器（Mock / 真实 MCP），把用例翻译成对被测系统的调用 |
-| `scorer.py` | 执行端 | 打分器（0.0~1.0 连续分），被 run_dataset 依赖 |
-| `trace_platform/app.py` | 平台 | 存储 + 展示 trace |
+| 系统配置 | `configs/<系统>.yaml` | 连接（URL/token env 名）+ MCP 工具 schema + verify 规则 |
+| 能力目录 | `ability/能力目录_<系统>.yaml` | 能力→工具映射 + verify 字段 |
+| 敏感密钥 | `.env` | token / 公司ID / 店铺ID（`*.env` 已被 `.gitignore` 保护） |
 
----
+**新增系统流程**：复制 `configs/POS_商品管理.yaml` → 填新系统连接 + 工具 → 准备对应能力目录 → 即可跑 `real`。系统名匹配已容错（`POS 商品管理`/`POS_商品管理` 等价）。
 
-## 核心设计原则
+> ⚠️ **占位样例**：`configs/客服知识库.yaml`、`ability/能力目录_客服知识库.yaml`、`datasets/E_客服知识库.yaml` 为验证 E 类链路的**虚构演示**，非真实系统。真实接入请按被测系统改写。
 
-1. **维度驱动**：数据集围绕评测维度设计（规范表 5 大类）
-2. **能力标准化**：能力目录独立，数据集 `能力` 引用它（换系统只换目录）
-3. **需求预定义 → MCP 校准**：测试前需求定能力，开发完成后真实 MCP 校准
-4. **一源两用**：YAML 数据源 + MD 评审视图（自动生成，不重复维护）
-5. **打分连续化**：0.0~1.0 连续分（scorer.py）
-6. **生成与执行解耦**：物理上分两个独立目录，可独立运行，中间可随时停顿评审
-7. **能力×类型全覆盖**：每个能力都要覆盖正常/边界/异常/对抗/模糊，自检强制检查
-
----
-
-## 真实 MCP 配置
-
-- **URL**: `https://pos-test-mcp.proton-system.com/mcp`
-- **鉴权**: Header `Authorization: Bearer <token>` + `CompanyId: <公司ID>`
-- **参数**: 必须嵌套 `{"toolParams": {...}}`
-- **测试账号**: 公司 `测试公司(9088125566714885)`，店铺 `Test01(9088143804924933)`
-
-> ⚠️ token 属敏感信息，放 `dataset-generator/.env` 的 `POS_MCP_TOKEN`，勿硬编码提交。
+> ⚠️ token 属敏感信息，放 `.env`，勿硬编码提交。系统名自动从数据集读取，避免命令行中文乱码。

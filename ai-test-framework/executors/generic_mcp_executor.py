@@ -1,0 +1,534 @@
+# -*- coding: utf-8 -*-
+"""
+通用真实执行器（配置驱动）
+==========================
+把 pos_mcp_executor 里写死的 POS 逻辑，改为由「系统配置 + 能力目录」驱动，
+从而一套执行器可测任意系统的 Agent+MCP（C 类）、Agent（B 类）、工具（A/D 类）。
+
+设计：
+  - 连接：从 configs/<系统>.yaml 读取（base_url/token/公司/店铺 的 .env 变量名）
+  - 工具 schema：从 configs/<系统>.yaml 的 mcp_tools 读取（给 LLM 选工具/抽参数）
+  - 能力→工具映射：从 ability/能力目录_<系统>.yaml 读取（每能力有「工具」字段）
+  - verify 配置：从能力目录读取（verify_tool / verify_field / verify_expect）
+  - 校验查询工具、需要店铺参数的工具、需要校验的工具：从 configs 读取
+
+接入新系统（C 类）只需：
+  1. 复制 configs/POS_商品管理.yaml → configs/<系统名>.yaml，填连接 + mcp_tools
+  2. 准备 ability/能力目录_<系统名>.yaml（含 能力/工具/verify_*）
+  3. 在 registry 里按系统名实例化即可，不写任何 Python 逻辑
+
+依赖：
+  - llm_client（解析自然语言 → 工具调用）
+  - ability/ 能力目录 + configs/ 系统配置
+"""
+import asyncio
+import json
+import os
+import re
+import sys
+from contextlib import AsyncExitStack
+
+import httpx
+import yaml
+from dotenv import load_dotenv
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
+
+from base import BaseExecutor
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ABILITY_DIR = os.path.join(_ROOT, "ability")
+CONFIG_DIR = os.path.join(_ROOT, "configs")
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+if os.path.join(_ROOT, "scripts") not in sys.path:
+    sys.path.insert(0, os.path.join(_ROOT, "scripts"))
+
+# 加载 ai-test-framework/.env（敏感配置统一存这里，勿硬编码提交 git）
+load_dotenv(os.path.join(_ROOT, ".env"))
+
+
+# =====================================================================
+# 配置 / 能力目录加载
+# =====================================================================
+def _load_yaml(path):
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def _find_config_file(system):
+    """按系统名匹配 configs/ 下配置文件，返回完整路径；无精确匹配返回空串"""
+    if not system or not os.path.isdir(CONFIG_DIR):
+        return ""
+    for f in os.listdir(CONFIG_DIR):
+        if not f.endswith(".yaml"):
+            continue
+        base = os.path.splitext(f)[0]
+        if _name_match(base, system):
+            return os.path.join(CONFIG_DIR, f)
+    return ""
+
+
+def _find_ability_file(system):
+    """按系统名匹配 ability/ 下能力目录，返回完整路径；无精确匹配返回空串。
+    文件名格式「能力目录_<系统名>.yaml」，系统名可能带/不带分隔符，
+    用完整 base 名与系统名双向包含匹配，兼容 POS_商品管理 vs POS商品管理。
+    """
+    if not system or not os.path.isdir(ABILITY_DIR):
+        return ""
+    for f in os.listdir(ABILITY_DIR):
+        if not (f.startswith("能力目录_") and f.endswith(".yaml")):
+            continue
+        base = os.path.splitext(f)[0]          # 完整 base：能力目录_POS商品管理
+        stripped = base.replace("能力目录_", "")  # POS商品管理
+        if _name_match(stripped, system) or _name_match(base, system):
+            return os.path.join(ABILITY_DIR, f)
+    return ""
+
+
+def _name_match(stripped, system):
+    """容错匹配：忽略下划线/空格分隔符差异，任一方向包含即可。
+    兼容 POS商品管理 vs POS_商品管理（能力目录与系统名分隔符可能不一致）。
+    """
+    if not stripped or not system:
+        return False
+    norm = lambda s: s.replace("_", "").replace(" ", "").replace("-", "")
+    a, b = norm(stripped), norm(system)
+    return b in a or a in b
+
+
+class _SysConfig:
+    """封装一份系统的 连接 + 工具 schema + verify 配置（配置驱动）"""
+
+    def __init__(self, system):
+        self.system = system
+        cfg_path = _find_config_file(system)
+        abi_path = _find_ability_file(system)
+        cfg = _load_yaml(cfg_path) if cfg_path else {}
+        abi = _load_yaml(abi_path) if abi_path else {}
+
+        # ---- 连接 ----
+        conn = cfg.get("连接", {})
+        self.req_type = conn.get("需求类型", "C")
+        self.base_url = os.getenv(conn.get("base_url_env", ""), "")
+        self.token = os.getenv(conn.get("token_env", ""), "")
+        self.company_id = os.getenv(conn.get("company_id_env", ""), "")
+        self.merchant_id = os.getenv(conn.get("merchant_id_env", ""), "")
+
+        # ---- 工具 schema ----
+        self.tools = cfg.get("mcp_tools", [])
+
+        # ---- 需要店铺参数 / 需要校验的工具 ----
+        self.merchant_needed_tools = set(cfg.get("需要店铺参数的工具", []))
+        self.verify_tools = set(cfg.get("需要校验的工具", []))
+
+        # ---- 能力→工具 / verify 映射（来自能力目录）----
+        self.cap_tool = {}
+        self.verify_map = {}
+        for group in abi.get("能力分组", []):
+            for c in group.get("能力列表", []):
+                cap = c.get("能力")
+                if not cap:
+                    continue
+                if c.get("工具"):
+                    self.cap_tool[cap] = c["工具"]
+                if c.get("verify_tool"):
+                    self.verify_map[cap] = {
+                        "verify_tool": c["verify_tool"],
+                        "verify_field": c.get("verify_field", "exists"),
+                        "verify_expect": c.get("verify_expect", True),
+                    }
+        self.capabilities = list(self.cap_tool.keys())
+
+
+def _parse_llm_call(text):
+    """解析 LLM 输出的工具调用 JSON，容错处理"""
+    try:
+        start = text.index("{")
+        end = text.rindex("}") + 1
+        return json.loads(text[start:end])
+    except Exception:
+        tool = re.search(r'"tool"\s*:\s*"([^"]+)"', text)
+        params = re.search(r'"toolParams"\s*:\s*(\{.*?\})', text, re.DOTALL)
+        if tool:
+            params_obj = {}
+            if params:
+                try:
+                    params_obj = json.loads(params.group(1))
+                except Exception:
+                    params_obj = {}
+            return {"tool": tool.group(1), "toolParams": params_obj}
+        raise ValueError(f"无法解析 LLM 工具调用: {text[:300]}")
+
+
+def _extract_entity(user_input, capability):
+    """从用户自然语言里粗提取实体名（去掉常见动词/数量词）。
+    用于操作类工具缺 ID 时按名查 ID。通用实现：不同系统可覆盖提取逻辑。
+    """
+    if not user_input:
+        return ""
+    quoted = re.findall(r"['\"「『]([^'\"」』]+)['\"」』]", user_input)
+    if quoted:
+        return quoted[0].strip()
+    # 通用停止词（操作类动词 + 数量词）
+    stop_words = [
+        "把", "将", "给", "对", "帮", "我", "的", "改成", "改为", "变成",
+        "下架", "上架", "删除", "删掉", "移除", "价格", "调整到", "改成",
+        "新增", "添加", "元", "块", "修改", "改名", "英文名", "查询", "多少",
+        "所有", "全部", "重新", "店内", "菜单", "里", "的", "请", "麻烦",
+        "请问", "一下", "了", "啊", "呢",
+    ]
+    for token in stop_words:
+        user_input = user_input.replace(token, " ")
+    parts = [p.strip() for p in re.split(r"[\s,，。]+", user_input) if p.strip()]
+    candidates = [p for p in parts if len(p) >= 2]
+    candidates = [p for p in candidates if not re.fullmatch(r"\d+(\.\d+)?", p)]
+    return candidates[-1] if candidates else ""
+
+
+class GenericMcpExecutor(BaseExecutor):
+    """通用真实执行器：LLM 解析自然语言 → 调真实 MCP → 操作后实时校验。
+
+    通过 _SysConfig 加载系统配置，不绑定任何具体系统。
+    """
+
+    def __init__(self, system):
+        self.sys = _SysConfig(system)
+        self.capabilities = self.sys.capabilities
+        from llm_client import LLMClient
+        self.llm = LLMClient()
+
+    # ---- 连接上下文 ----
+    def _client_headers(self):
+        headers = {}
+        if self.sys.token:
+            headers["Authorization"] = f"Bearer {self.sys.token}"
+        if self.sys.company_id:
+            headers["CompanyId"] = self.sys.company_id
+        return headers
+
+    async def _session_context(self):
+        stack = AsyncExitStack()
+        http = await stack.enter_async_context(
+            httpx.AsyncClient(headers=self._client_headers())
+        )
+        read, write = await stack.enter_async_context(
+            streamable_http_client(self.sys.base_url, http_client=http)
+        )
+        session = await stack.enter_async_context(ClientSession(read, write))
+        await session.initialize()
+        return stack, session
+
+    async def _call_tool(self, session, name, tool_params):
+        """调用 MCP 工具，返回 (is_error, 文本)"""
+        result = await session.call_tool(name, {"toolParams": tool_params})
+        texts = [c.text for c in result.content if c.type == "text"]
+        return result.is_error, "\n".join(texts)
+
+    # ---- 主流程 ----
+    def handle(self, capability, user_input, inp, expected):
+        return asyncio.run(self._call_capability(capability, user_input, expected))
+
+    async def _call_capability(self, capability, user_input, expected):
+        steps = []
+        cap_tool = self.sys.cap_tool.get(capability, "")
+
+        # 1. LLM 意图理解
+        try:
+            intent_raw = self._llm_parse(user_input, capability)
+            tool_name = intent_raw.get("tool") or cap_tool
+            tool_params = intent_raw.get("toolParams") or {}
+        except Exception:
+            tool_name = cap_tool
+            tool_params = {}
+        # 工具纠正：能力目录有明确工具时，强制用它（避免 LLM 选成查询类）
+        if cap_tool and cap_tool != tool_name:
+            tool_name = cap_tool
+        steps.append({
+            "name": "LLM-意图理解", "type": "GENERATION",
+            "input": user_input,
+            "output": json.dumps({"tool": tool_name, "toolParams": tool_params}, ensure_ascii=False),
+            "metadata": {"capability": capability, "system": self.sys.system},
+        })
+        if not tool_name:
+            return {"error": f"LLM 未能解析出工具，能力: {capability}",
+                    "block": True, "steps": steps}
+
+        # 2. 补默认店铺 + ID 解析
+        tool_params = self._ensure_merchant(tool_name, tool_params)
+        await self._resolve_entity_id(tool_name, tool_params, user_input, steps, capability)
+
+        # 3. 调用真实 MCP
+        mcp_input = json.dumps({"toolParams": tool_params}, ensure_ascii=False)
+        try:
+            stack, session = await self._session_context()
+            async with stack:
+                is_error, text = await self._call_tool(session, tool_name, tool_params)
+        except Exception as e:
+            steps.append({
+                "name": f"MCP-{tool_name}", "type": "SPAN", "input": mcp_input,
+                "output": f"EXCEPTION: {e}",
+                "metadata": {"mcp": self.sys.system, "tool": tool_name},
+            })
+            return {"error": f"MCP 调用失败: {e}", "block": True, "steps": steps}
+
+        steps.append({
+            "name": f"MCP-{tool_name}", "type": "SPAN", "input": mcp_input,
+            "output": text, "metadata": {"mcp": self.sys.system, "tool": tool_name},
+        })
+        if is_error:
+            return {"error": text, "block": True, "steps": steps}
+
+        # 4. 操作后实时校验
+        verify = None
+        if tool_name in self.sys.verify_tools:
+            verify = await self._verify_after(capability, tool_name, tool_params)
+            if verify:
+                steps.append({
+                    "name": f"校验-MCP实时", "type": "SPAN",
+                    "input": json.dumps({
+                        "verify_tool": verify.get("verify_tool"),
+                        "field": verify.get("field"), "expect": verify.get("expect"),
+                    }, ensure_ascii=False),
+                    "output": json.dumps({
+                        "actual": verify.get("actual"), "match": verify.get("match"),
+                    }, ensure_ascii=False),
+                    "metadata": {"verify": True, "capability": capability},
+                })
+
+        # 5. LLM 生成回答
+        reply = self._gen_reply(capability, user_input, tool_name, text)
+        steps.append({
+            "name": "LLM-生成回答", "type": "GENERATION",
+            "input": json.dumps({"tool": tool_name, "mcp_result": text[:500]}, ensure_ascii=False),
+            "output": reply, "metadata": {"capability": capability},
+        })
+        return {"tool": tool_name, "result": text, "params": tool_params,
+                "reply": reply, "verify": verify, "steps": steps}
+
+    # ---- 操作后校验 ----
+    async def _verify_after(self, capability, tool_name, tool_params):
+        cfg = self.sys.verify_map.get(capability)
+        if not cfg:
+            return None
+        vtool = cfg["verify_tool"]
+        vfield = cfg["verify_field"]
+        vexpect = cfg.get("verify_expect", True)
+
+        query_params = {}
+        if self.sys.merchant_id:
+            query_params["merchantIds"] = [self.sys.merchant_id]
+        if vfield != "exists":
+            ids = self._extract_ids(tool_params)
+            if not ids:
+                return {"verify_tool": vtool, "field": vfield, "expect": vexpect,
+                        "actual": None, "match": None, "note": "无实体ID可校验"}
+            query_params["productIds"] = ids
+
+        try:
+            stack, session = await self._session_context()
+            async with stack:
+                _, text = await self._call_tool(session, vtool, query_params)
+        except Exception as e:
+            return {"verify_tool": vtool, "field": vfield, "expect": vexpect,
+                    "actual": None, "match": None, "error": str(e)}
+
+        actual, match = self._compare_verify(vfield, vexpect, tool_params, text)
+        return {"verify_tool": vtool, "field": vfield, "expect": vexpect,
+                "actual": actual, "match": match}
+
+    @staticmethod
+    def _extract_ids(tool_params):
+        ids = tool_params.get("productIds") or tool_params.get("product_ids") or []
+        if isinstance(ids, str):
+            ids = [ids]
+        return list(ids) if ids else []
+
+    def _compare_verify(self, field, expect, op_params, verify_text):
+        try:
+            data = json.loads(verify_text)
+            if data.get("code") != 0 or not data.get("data"):
+                return str(data.get("msg", "查询失败")), False
+        except Exception:
+            return verify_text[:200], None
+        items = data["data"]
+        flat = []
+        if isinstance(items, dict):
+            for name, lst in items.items():
+                if isinstance(lst, list):
+                    flat.extend(lst)
+                elif isinstance(lst, dict):
+                    flat.append(lst)
+        elif isinstance(items, list):
+            flat = items
+        if not flat:
+            if field == "exists":
+                return "not_found", (vexpect is False)
+            return "not_found", False
+        first = flat[0]
+        if field == "exists":
+            return "found", (vexpect is True)
+        if field == "price":
+            expect_price = op_params.get("price")
+            actual_price = first.get("price")
+            return str(actual_price), (actual_price is not None and str(actual_price) == str(expect_price))
+        if field == "status":
+            expect_status = op_params.get("status")
+            actual_status = first.get("status")
+            return str(actual_status), (actual_status is not None and str(actual_status).lower() == str(expect_status).lower())
+        if field in ("name", "nameEn"):
+            expect_name = op_params.get("name") or op_params.get("nameEn")
+            actual_name = first.get("name") or first.get("nameEn")
+            return str(actual_name), (actual_name is not None and str(actual_name).lower() == str(expect_name).lower())
+        return str(first), None
+
+    # ---- LLM 解析 / 回复 ----
+    def _build_tools_prompt(self):
+        lines = ["可用工具列表（JSON 格式）："]
+        for t in self.sys.tools:
+            required = "必填:" + ",".join(t["required"]) if t.get("required") else ""
+            lines.append(f"- {t['name']}: {t['description']} | 参数: {t['params']} | {required}")
+        return "\n".join(lines)
+
+    def _llm_parse(self, user_input, capability):
+        hint_tool = self.sys.cap_tool.get(capability, "")
+        hint_line = f"必须使用工具：{hint_tool}" if hint_tool else ""
+        prompt = f"""
+你是 {self.sys.system} 的意图解析引擎。请把用户的自然语言请求，解析为对真实 MCP 工具的一次调用。
+
+{self._build_tools_prompt()}
+
+当前任务类型（能力）：{capability}
+{hint_line}
+默认店铺ID：{self.sys.merchant_id}
+
+请解析以下用户请求，输出 JSON（不要其他文字）：
+{{
+  "tool": "工具名",
+  "toolParams": {{ 工具参数 }}
+}}
+
+用户请求：{user_input}
+
+注意：
+- 严格优先使用上面"必须使用工具"指定的工具（若有），不要用查询类工具替代操作类工具
+- 参数名必须用列表里定义的字段名
+- 涉及店铺操作但用户未指明店铺时，toolParams 用 merchantIds: ["{self.sys.merchant_id}"]
+- 上架/下架等状态用工具描述里定义的枚举
+- 若是删除操作，务必先想清楚是否合理，删除不可恢复
+"""
+        try:
+            text = self.llm.chat_text(prompt)
+            return _parse_llm_call(text)
+        except Exception:
+            return {"tool": hint_tool, "toolParams": {}}
+
+    def _gen_reply(self, capability, user_input, tool_name, mcp_result):
+        prompt = f"""
+你是 {self.sys.system} 的回复生成器。基于真实 MCP 工具返回结果，生成一句面向用户的中文回复。
+
+工具：{tool_name}
+能力：{capability}
+用户请求：{user_input}
+MCP 返回结果：
+{mcp_result[:800]}
+
+请生成简洁的中文回复（一句话），如实反映操作结果。不要编造不存在的成功/失败信息。
+"""
+        try:
+            return self.llm.chat_text(prompt)
+        except Exception:
+            return f"已处理请求（工具:{tool_name}），结果见 MCP 返回。"
+
+    # ---- 参数补齐 / ID 解析 ----
+    def _ensure_merchant(self, tool_name, tool_params):
+        if tool_name in self.sys.merchant_needed_tools:
+            has = any(k in tool_params for k in ("merchantIds", "merchantId"))
+            if not has and self.sys.merchant_id:
+                tool_params["merchantIds"] = [self.sys.merchant_id]
+        return tool_params
+
+    async def _resolve_entity_id(self, tool_name, tool_params, user_input, steps, capability):
+        """操作类工具缺 productIds 时，先按实体名查出真实 ID 填入。"""
+        need_ids = tool_name in (
+            "update_products_by_ids", "delete_products_by_ids",
+            "query_products_by_ids", "query_product_detail_by_id",
+        )
+        if not need_ids:
+            return False
+        if tool_params.get("productIds") or tool_params.get("product_ids"):
+            return False
+        name = _extract_entity(user_input, capability)
+        if not name:
+            return False
+        # 找一个可用的"按名搜索"工具（能力目录里 search 类工具）
+        lookup_tool = self._find_lookup_tool()
+        if not lookup_tool:
+            return False
+        resolved = await self._lookup_id(lookup_tool, name)
+        if resolved:
+            tool_params["productIds"] = [resolved]
+            steps.append({
+                "name": "ID解析-查询实体ID", "type": "SPAN",
+                "input": f"实体名: {name}", "output": f"ID: {resolved}",
+                "metadata": {"step": "id_resolve"},
+            })
+            return True
+        return False
+
+    def _find_lookup_tool(self):
+        """从工具 schema 找一个 search/lookup 类工具用于 ID 解析"""
+        for t in self.sys.tools:
+            if t["name"] in ("search_products_by_name", "search", "lookup"):
+                return t["name"]
+        return ""
+
+    async def _lookup_id(self, tool_name, name):
+        try:
+            stack, session = await self._session_context()
+            async with stack:
+                # 通用：用第一个非必填外的 name/productName 字段
+                params = {}
+                if self.sys.merchant_id:
+                    params["merchantIds"] = [self.sys.merchant_id]
+                params["productName"] = name
+                is_error, text = await self._call_tool(session, tool_name, params)
+                if is_error:
+                    return None
+                data = json.loads(text)
+                if data.get("code") != 0 or not data.get("data"):
+                    return None
+                for k, v in data["data"].items():
+                    if isinstance(v, list) and v:
+                        return v[0].get("id")
+                    if isinstance(v, dict) and v.get("id"):
+                        return v.get("id")
+                return None
+        except Exception:
+            return None
+
+
+# =====================================================================
+# 手动连接验证
+# =====================================================================
+async def _demo_connect(system):
+    ex = GenericMcpExecutor(system)
+    if not ex.sys.token:
+        print(f"⚠️ 未配置 {ex.sys.system} 的 token，无法连接真实 MCP。")
+        return
+    try:
+        stack, session = await ex._session_context()
+        async with stack:
+            print(f"✅ 已连接 {ex.sys.system}\n")
+            is_error, text = await ex._call_tool(session, "query_merchants", {})
+            print(f"query_merchants: is_error={is_error}\n  {text[:800]}")
+    except Exception as e:
+        print(f"连接失败: {e}")
+
+
+if __name__ == "__main__":
+    import sys as _s
+    system = _s.argv[1] if len(_s.argv) > 1 else "POS_商品管理"
+    asyncio.run(_demo_connect(system))

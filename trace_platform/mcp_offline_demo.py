@@ -13,9 +13,9 @@ from dotenv import load_dotenv
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
-# 从 dataset-generator/.env 读取 MCP 配置（避免硬编码 token 提交 git）
+# 从 ai-test-framework/.env 读取 MCP 配置（避免硬编码 token 提交 git）
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(os.path.join(_PROJECT_ROOT, "dataset-generator", ".env"))
+load_dotenv(os.path.join(_PROJECT_ROOT, "ai-test-framework", ".env"))
 
 URL = os.getenv("POS_MCP_URL", "https://pos-test-mcp.proton-system.com/mcp")
 TOKEN = os.getenv("POS_MCP_TOKEN", "")

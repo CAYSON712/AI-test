@@ -29,3 +29,10 @@ Thumbs.db
 *.log
 tmp/
 temp/
+
+# ===== 测试生成物（运行产生的中间/结果文件，不入库）=====
+ai-test-framework/results/
+ai-test-framework/report/
+ai-test-framework/datasets/*_verify.yaml
+*.tmp
+*_tmp_*.py

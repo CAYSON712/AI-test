@@ -1,0 +1,89 @@
+# =====================================================================
+# 系统配置：POS 商品管理（通用执行器的配置驱动样例）
+# =====================================================================
+# 用途：给 generic_mcp_executor 提供"连接 + 工具 schema"，使其不写死 POS。
+# 能力→工具映射、verify 配置从 ability/能力目录_POS商品管理.yaml 读取。
+#
+# 接入新系统：复制本文件为 configs/<系统名>.yaml，填 连接 + mcp_tools 即可。
+# 需求类型决定了接入方式（A/D直连、B/C对话式、E RAG），见 registry.py。
+# =====================================================================
+
+# ---- 连接配置（从 .env 读，token 前缀用于区分多系统）----
+连接:
+  需求类型: "C"                  # 接入方式：C=Agent+MCP 对话式直连
+  base_url_env: "POS_MCP_URL"    # .env 里存 MCP 地址的变量名
+  token_env: "POS_MCP_TOKEN"     # .env 里存 token 的变量名
+  company_id_env: "POS_MCP_COMPANY_ID"   # 可选：请求头 CompanyId
+  merchant_id_env: "POS_MERCHANT_ID"     # 可选：默认店铺
+  请求头: {CompanyId: "{{company_id}}"}
+  auth_header: "Authorization: Bearer {{token}}"
+
+# ---- MCP 工具 schema（给 LLM 做工具选择 + 参数抽取）----
+# name 必须与能力目录里的「工具」字段一致
+mcp_tools:
+  - name: query_menus
+    description: 查询菜单列表，支持按店铺、状态、销售渠道、菜单名称筛选。
+    params: [merchantIds, status, saleChannel, name]
+    required: []
+  - name: query_categories
+    description: 查询分类列表，支持按店铺、分类名称筛选。
+    params: [merchantIds, name]
+    required: []
+  - name: search_products_by_name
+    description: 按商品名称模糊搜索商品，返回商品ID、名称、价格。通常作为操作的前置查询。
+    params: [merchantIds, productName, status]
+    required: [merchantIds, productName]
+  - name: query_products_by_ids
+    description: 根据商品ID列表批量查询商品信息，需先获取商品ID。
+    params: [merchantIds, productIds]
+    required: [merchantIds, productIds]
+  - name: query_products_by_filter
+    description: 按分类ID、商品类型、商品状态等条件组合查询商品列表。
+    params: [merchantIds, categoryIds, status]
+    required: [merchantIds]
+  - name: query_product_detail_by_id
+    description: 根据商品ID查询商品详细信息。
+    params: [merchantIds, productIds]
+    required: [merchantIds, productIds]
+  - name: update_products_by_ids
+    description: '按商品ID批量修改商品属性（上下架状态/价格/名称）。status: Selling=上架, Off=下架。'
+    params: [merchantIds, productIds, status, price, name, nameEn]
+    required: [merchantIds, productIds]
+  - name: batch_insert_products
+    description: 在指定店铺批量新增商品，每个商品含价格、多语言名称。单次最多200个。
+    params: [merchantId, products]
+    required: [merchantId, products]
+  - name: delete_products_by_ids
+    description: 按商品ID批量删除商品，删除不可恢复。
+    params: [merchantIds, productIds]
+    required: [merchantIds, productIds]
+  - name: query_companies
+    description: 查询当前账号授权公司列表。
+    params: [companyIds, name]
+    required: []
+  - name: query_merchants
+    description: 查询授权店铺列表，获取 MerchantId。
+    params: []
+    required: []
+
+# ---- 操作后实时校验用的查询工具（name 需存在于 mcp_tools）----
+verify:
+  query_products_by_ids: {查询: true}   # 用此工具拉实时状态对比
+  query_products_by_filter: {查询: true}
+
+# ---- 需要自动补默认店铺的「操作类」工具（缺 merchantIds 时填默认店铺）----
+需要店铺参数的工具:
+  - update_products_by_ids
+  - delete_products_by_ids
+  - query_products_by_ids
+  - query_products_by_filter
+  - query_product_detail_by_id
+  - query_menus
+  - query_categories
+  - search_products_by_name
+
+# ---- 操作后需要实时校验的工具（tool_name 触发 verify）----
+需要校验的工具:
+  - update_products_by_ids
+  - delete_products_by_ids
+  - batch_insert_products
