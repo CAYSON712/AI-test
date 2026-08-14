@@ -43,10 +43,22 @@ TYPES = ["正常集", "边界集", "异常集", "对抗集", "模糊集"]
 
 # 不适用维度（需求不涉及，可配置）
 # 说明：这些维度在本次需求中"合理不适用"，不报缺口，但要标注
+# 对「POS 商品管理」：工具调用型系统（AI 调 MCP 查数据库），不涉文档检索/个人敏感/违规内容
 NOT_APPLICABLE = {
-    "危险拦截": "只读查询，无写操作",
-    "内容安全": "查询报表，不涉违规内容",
-    "敏感数据保护": "查询经营数据，不涉个人敏感信息",
+    "内容安全": "商品管理不涉违规内容",
+    "敏感数据保护": "商品数据不涉个人敏感信息",
+    # RAG 检索增强维度：本系统是工具调用型（调 MCP 操作数据库），不是文档检索问答，不适用
+    "检索召回率": "工具调用型系统，无文档检索环节",
+    "检索精确率": "工具调用型系统，无文档检索环节",
+    "回答忠实度": "工具调用型系统，回答基于工具返回的结构化数据而非检索片段",
+    "幻觉程度": "工具调用型系统，无检索生成幻觉场景",
+    "检索内容覆盖": "工具调用型系统，无文档检索环节",
+}
+
+# 能力 × 类型的豁免配置（某个能力确实某类型不适用时声明，必须说明理由）
+# 默认要求：每个能力都覆盖全部 5 种类型。仅当有充分理由时在此豁免。
+CAP_TYPE_NOT_APPLICABLE = {
+    # "查询菜单": ["对抗集"]  # 示例：若确认某能力某类型无需测，在此声明并注释理由
 }
 
 
@@ -136,6 +148,28 @@ def main():
     print("\n【④ 优先级分布】")
     for p in ["P0", "P1", "P2"]:
         print(f"  {p}: {pri_count.get(p, 0)} 条")
+
+    # 5. 能力 × 类型 组合覆盖（强制：每个能力应覆盖全部 5 种类型）
+    print("\n【⑤ 能力 × 类型 组合覆盖】")
+    cap_type = defaultdict(set)  # 能力 → {类型,...}
+    for c in cases:
+        cap_type[c["能力"]].add(parse_type(c))
+
+    combo_missing = []  # 记录缺口 (能力, 类型, 理由)
+    for cap in sorted(cap_type):
+        covered = cap_type[cap]
+        missing = [t for t in TYPES if t not in covered]
+        exempt = CAP_TYPE_NOT_APPLICABLE.get(cap, [])
+        real_missing = [t for t in missing if t not in exempt]
+        if real_missing:
+            combo_missing.append((cap, real_missing))
+            print(f"  ✗ [{cap}] 缺口类型: {', '.join(real_missing)}（已覆盖: {', '.join(covered)}）")
+        else:
+            print(f"  ✓ [{cap}] 全类型覆盖: {', '.join(covered)}")
+    if combo_missing:
+        print(f"\n  ⚠️ 有 {len(combo_missing)} 个能力未覆盖全部类型，需补充用例")
+    else:
+        print("\n  ✓ 所有能力均覆盖全部 5 种类型")
 
     print("\n" + "=" * 50)
     print("自检完成")

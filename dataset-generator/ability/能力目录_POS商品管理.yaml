@@ -21,14 +21,23 @@
       - 能力: "商品上架"
         参数: [productIds, status]
         工具: update_products_by_ids
+        layer: "E2E"
+        verify_tool: query_products_by_ids
+        verify_field: status
         说明: "把指定商品改为上架(Selling)状态"
       - 能力: "商品下架"
         参数: [productIds, status]
         工具: update_products_by_ids
+        layer: "E2E"
+        verify_tool: query_products_by_ids
+        verify_field: status
         说明: "把指定商品改为下架(Off)状态"
       - 能力: "批量上下架"
         参数: [productIds, status]
         工具: update_products_by_ids
+        layer: "Skill"
+        verify_tool: query_products_by_ids
+        verify_field: status
         说明: "一次批量设置多个商品上下架状态"
 
   - 分组: "价格修改"
@@ -37,10 +46,16 @@
       - 能力: "修改价格"
         参数: [productIds, price]
         工具: update_products_by_ids
+        layer: "E2E"
+        verify_tool: query_products_by_ids
+        verify_field: price
         说明: "修改一个或多个商品的价格"
       - 能力: "批量改价"
         参数: [productIds, prices]
         工具: update_products_by_ids
+        layer: "Skill"
+        verify_tool: query_products_by_ids
+        verify_field: price
         说明: "批量修改多个商品价格"
 
   - 分组: "名称修改"
@@ -49,14 +64,23 @@
       - 能力: "修改商品名称"
         参数: [productIds, name]
         工具: update_products_by_ids
+        layer: "E2E"
+        verify_tool: query_products_by_ids
+        verify_field: name
         说明: "修改一个或多个商品的中文名称"
       - 能力: "修改商品英文名称"
         参数: [productIds, name_en]
         工具: update_products_by_ids
+        layer: "E2E"
+        verify_tool: query_products_by_ids
+        verify_field: nameEn
         说明: "修改一个或多个商品的英文名称"
       - 能力: "批量修改名称"
         参数: [productIds, names]
         工具: update_products_by_ids
+        layer: "Skill"
+        verify_tool: query_products_by_ids
+        verify_field: name
         说明: "批量修改多个商品的名称"
 
   - 分组: "商品新增"
@@ -65,10 +89,16 @@
       - 能力: "新增商品"
         参数: [merchantId, name, price, categoryId]
         工具: batch_insert_products
+        layer: "E2E"
+        verify_tool: query_products_by_filter
+        verify_field: exists
         说明: "在指定店铺新增单个商品"
       - 能力: "批量新增商品"
         参数: [merchantId, products]
         工具: batch_insert_products
+        layer: "Skill"
+        verify_tool: query_products_by_filter
+        verify_field: exists
         说明: "在指定店铺批量新增商品（最多200个）"
 
   - 分组: "商品删除"
@@ -77,10 +107,18 @@
       - 能力: "删除商品"
         参数: [productIds]
         工具: delete_products_by_ids
+        layer: "E2E"
+        verify_tool: query_products_by_ids
+        verify_field: exists
+        verify_expect: false
         说明: "按ID删除商品，不可恢复"
       - 能力: "批量删除商品"
         参数: [productIds]
         工具: delete_products_by_ids
+        layer: "Skill"
+        verify_tool: query_products_by_ids
+        verify_field: exists
+        verify_expect: false
         说明: "批量删除多个商品，不可恢复"
 
   - 分组: "商品查询"

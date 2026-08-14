@@ -61,6 +61,24 @@ def score_case(case, result):
     if result.status == "error":
         return {"accuracy": 0.0, "reply_honesty": 0.0, "tool_success": 0.0}
 
+    # ★ 优先用「操作后实时校验」结果打分（E2E 层，最可靠）
+    # 执行器返回带 verify.match = 实时 MCP 校验是否通过
+    if isinstance(output, dict) and output.get("verify"):
+        v = output["verify"]
+        actual, match = v.get("actual"), v.get("match")
+        field = v.get("field")
+        if match is not None:
+            if field == "price":
+                return {"price_verify": 1.0 if match else 0.0}
+            if field == "status":
+                return {"status_verify": 1.0 if match else 0.0}
+            if field in ("name", "nameEn"):
+                return {"name_verify": 1.0 if match else 0.0}
+            if field == "exists":
+                return {"exists_verify": 1.0 if match else 0.0}
+        # 有 verify 但未判断出 match（如无 productIds 可校验），回退工具成功率
+        return {"tool_success": 1.0 if match is not None else 0.5}
+
     scorer = make_scorer("ratio")
 
     # ---- 根据期望字段类型精确打分 ----
