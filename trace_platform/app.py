@@ -43,6 +43,7 @@ class ScoreIn(BaseModel):
     data_type: str = "NUMERIC"
     comment: Optional[str] = None
     observation_id: Optional[str] = None
+    metadata: Optional[dict] = None
 
 class TraceIn(BaseModel):
     name: str
@@ -96,9 +97,10 @@ def create_trace(t: TraceIn):
     # 存 scores
     for s in t.scores:
         c.execute(
-            "INSERT INTO scores (id, trace_id, observation_id, name, value, data_type, comment) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (uuid.uuid4().hex, trace_id, s.observation_id, s.name, s.value, s.data_type, s.comment)
+            "INSERT INTO scores (id, trace_id, observation_id, name, value, data_type, comment, metadata) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (uuid.uuid4().hex, trace_id, s.observation_id, s.name, s.value, s.data_type, s.comment,
+             json.dumps(s.metadata, ensure_ascii=False) if s.metadata else None)
         )
 
     conn.commit()
@@ -226,29 +228,116 @@ def get_trace(trace_id: str):
     scores = [dict(r) for r in c.fetchall()]
     conn.close()
 
+    # 把 value 按 data_type 还原为原类型；解析 scores 的 metadata（评分来源/理由）
+    for sc in scores:
+        v, dt = sc.get("value"), sc.get("data_type", "NUMERIC")
+        try:
+            if dt == "NUMERIC":
+                sc["value"] = float(v) if v is not None else None
+            elif dt == "BOOLEAN":
+                sc["value"] = (str(v).lower() in ("true", "1", "yes"))
+        except Exception:
+            pass
+        # 解析 scores 的 metadata（评分来源/理由），前端可直接使用
+        try:
+            sc["metadata"] = json.loads(sc.get("metadata") or "{}") or {}
+        except Exception:
+            sc["metadata"] = {}
+
     # 还原父子树形结构
-    return {
+    tree = _build_tree(obs)
+    # 计算瀑布图时间窗口：优先用真实绝对时间；粗糙/缺失时用合成时间轴兜底。
+    # 若所有节点耗时都为 0（秒级数据 / 无 latency_ms），真实时间无法表达条宽 → 用合成。
+    def _collect(ns):
+        for n in ns:
+            yield n
+            yield from _collect(n.get("children", []))
+    _nodes = list(_collect(tree))
+    _has_dur = any(n.get("_duration_ms", 0) > 0 for n in _nodes)
+    _base, _total = _compute_waterfall_window(obs)
+    _synthetic = (_total <= 0) or (not _has_dur)
+    if _synthetic:
+        _base, _total = _synthesize_timeline(tree)
+        return {
         "trace": dict(trace),
-        "tree": _build_tree(obs),
+        "tree": tree,
         "scores": scores,
         "total_observations": len(obs),
+        "trace_start_ms": _base,          # trace 内最早观测点的相对时间偏移（通常 0）
+        "trace_duration_ms": _total,      # trace 总跨度（最晚结束 - 最早开始）
+        "synthetic": _synthetic,          # 是否用合成时间轴（真实时间缺失时兜底）
     }
 
 
+def _parse_ts(ts):
+    """把 start_time/end_time（ISO 字符串）转成可比较的毫秒时间戳；失败返回 None"""
+    import datetime as _dt
+    if not ts:
+        return None
+    try:
+        s = str(ts).strip()
+        # 兼容带 T 的 ISO 与空格分隔
+        if "T" in s:
+            s = s.replace("T", " ")
+        dt = _dt.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+        return int(dt.timestamp() * 1000)
+    except Exception:
+        return None
+
+
+def _node_duration_ms(node):
+    """优先用 metadata.latency_ms；否则用 end_time - start_time 估算"""
+    ms = node.get("_latency_ms")
+    if ms:
+        return float(ms)
+    t0 = _parse_ts(node.get("start_time"))
+    t1 = _parse_ts(node.get("end_time"))
+    if t0 is not None and t1 is not None and t1 >= t0:
+        return float(t1 - t0)
+    return 0.0
+
+
+def _compute_waterfall_window(obs):
+    """返回 (start_offset_ms, total_duration_ms)：
+    以所有节点最早开始时间为 0，总跨度为最晚结束-最早开始。
+    无有效时间数据时返回 (0, 0)。"""
+    starts, ends = [], []
+    for o in obs:
+        t0 = _parse_ts(o.get("start_time"))
+        t1 = _parse_ts(o.get("end_time"))
+        if t0 is not None:
+            starts.append(t0)
+        if t1 is not None:
+            ends.append(t1)
+    if not starts:
+        return (0, 0)
+    base = min(starts)
+    end = max(ends) if ends else base
+    return (0, max(0, end - base))
+
+
 def _build_tree(obs: List[dict]):
-    """把扁平 observation 列表还原成父子嵌套树，并解析节点 level（ERROR/WARNING）"""
+    """把扁平 observation 列表还原成父子嵌套树，并解析节点 level/latency 等展示字段。"""
     import json as _json
     nodes = {}
     for o in obs:
         node = dict(o, children=[])
-        # 解析节点 metadata 的 level（用于前端标红/黄）
-        lvl = ""
+        # 解析节点 metadata：level（红/黄标）+ latency + model/tokens 等展示字段
+        _m = {}
         try:
-            _m = _json.loads(node.get("metadata") or "{}")
-            lvl = _m.get("level", "") or ""
+            _m = _json.loads(node.get("metadata") or "{}") or {}
         except Exception:
-            lvl = ""
+            _m = {}
+        lvl = _m.get("level", "") or ""
         node["_level"] = lvl
+        node["_latency_ms"] = _m.get("latency_ms", "") or ""
+        # 提升常用展示字段到顶层，前端无需再解 metadata
+        for k in ("model", "provider", "tool", "tokens_in", "tokens_out",
+                  "skill", "skill_name", "scenario", "cost"):
+            if _m.get(k) is not None:
+                node["_" + k] = _m[k]
+        # 先算耗时
+        node["_duration_ms"] = _node_duration_ms(node)
         nodes[o["id"]] = node
     roots = []
     for o in obs:
@@ -259,6 +348,28 @@ def _build_tree(obs: List[dict]):
         else:
             roots.append(node)
     return roots
+
+
+def _synthesize_timeline(roots):
+    """合成时间轴：当真实时间缺失（秒级/无 latency）时，按树的先序顺序
+    依次排布每个节点，offset 顺延累积；节点宽度用 latency_ms，无则给默认 300ms。
+    返回 (start_offset_ms, total_duration_ms)。"""
+    _DEFAULT_DUR = 300.0
+    _state = {"cursor": 0}
+    def walk(node):
+        # 有真实耗时则用，否则用默认宽度
+        dur = node.get("_duration_ms") or 0.0
+        if dur <= 0:
+            dur = _DEFAULT_DUR
+        # 有真实 offset（已解析到毫秒级绝对时间）则跳过合成——但此处进入即说明时间缺失
+        node["_offset_ms"] = int(_state["cursor"])
+        node["_duration_ms"] = dur
+        _state["cursor"] += dur
+        for ch in node.get("children", []):
+            walk(ch)
+    for r in roots:
+        walk(r)
+    return (0, _state["cursor"])
 
 
 # ---------- 打分 ----------
@@ -321,7 +432,41 @@ INDEX_HTML = """<!DOCTYPE html>
   .node-lvl-warn { display: inline-block; background: #fff8e1; color: #ef6c00; font-size: 11px; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
   .node-detail { font-size: 12px; color: #555; margin-top: 4px; white-space: pre-wrap; word-break: break-all; }
   .node-children { margin-left: 20px; border-left: 1px dashed #ccc; padding-left: 10px; }
-  .score { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 12px; font-size: 12px; margin: 2px; }
+  .score { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 12px; font-size: 12px; margin: 2px; cursor: help; }
+  .score .via { font-size: 9px; border-radius: 6px; padding: 0 4px; margin-left: 4px; vertical-align: 1px; }
+  .score .via-rule { background: #e3f2fd; color: #1565c0; }
+  .score .via-llm { background: #f3e5f5; color: #6a1b9a; }
+  .score .via-default { background: #eceff1; color: #78909c; }
+  .score-nojudge { background: #eceff1 !important; color: #78909c !important; font-style: italic; }
+  /* ===== 瀑布图 ===== */
+  .wf-head { font-weight: 600; color: #2c3e50; margin-bottom: 4px; }
+  .wf-head .batch-meta { font-weight: normal; }
+  .wf-scale { position: relative; height: 18px; margin: 6px 0 2px; border-bottom: 1px solid #eee; }
+  .wf-scale-inner { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+  .wf-tick { position: absolute; top: 0; height: 100%; border-left: 1px solid #e0e0e0; }
+  .wf-tick span { position: absolute; top: 2px; left: 3px; font-size: 10px; color: #999; white-space: nowrap; }
+  .wf-timeline { position: relative; }
+  .wf-row { display: flex; align-items: center; min-height: 30px; border-bottom: 1px dashed #f0f0f0; }
+  .wf-meta { width: 280px; flex-shrink: 0; padding: 2px 8px 2px 0; overflow: hidden; }
+  .wf-meta .node-type { font-size: 10px; color: #aaa; margin-left: 4px; }
+  .wf-meta-bits { font-size: 11px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wf-dur { font-size: 11px; color: #777; background: #f0f1f4; border-radius: 8px; padding: 0 6px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .wf-track { flex: 1; position: relative; height: 24px; background: repeating-linear-gradient(90deg, #fafbfc, #fafbfc calc(25% - 1px), #f2f3f5 25%); border-radius: 4px; }
+  .wf-bar { position: absolute; top: 4px; height: 16px; border-radius: 3px; background: #9b59b6; opacity: 0.9; cursor: pointer; }
+  .wf-bar:hover { opacity: 1; outline: 1px solid #000; }
+  .wf-row.gen .wf-bar { background: #e91e63; }
+  .wf-row.st-err .wf-bar { background: #e53935; }
+  .wf-row.st-warn .wf-bar { background: #fb8c00; }
+  .wf-row.st-err .wf-meta { background: #fff5f5; border-left: 3px solid #e53935; }
+  .wf-row.st-warn .wf-meta { background: #fffdf0; border-left: 3px solid #fb8c00; }
+  .wf-empty { padding: 14px; margin: 4px 0 10px; background: #fff8e1; color: #8d6e63;
+    border: 1px dashed #ffb300; border-radius: 6px; font-size: 12px; }
+  .wf-legend { margin: 10px 0 4px; font-size: 11px; color: #666; }
+  .lg { display: inline-block; padding: 1px 8px; border-radius: 8px; margin-right: 8px; background: #eee; }
+  .lg-gen { background: #fce4ec; color: #ad1457; }
+  .lg-span { background: #ede7f6; color: #6a1b9a; }
+  .lg-err { background: #ffebee; color: #c62828; }
+  .lg-warn { background: #fff8e1; color: #ef6c00; }
   .badge-err { display: inline-block; background: #ffebee; color: #c62828; padding: 1px 6px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
   .badge-warn { display: inline-block; background: #fff8e1; color: #ef6c00; padding: 1px 6px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
   .badge-pass { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 1px 6px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
@@ -439,12 +584,32 @@ async function toggleDetail(id) {
     document.querySelectorAll('.toggle').forEach(el => { el.textContent = '▸'; });
     const r = await fetch('/api/traces/' + id);
     const d = await r.json();
+    wfTotal = d.trace_duration_ms || 0;
+    const totalTxt = wfTotal ? fmtMs(wfTotal) : '—';
+    const synthTag = d.synthetic ? '<span class="lg lg-warn" title="真实毫秒时间缺失，按节点顺序估算">合成时间轴</span>' : '<span class="lg lg-span" title="基于节点真实 start/end_time">真实时间</span>';
+    // 0 节点：该执行器未上报链路详情，仅展示评分
+    const waterfallHtml = (d.tree && d.tree.length) ? `
+        <div class="wf-head">⏱ 时间轴瀑布 ${synthTag} <span class="batch-meta">总跨度 ${totalTxt} · ${d.total_observations} 节点</span></div>
+        <div class="wf-scale" id="wf-scale"></div>
+        <div class="wf-timeline" id="wf-timeline">
+          ${d.tree.map(renderNode).join('')}
+        </div>
+        <div class="wf-legend">
+          <span class="lg lg-gen">LLM/生成</span>
+          <span class="lg lg-span">工具/SPAN</span>
+          <span class="lg lg-err">异常</span>
+          <span class="lg lg-warn">拒绝</span>
+        </div>
+      ` : `
+        <div class="wf-empty">⚠ 该执行器未上报链路节点（observations 为空）。仅展示输入与评分结果。</div>
+      `;
     box.innerHTML = `<div class="detail-body">
+        ${waterfallHtml}
         <div class="node-detail"><b>input:</b> ${d.trace.input || ''}</div>
-        ${d.tree.map(renderNode).join('')}
         <h4>打分 (${d.scores.length})</h4>
-        <div>${d.scores.map(s => `<span class="score">${s.name} = ${s.value}</span>`).join('')}</div>
+        <div>${d.scores.map(renderScore).join('')}</div>
       </div>`;
+    drawScale(wfTotal);
     box.style.display = 'block';
     row.querySelector('.toggle').textContent = '▾';
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -454,17 +619,86 @@ async function toggleDetail(id) {
   }
 }
 
+let wfTotal = 0;
+
+function fmtMs(ms) {
+  if (!ms || isNaN(ms)) return '—';
+  if (ms >= 1000) return (ms / 1000).toFixed(2) + 's';
+  return Math.round(ms) + 'ms';
+}
+
+function drawScale(total) {
+  const el = document.getElementById('wf-scale');
+  if (!el) return;
+  if (!total) { el.innerHTML = ''; return; }
+  // 5 个等分刻度
+  let ticks = [];
+  for (let i = 0; i <= 4; i++) {
+    const t = total * i / 4;
+    ticks.push(`<div class="wf-tick" style="left:${i*25}%"><span>${fmtMs(t)}</span></div>`);
+  }
+  el.innerHTML = `<div class="wf-scale-inner">${ticks.join('')}</div>`;
+}
+
+// 瀑布条最小可见宽度（相对 total 的百分比）
+function wfWidth(dur) {
+  if (!wfTotal) return 2;
+  const pct = (dur / wfTotal) * 100;
+  return Math.max(0.6, Math.min(pct, 100));
+}
+
 function renderNode(n) {
   const lvl = n._level || '';
-  const cls = lvl === 'ERROR' ? ' node-error' : lvl === 'WARNING' ? ' node-warn' : '';
-  return `<div class="node ${n.type}${cls}">
-    <span class="node-name">${n.name}</span>
-    <span class="node-type">[${n.type}]</span>
-    ${lvl === 'ERROR' ? '<span class="node-lvl-err">⚠ ERROR</span>' : lvl === 'WARNING' ? '<span class="node-lvl-warn">◆ WARNING</span>' : ''}
-    <div class="node-detail"><b>input:</b> ${n.input || ''}</div>
-    <div class="node-detail"><b>output:</b> ${n.output || ''}</div>
-    ${n.children && n.children.length ? '<div class="node-children">' + n.children.map(renderNode).join('') + '</div>' : ''}
-  </div>`;
+  const isErr = lvl === 'ERROR', isWarn = lvl === 'WARNING';
+  const dur = n._duration_ms || 0;
+  const off = n._offset_ms || 0;
+  // 横条定位（相对整条 trace 时间窗）
+  let left = 0, width = 2;
+  if (wfTotal) {
+    left = (off / wfTotal) * 100;
+    width = (dur / wfTotal) * 100;
+    width = Math.max(0.6, Math.min(width, 100 - left));
+  }
+  const typeCls = n.type === 'GENERATION' ? 'gen' : 'span';
+  const stateCls = isErr ? ' st-err' : isWarn ? ' st-warn' : '';
+  const metaBits = [];
+  if (n._tool) metaBits.push('🔧 ' + n._tool);
+  if (n._model) metaBits.push('🧠 ' + n._model);
+  if (n._tokens_in !== undefined || n._tokens_out !== undefined) metaBits.push(`⇄ ${n._tokens_in||0}/${n._tokens_out||0} tok`);
+  const tooltip = escAttr(n.input || '') + '\\n⇊\\n' + escAttr(n.output || '');
+
+  return `<div class="wf-row ${typeCls}${stateCls}">
+    <div class="wf-meta">
+      <span class="node-name">${n.name}</span>
+      <span class="node-type">[${n.type}]</span>
+      ${isErr ? '<span class="node-lvl-err">⚠ ERROR</span>' : isWarn ? '<span class="node-lvl-warn">◆ WARNING</span>' : ''}
+      <span class="wf-dur">${fmtMs(dur)}</span>
+      ${metaBits.length ? '<div class="wf-meta-bits">' + metaBits.join(' ') + '</div>' : ''}
+    </div>
+    <div class="wf-track">
+      <div class="wf-bar ${isErr ? 'bar-err' : isWarn ? 'bar-warn' : ''}" style="left:${left}%;width:${width}%"
+        title="${tooltip}"></div>
+    </div>
+  </div>
+  ${n.children && n.children.length ? n.children.map(renderNode).join('') : ''}`;
+}
+
+function escAttr(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\\n/g, ' ');
+}
+
+function renderScore(s) {
+  const md = s.metadata || {};
+  const via = md.via || '';
+  const viaCls = via === 'rule' ? 'via-rule' : via === 'llm' ? 'via-llm' : 'via-default';
+  const viaTxt = via === 'rule' ? '规则' : via === 'llm' ? 'LLM' : '默认';
+  const detail = md.detail || s.comment || '';
+  const noJudge = via === 'default' || via === '';
+  const tooltip = `${s.name} = ${s.value}${detail ? '\\n理由: ' + detail : ''}${md.judgeable ? '' : '\\n(未实际判定，取默认)'}`;
+  return `<span class="score${noJudge ? ' score-nojudge' : ''}" title="${escAttr(tooltip)}">
+    ${s.name} = ${s.value}<span class="via ${viaCls}">${viaTxt}</span>
+  </span>`;
 }
 
 loadBatches();

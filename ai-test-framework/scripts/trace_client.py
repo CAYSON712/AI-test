@@ -17,6 +17,13 @@ Trace 上报客户端（通用）
 """
 import json
 import os
+import sys
+
+# Windows 终端默认 GBK，会让 json.dumps 编码中文 ensure_ascii=False 字段时
+# 退化为 GBK 字节，导致平台端 json.loads 解析失败（中文变成乱码）。
+# 强制 UTF-8 保证上报数据完整可解析。
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 import requests
 
@@ -51,15 +58,26 @@ def _steps_to_observations(steps):
 
 
 def _scores_to_list(scores):
-    """把 Rubric 评分 {维度: {score,label,...}} 转成 scores 列表"""
+    """把 Rubric 评分 {维度: {score,label,via,detail,...}} 转成 scores 列表"""
     out = []
     for dim, v in (scores or {}).items():
-        out.append({
-            "name": dim,
-            "value": float(v.get("score", 0)) if isinstance(v, dict) else float(v),
-            "data_type": "NUMERIC",
-            "comment": v.get("label", "") if isinstance(v, dict) else "",
-        })
+        if isinstance(v, dict):
+            out.append({
+                "name": dim,
+                "value": float(v.get("score", 0)),
+                "data_type": "NUMERIC",
+                "comment": v.get("label", ""),
+                "metadata": {
+                    "via": v.get("via", ""),          # rule / llm / default
+                    "detail": v.get("detail", ""),    # 评分理由
+                    "judgeable": v.get("judgeable", False),
+                },
+            })
+        else:
+            out.append({
+                "name": dim, "value": float(v), "data_type": "NUMERIC",
+                "comment": "", "metadata": {},
+            })
     return out
 
 
@@ -88,7 +106,20 @@ def report_case_trace(case, result, scores, system="", base_url=None,
     if isinstance(case_input, dict):
         case_input = case_input.get("user_input", "") or str(case_input)
 
+    # 无 steps（mock 或未上报链路的执行器）时，自动包一个 root 节点展示整段输出，
+    # 避免瀑布显示"0 节点"空无一物。
+    if not steps:
+        _out_str = json.dumps(out, ensure_ascii=False)[:2000] if isinstance(out, dict) else str(out)[:2000]
+        steps = [{
+            "name": "执行结果",
+            "type": "SPAN",
+            "input": str(case_input)[:500],
+            "output": _out_str,
+            "metadata": {"auto_root": True},
+        }]
+
     # 提取执行结果 level（对齐 Langfuse）：ERROR=真异常 / WARNING=业务拒绝 / 空=正常
+    # 优先取 trace 顶层 level；若未标，则聚合 steps 里各节点的 level（ERROR>WARNING）
     level = ""
     error_summary = ""
     if isinstance(out, dict):
@@ -97,9 +128,29 @@ def report_case_trace(case, result, scores, system="", base_url=None,
             error_summary = str(out.get("error") or out.get("biz_error"))[:80]
         elif out.get("error"):
             error_summary = str(out.get("error"))[:80]
+    # 顶层未标 level 时，聚合 steps 节点级 level（保证"节点有红/黄但批次显示正常"不再出现）
+    if not level:
+        for s in steps or []:
+            sm = s.get("metadata") or {}
+            if not isinstance(sm, dict):
+                continue
+            sl = sm.get("level", "") or ""
+            if sl == "ERROR":
+                level = "ERROR"
+                if not error_summary:
+                    error_summary = str(s.get("output") or "")[:80]
+                break
+            elif sl == "WARNING" and level != "ERROR":
+                level = "WARNING"
+                if not error_summary:
+                    error_summary = str(s.get("output") or "")[:80]
 
+    # 拼 trace 名字：{用例ID} - {能力} | {输入场景截短}；让"同能力多场景"在列表里一眼可辨
+    _scene = str(case_input).replace("\n", " ").strip()
+    if len(_scene) > 25:
+        _scene = _scene[:25] + "…"
     payload = {
-        "name": f"{case.get('用例ID', '?')} - {case.get('能力', '')}",
+        "name": f"{case.get('用例ID', '?')} - {case.get('能力', '')} | {_scene}",
         "input": case_input,
         "output": json.dumps(out, ensure_ascii=False)[:2000] if out else "",
         "metadata": {

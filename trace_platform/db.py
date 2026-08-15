@@ -5,6 +5,11 @@ SQLite 数据库初始化（自建 trace 平台）
 """
 import sqlite3
 import os
+import sys
+
+# Windows 终端默认 GBK，无法输出 emoji，需强制 UTF-8
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "trace_platform.db")
 
@@ -61,9 +66,15 @@ def init_db():
             value TEXT,              -- 数值/布尔/分类/文本
             data_type TEXT,          -- NUMERIC/BOOLEAN/CATEGORICAL/TEXT
             comment TEXT,
+            metadata TEXT,           -- 评分来源(via)/理由(detail) 等 JSON
             FOREIGN KEY (trace_id) REFERENCES traces(id)
         )
     """)
+    # 兼容旧库：scores 表若缺 metadata 列则补上
+    _cols = [r[1] for r in c.execute("PRAGMA table_info(scores)")]
+    if "metadata" not in _cols:
+        c.execute("ALTER TABLE scores ADD COLUMN metadata TEXT")
+        conn.commit()
 
     # 测试数据集（Dataset）
     c.execute("""

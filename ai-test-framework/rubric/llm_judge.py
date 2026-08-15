@@ -23,7 +23,7 @@ class LLMJudge:
         from llm_client import LLMClient
         self.llm = LLMClient()
 
-    def judge(self, rubric_map, user_input, expected, actual):
+    def judge(self, rubric_map, user_input, expected, actual, with_reason=False):
         """让 LLM 根据 Rubric 打分。
 
         Args:
@@ -31,6 +31,7 @@ class LLMJudge:
             user_input: 用户输入
             expected: 期望输出
             actual: 实际输出
+            with_reason: 是否让 LLM 生成详细评分理由（True 时更耗 token）
 
         Returns:
             (score 1~5, reason str)
@@ -44,6 +45,10 @@ class LLMJudge:
             f"  {s}分({labels.get(s, '')}): {desc}"
             for s, desc in items
         )
+        # 默认只要求分数（省 token）；with_reason=True 时才要求输出评分理由
+        output_spec = ('{{"score": 分数}}'
+                       if not with_reason
+                       else '{{"score": 分数, "reason": "评分理由"}}')
         prompt = f"""你是 AI 测试的评分裁判。请根据 Rubric 判定标准，对"实际输出"打分（1~5分）。
 
 Rubric 判定标准：
@@ -54,23 +59,25 @@ Rubric 判定标准：
 实际输出：{actual}
 
 请严格按 Rubric 打分，输出 JSON（不要其他文字）：
-{{"score": 分数, "reason": "评分理由"}}
+{output_spec}
 """
         try:
             text = self.llm.chat_text(prompt)
-            return self._parse(text)
+            score, reason = self._parse(text, with_reason=with_reason)
+            return score, (reason or ("LLM 评分" if with_reason else ""))
         except Exception as e:
             return 3, f"LLM 评分失败: {e}，默认可接受"
 
-    def _parse(self, text):
-        """解析 LLM 返回的 {score, reason}"""
+    def _parse(self, text, with_reason=False):
+        """解析 LLM 返回的 {score} 或 {score, reason}"""
         try:
             start = text.index("{")
             end = text.rindex("}") + 1
             data = json.loads(text[start:end])
             score = int(data.get("score", 3))
             score = max(1, min(5, score))  # 限制 1~5
-            return score, data.get("reason", "")
+            reason = data.get("reason", "") if with_reason else ""
+            return score, reason
         except Exception:
             # 尝试直接提取数字
             import re

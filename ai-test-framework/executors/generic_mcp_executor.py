@@ -26,6 +26,7 @@ import json
 import os
 import re
 import sys
+import time
 from contextlib import AsyncExitStack
 
 import httpx
@@ -222,10 +223,12 @@ class GenericMcpExecutor(BaseExecutor):
         return stack, session
 
     async def _call_tool(self, session, name, tool_params):
-        """调用 MCP 工具，返回 (is_error, 文本)"""
+        """调用 MCP 工具，返回 (is_error, 文本, latency_ms)"""
+        t0 = time.monotonic()
         result = await session.call_tool(name, {"toolParams": tool_params})
+        latency_ms = (time.monotonic() - t0) * 1000
         texts = [c.text for c in result.content if c.type == "text"]
-        return result.is_error, "\n".join(texts)
+        return result.is_error, "\n".join(texts), round(latency_ms, 1)
 
     # ---- 主流程 ----
     def handle(self, capability, user_input, inp, expected):
@@ -237,8 +240,9 @@ class GenericMcpExecutor(BaseExecutor):
 
         # 1. LLM 意图理解：记录 LLM 原始选择的工具（供评分判断工具选择/意图识别）
         llm_tool = ""
+        llm_intent_latency = 0.0
         try:
-            intent_raw = self._llm_parse(user_input, capability)
+            intent_raw, llm_intent_latency = self._llm_parse(user_input, capability)
             llm_tool = intent_raw.get("tool") or cap_tool
             tool_params = intent_raw.get("toolParams") or {}
         except Exception:
@@ -254,7 +258,8 @@ class GenericMcpExecutor(BaseExecutor):
             "input": user_input,
             "output": json.dumps({"tool": llm_tool, "toolParams": tool_params}, ensure_ascii=False),
             "metadata": {"capability": capability, "system": self.sys.system,
-                         "expected_tool": cap_tool, "tool_correct": tool_correct},
+                         "expected_tool": cap_tool, "tool_correct": tool_correct,
+                         "latency_ms": llm_intent_latency},
         })
         if not tool_name:
             return {"error": f"LLM 未能解析出工具，能力: {capability}",
@@ -269,7 +274,7 @@ class GenericMcpExecutor(BaseExecutor):
         try:
             stack, session = await self._session_context()
             async with stack:
-                is_error, text = await self._call_tool(session, tool_name, tool_params)
+                is_error, text, mcp_latency = await self._call_tool(session, tool_name, tool_params)
         except Exception as e:
             steps.append({
                 "name": f"MCP-{tool_name}", "type": "SPAN", "input": mcp_input,
@@ -280,7 +285,8 @@ class GenericMcpExecutor(BaseExecutor):
 
         steps.append({
             "name": f"MCP-{tool_name}", "type": "SPAN", "input": mcp_input,
-            "output": text, "metadata": {"mcp": self.sys.system, "tool": tool_name},
+            "output": text, "metadata": {"mcp": self.sys.system, "tool": tool_name,
+                                         "latency_ms": mcp_latency},
         })
         if is_error:
             # 传输层/协议异常（网络、MCP 调用失败）→ 真异常 ERROR
@@ -336,11 +342,12 @@ class GenericMcpExecutor(BaseExecutor):
                 })
 
         # 5. LLM 生成回答
-        reply = self._gen_reply(capability, user_input, tool_name, text)
+        reply, reply_latency = self._gen_reply(capability, user_input, tool_name, text)
         steps.append({
             "name": "LLM-生成回答", "type": "GENERATION",
             "input": json.dumps({"tool": tool_name, "mcp_result": text[:500]}, ensure_ascii=False),
-            "output": reply, "metadata": {"capability": capability},
+            "output": reply, "metadata": {"capability": capability,
+                                          "latency_ms": reply_latency},
         })
         return {"tool": tool_name, "result": text, "params": tool_params,
                 "reply": reply, "verify": verify, "steps": steps,
@@ -369,7 +376,7 @@ class GenericMcpExecutor(BaseExecutor):
         try:
             stack, session = await self._session_context()
             async with stack:
-                _, text = await self._call_tool(session, vtool, query_params)
+                _, text, _ = await self._call_tool(session, vtool, query_params)
         except Exception as e:
             return {"verify_tool": vtool, "field": vfield, "expect": vexpect,
                     "actual": None, "match": None, "error": str(e)}
@@ -458,11 +465,13 @@ class GenericMcpExecutor(BaseExecutor):
 - 上架/下架等状态用工具描述里定义的枚举
 - 若是删除操作，务必先想清楚是否合理，删除不可恢复
 """
+        t0 = time.monotonic()
         try:
             text = self.llm.chat_text(prompt)
-            return _parse_llm_call(text)
+            latency = round((time.monotonic() - t0) * 1000, 1)
+            return _parse_llm_call(text), latency
         except Exception:
-            return {"tool": hint_tool, "toolParams": {}}
+            return {"tool": hint_tool, "toolParams": {}}, round((time.monotonic() - t0) * 1000, 1)
 
     def _gen_reply(self, capability, user_input, tool_name, mcp_result):
         prompt = f"""
@@ -476,10 +485,12 @@ MCP 返回结果：
 
 请生成简洁的中文回复（一句话），如实反映操作结果。不要编造不存在的成功/失败信息。
 """
+        t0 = time.monotonic()
         try:
-            return self.llm.chat_text(prompt)
+            text = self.llm.chat_text(prompt)
+            return text, round((time.monotonic() - t0) * 1000, 1)
         except Exception:
-            return f"已处理请求（工具:{tool_name}），结果见 MCP 返回。"
+            return f"已处理请求（工具:{tool_name}），结果见 MCP 返回。", round((time.monotonic() - t0) * 1000, 1)
 
     # ---- 参数补齐 / ID 解析 ----
     def _ensure_merchant(self, tool_name, tool_params):
@@ -533,7 +544,7 @@ MCP 返回结果：
                 if self.sys.merchant_id:
                     params["merchantIds"] = [self.sys.merchant_id]
                 params["productName"] = name
-                is_error, text = await self._call_tool(session, tool_name, params)
+                is_error, text, _ = await self._call_tool(session, tool_name, params)
                 if is_error:
                     return None
                 data = json.loads(text)

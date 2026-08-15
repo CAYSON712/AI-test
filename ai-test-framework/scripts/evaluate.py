@@ -118,7 +118,8 @@ def main():
     for c in cases:
         for _ in range(args.runs):
             result = _mock_result(c)
-            scores = judger.score_case(args.req_type, c, result, judge_text=None)
+            scores = judger.score_case(args.req_type, c, result, judge_text=None,
+                                       judge=judge, use_llm=args.llm_judge)
             all_runs.append({k: v["score"] for k, v in scores.items()})
 
     from rubric.rubric import aggregate_case_runs, format_report

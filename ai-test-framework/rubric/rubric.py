@@ -94,26 +94,35 @@ class RubricJudger:
         """dimension_tables: {需求类型: {维度: Rubric}}"""
         self.tables = dimension_tables
 
-    def score_case(self, req_type, case, result, judge_text=None):
+    def score_case(self, req_type, case, result, judge_text=None,
+                   judge=None, use_llm=False, llm_detail=False):
         """对一条用例打分。
 
         Args:
             req_type: 需求类型 A/B/C/D/E
             case: 用例 dict
             result: 执行结果（含实际输出/校验）
-            judge_text: LLM-as-Judge 返回的文本/判定（可选）
+            judge_text: 外部 LLM 判定文本（可选，传入则优先用）
+            judge: LLMJudge 实例（启用 LLM-as-Judge 时传入）
+            use_llm: 是否允许对"规则判不了"的主观维度用 LLM 打分
+            llm_detail: 是否让 LLM 输出详细评分理由（True 时更耗 token）
 
         Returns:
-            {维度: {"score": 1~5, "label": "优秀", "detail": ...}}
+            {维度: {"score": 1~5, "label": "优秀", "detail": "评分理由",
+                    "judgeable": bool, "via": "rule"|"llm"|"default"}}
         """
         scores = {}
         dims = self._get_dimensions(req_type)
         for dim, rubric in dims.items():
-            s = self._judge_single(rubric, case, result, judge_text)
+            s, judgeable, via, detail = self._judge_single(
+                rubric, case, result, judge_text, judge, use_llm, llm_detail)
             scores[dim] = {
                 "score": s,
                 "label": score_to_label(s),
                 "rubric": rubric.rubric_map.get(str(s), ""),
+                "judgeable": judgeable,
+                "via": via,
+                "detail": detail,
             }
         return scores
 
@@ -124,23 +133,77 @@ class RubricJudger:
         """
         return dict(self.tables.get(req_type, {}))
 
-    def _judge_single(self, rubric, case, result, judge_text):
-        """对单个维度打分：
-        1. 若有 LLM 判定文本，尝试匹配 rubric 描述
-        2. 否则用规则（verify/状态/关键词）
+    def _judge_single(self, rubric, case, result, judge_text=None,
+                      judge=None, use_llm=False, llm_detail=False):
+        """对单个维度打分（统一判定入口）：
+        1. 外部 judge_text 优先（LLM 已返回判定）
+        2. 规则判定（verify/状态/工具匹配/block）
+        3. 规则判不了 → LLM-as-Judge（若启用）
+        4. 仍无法判定 → 默认 3 分 + judgeable=False
+
+        返回 (score, judgeable, via, detail)
         """
         dim = rubric.dimension
-        # 优先用 LLM-as-Judge 判定
+        # 1. 外部 judge_text
         if judge_text:
-            # LLM 返回形如 "5" 或包含分数
             for score in (5, 4, 3, 2, 1):
                 if str(score) in judge_text:
-                    return score
-        # 规则打分
-        return self._rule_judge(rubric, case, result)
+                    return score, True, "llm", judge_text[:200]
+        # 2. 规则判定（detail 为简短模板，零成本）
+        s, judgeable, detail = self._rule_judge(rubric, case, result)
+        if judgeable:
+            return s, True, "rule", detail
+        # 3. LLM-as-Judge（规则判不了的主观维度）
+        #    llm_detail=False 时只让 LLM 返回分数（省 token），detail 用简短说明；
+        #    llm_detail=True 时才让 LLM 生成详细评分理由。
+        if use_llm and judge is not None:
+            try:
+                score, reason = judge.judge(
+                    rubric.rubric_map,
+                    self._input_text(case),
+                    self._expected_text(case),
+                    self._actual_text(result),
+                    with_reason=llm_detail,
+                )
+                if llm_detail:
+                    detail = reason or "LLM 评分"
+                else:
+                    detail = f"LLM 评分 {score} 分"
+                return score, True, "llm", detail
+            except Exception as e:
+                return 3, False, "default", f"LLM 评分失败: {e}"
+        # 4. 无法判定 → 默认 3
+        return 3, False, "default", "规则与 LLM 均未启用/无法判定，取默认可接受分"
+
+    # ---- 判定输入提取 ----
+    @staticmethod
+    def _input_text(case):
+        inp = case.get("输入", "")
+        if isinstance(inp, dict):
+            return inp.get("user_input", "") or str(inp)
+        return str(inp)
+
+    @staticmethod
+    def _expected_text(case):
+        exp = case.get("期望", {}) or {}
+        if isinstance(exp, dict):
+            return str(exp.get("output", "") or exp.get("intent", ""))
+        return str(exp)
+
+    @staticmethod
+    def _actual_text(result):
+        out = getattr(result, "output_data", None)
+        if isinstance(out, dict):
+            return json.dumps(out, ensure_ascii=False)[:2000]
+        return str(out or "")[:2000]
 
     def _rule_judge(self, rubric, case, result):
-        """规则打分（RAG 指标 / verify 校验 / block / 工具意图匹配 / 业务失败）"""
+        """规则打分（RAG 指标 / verify 校验 / block / 工具意图匹配 / 业务失败）。
+
+        返回 (score, judgeable, detail)：
+          - judgeable=True  → 规则能确定性判定，score 有效
+          - judgeable=False → 规则判不了（主观维度），score=None，交由上层走 LLM
+        """
         output = getattr(result, "output_data", None)
         dim = rubric.dimension
         is_biz_fail = getattr(result, "status", "") != "success" or (
@@ -151,40 +214,39 @@ class RubricJudger:
                      "规划与推理", "意图到工具映射准确率")
         result_dims = ("参数端到端准确率", "参数生成", "操作后校验", "参数校验",
                        "返回处理", "异常与容错", "非确定性与稳定性", "协议契约",
-                       "跨工具编排", "性能")
+                       "跨工具编排正确性", "性能")
         # 0. 业务失败/执行报错：结果相关维度判低分；决策维度留给 tool_correct 判定
         if is_biz_fail and dim in result_dims:
-            return 1
+            return 1, True, "业务失败/执行报错，结果类维度判低分"
         # 操作后校验：verify.match 为 True → 5 分，False → 1 分
         if isinstance(output, dict) and output.get("verify"):
             match = output["verify"].get("match")
             if match is True:
-                return 5
+                return 5, True, "操作后校验通过"
             if match is False:
-                return 1
+                return 1, True, f"操作后校验失败: actual={output['verify'].get('actual')}"
         # RAG 类专项评分（需求类型 E）：按维度名取对应指标
         if isinstance(output, dict) and output.get("rag_metrics"):
             score = self._rag_judge(rubric.dimension, output["rag_metrics"])
             if score is not None:
-                return score
+                return score, True, f"RAG 指标: {output['rag_metrics']}"
         # block 拦截类：正确处理 = 5，未拦截 = 1
         expected_block = case.get("期望", {}).get("block", False)
         if expected_block:
             if getattr(result, "status", "") == "error":
-                return 5  # 正确拦截
-            return 1
-        # 返回处理 / 异常维度：执行失败或报错 → 低分
+                return 5, True, "正确拦截危险操作"
+            return 1, True, "未按预期拦截危险操作"
+        # 返回处理 / 异常维度：执行失败或报错 → 低分（可规则判定）
         if dim in ("返回处理", "异常与容错", "非确定性与稳定性"):
             if getattr(result, "status", "") != "success" or getattr(result, "error", None):
-                return 1 if dim == "返回处理" else 2
+                return (1 if dim == "返回处理" else 2), True, "执行失败/报错"
         # 意图识别 / 工具选择：用执行器返回的 tool_correct（能力目录期望工具 vs LLM原始选择）
-        if dim in ("意图识别", "工具选择准确率", "工具调用", "规划与推理",
-                   "工具选择与调用", "意图到工具映射准确率"):
+        if dim in tool_dims:
             if isinstance(output, dict) and "tool_correct" in output:
-                return 5 if output["tool_correct"] else 2
-        # 参数端到端 / 参数生成：verify.match 决定（已在最上方处理，兜底给 3）
-        # 默认给可接受分（具体靠 LLM-as-Judge 细化）
-        return 3
+                return (5 if output["tool_correct"] else 2), True, (
+                    "工具选择正确" if output["tool_correct"] else "工具选择错误")
+        # 无法规则判定的主观维度 → 交由 LLM（上层处理），此处标记不可判
+        return None, False, "规则无法确定性判定，需 LLM-as-Judge"
 
     def _rag_judge(self, dimension, metrics):
         """RAG 维度专项打分（对齐 E 类维度表）"""
