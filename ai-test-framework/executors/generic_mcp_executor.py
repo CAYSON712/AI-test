@@ -235,22 +235,26 @@ class GenericMcpExecutor(BaseExecutor):
         steps = []
         cap_tool = self.sys.cap_tool.get(capability, "")
 
-        # 1. LLM 意图理解
+        # 1. LLM 意图理解：记录 LLM 原始选择的工具（供评分判断工具选择/意图识别）
+        llm_tool = ""
         try:
             intent_raw = self._llm_parse(user_input, capability)
-            tool_name = intent_raw.get("tool") or cap_tool
+            llm_tool = intent_raw.get("tool") or cap_tool
             tool_params = intent_raw.get("toolParams") or {}
         except Exception:
-            tool_name = cap_tool
+            llm_tool = cap_tool
             tool_params = {}
+        # LLM 原始选择的工具是否与能力目录期望工具一致（用于工具选择/意图评分）
+        tool_correct = bool(cap_tool) and llm_tool == cap_tool
         # 工具纠正：能力目录有明确工具时，强制用它（避免 LLM 选成查询类）
-        if cap_tool and cap_tool != tool_name:
-            tool_name = cap_tool
+        # 注意：纠正只影响实际调用，原始选择 llm_tool 保留给评分
+        tool_name = cap_tool if cap_tool else llm_tool
         steps.append({
             "name": "LLM-意图理解", "type": "GENERATION",
             "input": user_input,
-            "output": json.dumps({"tool": tool_name, "toolParams": tool_params}, ensure_ascii=False),
-            "metadata": {"capability": capability, "system": self.sys.system},
+            "output": json.dumps({"tool": llm_tool, "toolParams": tool_params}, ensure_ascii=False),
+            "metadata": {"capability": capability, "system": self.sys.system,
+                         "expected_tool": cap_tool, "tool_correct": tool_correct},
         })
         if not tool_name:
             return {"error": f"LLM 未能解析出工具，能力: {capability}",
@@ -279,7 +283,40 @@ class GenericMcpExecutor(BaseExecutor):
             "output": text, "metadata": {"mcp": self.sys.system, "tool": tool_name},
         })
         if is_error:
-            return {"error": text, "block": True, "steps": steps}
+            # 传输层/协议异常（网络、MCP 调用失败）→ 真异常 ERROR
+            return {"error": text, "block": True, "level": "ERROR", "steps": steps}
+
+        # 3.5 业务层结果检测：code != 0 或 success=false 视为业务拒绝/异常
+        # 对齐 Langfuse：流程正常但业务拒绝 → WARNING；真异常（unexpected error）→ ERROR
+        biz_error = None
+        biz_level = None
+        try:
+            _parsed = json.loads(text)
+            if isinstance(_parsed, dict):
+                _code = _parsed.get("code", 0)
+                _success = _parsed.get("success", True)
+                if _code not in (0, 200) or _success is False:
+                    biz_error = _parsed.get("msg") or str(_parsed.get("code"))
+                    # 真异常关键词（服务端崩溃）→ ERROR；其余业务拒绝 → WARNING
+                    if any(k in str(biz_error).lower() for k in
+                           ("unexpected error", "exception", "internal server", "server error")):
+                        biz_level = "ERROR"
+                    else:
+                        biz_level = "WARNING"  # 安全拦截/参数校验/业务规则拒绝
+        except Exception:
+            biz_error = None
+        if biz_error:
+            steps.append({
+                "name": f"MCP-{tool_name}({biz_level})", "type": "SPAN",
+                "input": mcp_input, "output": f"BIZ: {biz_error}",
+                "metadata": {"mcp": self.sys.system, "tool": tool_name,
+                             "biz_error": True, "level": biz_level},
+            })
+            return {"tool": tool_name, "result": text, "params": tool_params,
+                    "error": f"业务拒绝/异常: {biz_error}", "biz_error": biz_error,
+                    "block": True, "level": biz_level, "steps": steps,
+                    "llm_tool": llm_tool, "tool_correct": tool_correct,
+                    "expected_tool": cap_tool}
 
         # 4. 操作后实时校验
         verify = None
@@ -306,7 +343,9 @@ class GenericMcpExecutor(BaseExecutor):
             "output": reply, "metadata": {"capability": capability},
         })
         return {"tool": tool_name, "result": text, "params": tool_params,
-                "reply": reply, "verify": verify, "steps": steps}
+                "reply": reply, "verify": verify, "steps": steps,
+                "llm_tool": llm_tool, "tool_correct": tool_correct,
+                "expected_tool": cap_tool}
 
     # ---- 操作后校验 ----
     async def _verify_after(self, capability, tool_name, tool_params):
@@ -365,11 +404,11 @@ class GenericMcpExecutor(BaseExecutor):
             flat = items
         if not flat:
             if field == "exists":
-                return "not_found", (vexpect is False)
+                return "not_found", (expect is False)
             return "not_found", False
         first = flat[0]
         if field == "exists":
-            return "found", (vexpect is True)
+            return "found", (expect is True)
         if field == "price":
             expect_price = op_params.get("price")
             actual_price = first.get("price")

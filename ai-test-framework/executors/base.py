@@ -61,11 +61,23 @@ class BaseExecutor:
         try:
             result = self.handle(cap, user_input, inp, case.get("期望", {}))
             latency = (time.time() - t0) * 1000
+            # 状态判定（对齐 Langfuse）：
+            #   level=ERROR（真异常）→ status=error
+            #   level=WARNING（业务拒绝）→ status=success，但带 biz_reject 标记
+            #   其他 → success
+            status = "success"
+            error = None
+            if isinstance(result, dict):
+                _level = result.get("level")
+                if _level == "ERROR":
+                    status, error = "error", result.get("error") or result.get("biz_error")
+                elif result.get("error"):
+                    status, error = "error", result.get("error")
             return ExecResult(
                 case_id=case["用例ID"], capability=cap,
                 dimension=case.get("维度", ""), priority=case.get("优先级", ""),
-                status="success", latency_ms=latency,
-                input_data=user_input, output_data=result,
+                status=status, latency_ms=latency,
+                input_data=user_input, output_data=result, error=error,
             )
         except Exception as e:
             latency = (time.time() - t0) * 1000

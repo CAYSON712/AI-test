@@ -10,6 +10,7 @@ Rubric 评分体系（基于《AI 测试方法体系手册》）
 import json
 import math
 import os
+import re
 from collections import defaultdict
 
 # 5 分制评分
@@ -52,6 +53,38 @@ class Rubric:
             if desc and matched_label in desc:
                 return score
         return 3  # 未命中，默认可接受
+
+    def has_rate_criteria(self):
+        """该维度 rubric 是否含百分比阈值（可程序化按准确率查表）"""
+        return any(desc and "%" in desc for desc in self.rubric_map.values())
+
+    def score_from_rate(self, rate):
+        """按全局准确率查表得 1~5 分（对齐手册：准确率 → 等级）。
+
+        解析每个分数档描述里的百分比阈值下限，rate 落在哪档就取哪档。
+        rubric 描述形如："准确率≥98%" / "≥95%" / "≥90%"。
+        若该维度 rubric 无百分比，则无法程序化，返回 None（走 LLM）。
+        """
+        if not self.has_rate_criteria():
+            return None
+        # 收集 分数 → 阈值下限（百分比）
+        thresholds = []  # (threshold_value, score)
+        for score in (5, 4, 3, 2, 1):
+            desc = self.rubric_map.get(str(score), "")
+            if not desc:
+                continue
+            m = re.search(r"(\d+(?:\.\d+)?)\s*%", desc)
+            if m:
+                thresholds.append((float(m.group(1)), score))
+        if not thresholds:
+            return None
+        # 取每个分数档的最低阈值作为"达到该档的最低线"
+        # 5档阈值最高，1档最低，按降序找第一个 rate>=threshold
+        thresholds.sort(reverse=True)  # 按阈值降序
+        for th, sc in thresholds:
+            if rate >= th / 100.0:
+                return sc
+        return 1  # 低于所有阈值
 
 
 class RubricJudger:
@@ -107,8 +140,21 @@ class RubricJudger:
         return self._rule_judge(rubric, case, result)
 
     def _rule_judge(self, rubric, case, result):
-        """规则打分（RAG 指标 / verify 校验 / block / 关键词）"""
+        """规则打分（RAG 指标 / verify 校验 / block / 工具意图匹配 / 业务失败）"""
         output = getattr(result, "output_data", None)
+        dim = rubric.dimension
+        is_biz_fail = getattr(result, "status", "") != "success" or (
+            isinstance(output, dict) and output.get("biz_error")
+        )
+        # 决策相关维度（意图/工具/规划）：业务失败不判低分，由后续 tool_correct 决定
+        tool_dims = ("意图识别", "工具选择准确率", "工具调用", "工具选择与调用",
+                     "规划与推理", "意图到工具映射准确率")
+        result_dims = ("参数端到端准确率", "参数生成", "操作后校验", "参数校验",
+                       "返回处理", "异常与容错", "非确定性与稳定性", "协议契约",
+                       "跨工具编排", "性能")
+        # 0. 业务失败/执行报错：结果相关维度判低分；决策维度留给 tool_correct 判定
+        if is_biz_fail and dim in result_dims:
+            return 1
         # 操作后校验：verify.match 为 True → 5 分，False → 1 分
         if isinstance(output, dict) and output.get("verify"):
             match = output["verify"].get("match")
@@ -127,6 +173,16 @@ class RubricJudger:
             if getattr(result, "status", "") == "error":
                 return 5  # 正确拦截
             return 1
+        # 返回处理 / 异常维度：执行失败或报错 → 低分
+        if dim in ("返回处理", "异常与容错", "非确定性与稳定性"):
+            if getattr(result, "status", "") != "success" or getattr(result, "error", None):
+                return 1 if dim == "返回处理" else 2
+        # 意图识别 / 工具选择：用执行器返回的 tool_correct（能力目录期望工具 vs LLM原始选择）
+        if dim in ("意图识别", "工具选择准确率", "工具调用", "规划与推理",
+                   "工具选择与调用", "意图到工具映射准确率"):
+            if isinstance(output, dict) and "tool_correct" in output:
+                return 5 if output["tool_correct"] else 2
+        # 参数端到端 / 参数生成：verify.match 决定（已在最上方处理，兜底给 3）
         # 默认给可接受分（具体靠 LLM-as-Judge 细化）
         return 3
 

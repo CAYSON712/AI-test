@@ -83,6 +83,19 @@ python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --
 
 系统名会自动从数据集「系统」字段读取，无需手动传（避免中文路径乱码）。
 
+## Trace 上报（可视化链路）
+
+加 `--trace` 参数，执行器产出的多层链路（LLM意图→参数→MCP→校验→回答）会自动上报到 trace_platform：
+
+```powershell
+python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --trace
+```
+
+- 上报到 `trace_platform`（默认 `http://127.0.0.1:8000`，可用环境变量 `TRACE_PLATFORM_URL` 覆盖）
+- 需先启动 trace_platform：`python -m uvicorn app:app --port 8000`（在 trace_platform/ 目录）
+- 服务离线时**跳过上报但提醒**，不影响主流程
+- 上报后 trace_id 记录进结果 YAML，报告会生成「Trace 链路」表带查看链接
+
 ## 执行器说明
 
 | 执行器 | 用途 | 依赖 |
