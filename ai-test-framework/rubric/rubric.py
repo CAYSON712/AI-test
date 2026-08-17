@@ -296,8 +296,11 @@ class RubricJudger:
         # 0. 业务失败/执行报错：结果相关维度判低分；决策维度留给 tool_correct 判定
         if is_biz_fail and dim in result_dims:
             return 1, True, "业务失败/执行报错，结果类维度判低分"
-        # 操作后校验：verify.match 为 True → 5 分，False → 1 分
-        if isinstance(output, dict) and output.get("verify"):
+        # 操作后校验：只对结果类维度生效（verify 本质是"操作后数据校验"，属结果验证）
+        # 修复：此前对所有维度一刀切复用 verify.match，导致带 verify 的用例
+        #      （如"批量删除"）在意图识别/工具调用/规划推理等维度也全判"操作后校验失败"。
+        #      正确做法：verify 只评判结果类维度，决策维度走 tool_correct/各自判定。
+        if (dim in result_dims and isinstance(output, dict) and output.get("verify")):
             match = output["verify"].get("match")
             if match is True:
                 return 5, True, "操作后校验通过"
