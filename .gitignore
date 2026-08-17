@@ -11,6 +11,7 @@ __pycache__/
 
 # ===== 数据库文件 =====
 *.db
+*.db.bak
 *.sqlite
 *.sqlite3
 
