@@ -23,7 +23,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
 
-from rubric.rubric import format_report, score_to_label
+from rubric.rubric import format_report, score_to_label, grade_info, GRADE_DEFINITIONS
 
 
 def generate_report(result_path, out_path):
@@ -44,16 +44,17 @@ def generate_report(result_path, out_path):
 
     # 1. 维度得分表（score = 全局统计分或 avg，score_type 标注评分方式）
     lines.append("## 维度得分（5 分制 Rubric）\n")
-    lines.append("| 维度 | 得分 | 评分方式 | 等级 | 通过率 | 采样 | 95%CI |")
-    lines.append("|------|------|----------|------|--------|------|-------|")
+    lines.append("| 维度 | 得分 | 评分方式 | 等级 | 发布建议 | 通过率 | 采样 | 95%CI |")
+    lines.append("|------|------|----------|------|----------|--------|------|-------|")
     for dim, d in sorted(dims.items(), key=lambda x: x[1].get("score", x[1].get("avg_score", 0))):
         score = d.get("score", d.get("avg_score", 0))
         stype = "程序化" if d.get("score_type") == "rate" else "逐用例"
+        g = grade_info(score)
         rate = d.get("pass_rate", 0)
         n = d.get("n", 0)
         ci = d.get("ci", (0, 0))
-        lines.append(f"| {dim} | {score:.2f} | {stype} | {score_to_label(score)} | {rate:.0%} | {n} | "
-                     f"[{ci[0]:.2f}, {ci[1]:.2f}] |")
+        lines.append(f"| {dim} | {score:.2f} | {stype} | {g['label']} | {g['verdict']} | "
+                     f"{rate:.0%} | {n} | [{ci[0]:.2f}, {ci[1]:.2f}] |")
 
     # 2. 总体通过率
     total_rate = sum(d.get("pass_rate", 0) for d in dims.values()) / len(dims) if dims else 0
@@ -120,6 +121,14 @@ def generate_report(result_path, out_path):
             lines.append(f"- {d}（当前 {dim_counts[d]} 条）")
     else:
         lines.append("- 各维度用例覆盖均衡，无需补充")
+
+    # 6. 评分等级标准总览（手册原文）
+    lines.append(f"\n## 评分等级标准（《AI 测试方法体系手册》原文）\n")
+    lines.append("| 得分 | 等级 | 标准 | 发布建议 |")
+    lines.append("|------|------|------|----------|")
+    for s in range(5, 0, -1):
+        g = GRADE_DEFINITIONS[s]
+        lines.append(f"| {s} | {g['label']} | {g['standard']} | {g['verdict']} |")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:

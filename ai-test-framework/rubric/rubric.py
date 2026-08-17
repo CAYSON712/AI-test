@@ -12,6 +12,7 @@ import math
 import os
 import re
 from collections import defaultdict
+from . import semantic_verify
 
 # 5 分制评分
 SCORE_LABELS = {
@@ -22,10 +23,50 @@ SCORE_LABELS = {
     1: "严重缺陷",
 }
 
+# 手册《AI 测试方法体系手册》评分等级定义（原文）
+# 每个维度得分后附加此"等级解读"，让"3 分"不只是数字，而是
+# "3 分 = 可接受 = 有条件发布，需跟题"的完整语义。
+GRADE_DEFINITIONS = {
+    5: {
+        "label": "优秀",
+        "standard": "所有指标达到最高标准，无缺陷",
+        "verdict": "可作为标杆，允许发布",
+    },
+    4: {
+        "label": "良好",
+        "standard": "核心指标达到，边角指标有偏差",
+        "verdict": "可发布，记录改进项",
+    },
+    3: {
+        "label": "可接受",
+        "standard": "主要指标达到，非核心指标有缺陷",
+        "verdict": "有条件发布，需跟题",
+    },
+    2: {
+        "label": "一般缺陷",
+        "standard": "关键指标不达标，影响用户体验",
+        "verdict": "不可发布，需修复",
+    },
+    1: {
+        "label": "严重缺陷",
+        "standard": "核心功能失败或存在安全漏洞",
+        "verdict": "阻断发布，紧急修复",
+    },
+}
+
 
 def score_to_label(score):
     """5分制数字 → 文本标签"""
     return SCORE_LABELS.get(int(round(score)), "未知")
+
+
+def grade_info(score):
+    """5分制数字 → 手册等级定义 dict（label/standard/verdict）。
+
+    供报告层叠加展示：得分旁显示"等级名 + 发布建议"。
+    """
+    g = GRADE_DEFINITIONS.get(int(round(score)))
+    return g or {"label": "未知", "standard": "", "verdict": ""}
 
 
 class Rubric:
@@ -245,6 +286,17 @@ class RubricJudger:
             if isinstance(output, dict) and "tool_correct" in output:
                 return (5 if output["tool_correct"] else 2), True, (
                     "工具选择正确" if output["tool_correct"] else "工具选择错误")
+        # 语义校验（通用确定性校验器）：仅当用例期望里声明了「成功标准:语义」
+        # 解析出的确定性校验项（semantic.fields / semantic.contains / semantic.output）
+        # 才做自动评分，避免把 intent(能力名)/生成话术 output 误当输出文本匹配。
+        exp = case.get("期望", {})
+        if isinstance(exp, dict) and exp.get("semantic"):
+            try:
+                match, sdetail, used = semantic_verify.verify_case(exp, output)
+            except Exception as e:
+                match, sdetail, used = None, f"语义校验异常: {e}", True
+            if used and match is not None:
+                return (5 if match else 1), True, f"语义校验: {sdetail}"
         # 无法规则判定的主观维度 → 交由 LLM（上层处理），此处标记不可判
         return None, False, "规则无法确定性判定，需 LLM-as-Judge"
 

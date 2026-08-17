@@ -125,9 +125,10 @@ class _SysConfig:
         self.merchant_needed_tools = set(cfg.get("需要店铺参数的工具", []))
         self.verify_tools = set(cfg.get("需要校验的工具", []))
 
-        # ---- 能力→工具 / verify 映射（来自能力目录）----
+        # ---- 能力→工具 / verify / 操作类型 映射（来自能力目录）----
         self.cap_tool = {}
         self.verify_map = {}
+        self.cap_op = {}   # 操作类型（查询/创建/变更数值/变更状态/删除/组合/人工）
         for group in abi.get("能力分组", []):
             for c in group.get("能力列表", []):
                 cap = c.get("能力")
@@ -135,13 +136,36 @@ class _SysConfig:
                     continue
                 if c.get("工具"):
                     self.cap_tool[cap] = c["工具"]
-                if c.get("verify_tool"):
+                if c.get("操作类型"):
+                    self.cap_op[cap] = c["操作类型"]
+                # verify：优先读新版「成功标准」的 db 模式，回退旧版 verify_tool 字段
+                vcfg = self._extract_db_verify(c)
+                if vcfg:
+                    self.verify_map[cap] = vcfg
+                elif c.get("verify_tool"):
                     self.verify_map[cap] = {
                         "verify_tool": c["verify_tool"],
                         "verify_field": c.get("verify_field", "exists"),
                         "verify_expect": c.get("verify_expect", True),
                     }
         self.capabilities = list(self.cap_tool.keys())
+
+    @staticmethod
+    def _extract_db_verify(cap):
+        """从新版能力目录「成功标准」里提取 db 模式校验配置。
+        返回 {"verify_tool", "verify_field", "verify_expect"} 或 None。
+        """
+        sc = cap.get("成功标准") or []
+        if isinstance(sc, dict):
+            sc = [sc]
+        for item in sc:
+            if isinstance(item, dict) and item.get("模式") == "db":
+                return {
+                    "verify_tool": item.get("校验工具", ""),
+                    "verify_field": item.get("字段", "exists"),
+                    "verify_expect": item.get("期望", True),
+                }
+        return None
 
 
 def _parse_llm_call(text):
