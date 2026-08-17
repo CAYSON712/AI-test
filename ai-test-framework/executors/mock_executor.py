@@ -36,9 +36,21 @@ def _load_capabilities(ability_file):
     return caps
 
 
+def _find_any_ability_file():
+    """扫描 ability/ 下第一个能力目录文件（动态发现，不依赖特定文件名）。
+    保证删除旧能力目录后 mock 仍能读取现存能力清单。
+    """
+    if not os.path.isdir(ABILITY_DIR):
+        return ""
+    for f in sorted(os.listdir(ABILITY_DIR)):
+        if f.startswith("能力目录_") and f.endswith(".yaml"):
+            return f
+    return ""
+
+
 class MockExecutor(BaseExecutor):
-    # 能力清单来自能力目录（需求预定义），去重
-    capabilities = list(dict.fromkeys(_load_capabilities("能力目录_POS数据查询.yaml")))
+    # 能力清单来自现存能力目录（动态发现），去重
+    capabilities = list(dict.fromkeys(_load_capabilities(_find_any_ability_file())))
 
     def handle(self, capability, user_input, inp, expected):
         time.sleep(random.uniform(0.1, 0.3))
@@ -61,7 +73,8 @@ class MockExecutor(BaseExecutor):
             return {"sales": 452000, "estimate_next": 460000}
         if capability == "查询":
             return {"metric": "sales", "value": 15860}
-        return {"error": f"未知能力: {capability}"}
+        # 通用兜底：对动态发现的其他能力，返回模拟成功（隔离副作用，验证决策链路）
+        return {"mock": True, "capability": capability, "result": "模拟执行成功"}
 
     def _query_metric(self, capability):
         data = {
