@@ -58,8 +58,11 @@ ai-test-framework/
 
 **新增一个系统（如客流统计）**：
 1. 复制 `configs/POS_商品管理.yaml` → `configs/<新系统>.yaml`，填连接 + mcp_tools
-2. 准备 `ability/能力目录_<新系统>.yaml`（含 能力/工具/verify_*）
+2. 准备 `ability/能力目录_<新系统>.yaml`（Task 结构：能力/操作类型/成功标准(db|语义|拒绝)/负向场景）
 3. 无需写任何 Python 逻辑，执行器自动加载
+
+> **能力目录新旧兼容**：新版用「成功标准」声明校验（db 查字段 / 语义看输出 / 拒绝应拦截）；
+> 旧版 `verify_tool/verify_field/verify_expect` 字段仍被兼容读取。执行器会从「成功标准」自动提取 db 校验配置。
 
 系统名匹配已做容错（`POS 商品管理`/`POS_商品管理`/`POS商品管理` 等价）。
 
@@ -114,7 +117,8 @@ python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --
 - **Rubric 5 分制**（5=优秀...1=严重缺陷），每个维度有判定标准
 - **统计判定**：每条用例跑 ≥5 次，计算通过率 + Wilson 95% 置信区间
 - **操作后实时校验**（E2E）：操作后调真实查询接口拉实时状态核对
-- 主观维度可加 `--llm-judge` 用 LLM-as-Judge 打分
+- **确定性语义校验**（`semantic_verify.py`）：能力目录「成功标准:语义」的期望自动解析为可校验项（字段/关键词），评分时自动评分（免费/稳定/可解释，via=rule）
+- **评分优先级**：规则判定 → 确定性语义校验 → 主观维度用 LLM-as-Judge（`--llm-judge`）；`--llm-detail` 让 LLM 输出详细评分理由（更耗 token）
 
 ## 输出
 
