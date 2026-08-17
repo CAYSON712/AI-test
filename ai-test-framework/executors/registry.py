@@ -6,8 +6,13 @@
 
 接入方式（由需求类型决定）：
   - A / D：直连 MCP 工具（generic_mcp_executor）
-  - B / C：对话式 Agent（C=Agent+MCP 直连；B=Agent 对话，走 generic_mcp_executor 或 mock）
+  - B：纯对话 Agent（generic_chat_executor：不连 MCP，只测 Agent 决策/话术）
+  - C：Agent + MCP 对话式直连（generic_mcp_executor）
   - E：RAG 知识库（generic_rag_executor：检索 + 生成）
+
+B 类纯对话判定：
+  - 能力目录声明了「工具」（有真实 MCP）→ 回退 generic_mcp_executor（当它具备工具能力）
+  - 否则 → 纯对话执行器（只测决策，Mock 工具）
 
 路由策略：
   - mode="mock"：只注册 Mock 执行器（隔离副作用，测 B/D 决策层）
@@ -22,6 +27,8 @@ import os
 from mock_executor import MockExecutor
 from generic_mcp_executor import GenericMcpExecutor
 from generic_rag_executor import GenericRagExecutor
+from direct_mcp_executor import DirectMcpExecutor
+from generic_chat_executor import GenericChatExecutor
 
 
 def _resolve_system(system, req_type):
@@ -41,10 +48,17 @@ class ExecutorRegistry:
         self._init_executors()
 
     def _make_executor(self):
-        """按需求类型创建对应的配置驱动执行器实例"""
+        """按需求类型创建对应的配置驱动执行器实例。
+        A/D=直连 MCP（纯工具，不过 LLM）；B=纯对话（不连 MCP）；
+        C=Agent+MCP；E=RAG 检索。
+        """
         try:
+            if self.req_type in ("A", "D"):
+                return DirectMcpExecutor(self.system)
             if self.req_type == "E":
                 return GenericRagExecutor(self.system)
+            if self.req_type == "B":
+                return GenericChatExecutor(self.system)
             return GenericMcpExecutor(self.system)
         except Exception as e:
             print(f"⚠ 加载真实执行器失败（{e}），仅用 Mock")
@@ -58,10 +72,13 @@ class ExecutorRegistry:
         real_exec = self._make_executor()
         has_cap = real_exec and real_exec.capabilities
         # RAG 执行器内置 Mock 检索，无需 token 即可产出有效结果；
-        # MCP 执行器需 token 才连真实接口（无 token 时降级 Mock）
+        # MCP 执行器需 token 才连真实接口（无 token 时降级 Mock）；
+        # B 类纯对话执行器不连 MCP，无需 token 即可跑（只测决策层）。
         is_rag = self.req_type == "E"
+        is_chat = self.req_type == "B"
         has_token = getattr(real_exec, "sys", None) and bool(getattr(real_exec.sys, "token", ""))
-        is_real = (self.mode == "real") or (self.mode == "auto" and (has_token or is_rag))
+        # B 类纯对话：无需 token；若真实执行器是 C 类（有工具能力）则仍需 token
+        is_real = (self.mode == "real") or (self.mode == "auto" and (has_token or is_rag or is_chat))
 
         if is_real and real_exec and has_cap:
             self.register(real_exec)          # 真实执行器（仅当有配置+能力时）

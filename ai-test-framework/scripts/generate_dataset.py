@@ -23,6 +23,7 @@
 """
 import argparse
 import copy
+import json
 import os
 import random
 import sys
@@ -31,10 +32,10 @@ import yaml
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-from rubric.semantic_verify import parse_semantic as _parse_semantic
-
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
+
+from rubric.semantic_verify import parse_semantic as _parse_semantic
 
 DIMS_DIR = os.path.join(_ROOT, "dimensions")
 TYPE_FILES = {
@@ -308,6 +309,92 @@ def build_l1(products, abilities, req_type):
 #   C 表达改写   换句式（口语化/书面语/中英混合）
 #   D 注入对抗   追加注入指令、尝试越权
 # 每个 L1 用例最多生成 MUTATE_PER_CASE 个变异（受比例约束）。
+def build_a(products, abilities, req_type):
+    """A/D 类：纯 MCP 工具测试，生成「工具调用」格式用例（直连执行器消费）。
+
+    用例输入为 {"tool_name":..., "tool_params":...}，直连 MCP 不过 LLM。
+    覆盖 A 类核心维度：调用正确性(正向) / 参数校验(缺失/非法/边界) /
+    返回处理 / 安全与权限(负向) / 异常与容错(负向)。
+    """
+    if not abilities:
+        return []
+    P = products or []
+    cases = []
+    used_idx = 0
+
+    def entity(i):
+        return P[i % len(P)] if P else {"名称": f"实体{i}", "id": str(i + 1)}
+
+    for cap in abilities:
+        name = cap.get("能力")
+        tool = cap.get("工具")
+        params = cap.get("参数") or []
+        if not tool:
+            continue
+        e = entity(used_idx); used_idx += 1
+        tp = {}
+        for p in params:
+            pl = str(p).lower()
+            if "id" in pl or pl.endswith("ids"):
+                tp[p] = e.get("id", "1")
+            elif "name" in pl or "名称" in p:
+                tp[p] = e.get("名称", "测试")
+            elif "price" in pl or "价" in p or "数量" in p or "qty" in pl:
+                tp[p] = 10
+            elif "status" in pl or "状态" in p:
+                tp[p] = "Off"
+            else:
+                tp[p] = ""
+        cap_input = {"tool_name": tool, "tool_params": tp}
+
+        # 1) 调用正确性（正向）：正常参数调用
+        cases.append({
+            "维度": "调用正确性", "能力": name, "层": "L1",
+            "输入": dict(cap_input),
+            "期望": build_expect(cap, intent=name, params=tp, output="工具调用成功"),
+            "标签": ["正常"]})
+
+        # 2) 参数校验（负向）：必填参数缺失 → 应返回参数错误
+        if params:
+            miss_key = params[0]
+            bad_input = {"tool_name": tool, "tool_params": {k: v for k, v in tp.items() if k != miss_key}}
+            cases.append({
+                "维度": "参数校验", "能力": name, "层": "L1",
+                "输入": bad_input,
+                "期望": build_expect(cap, intent=name, params=bad_input["tool_params"],
+                                     output="参数校验失败，返回错误", block=True),
+                "标签": ["参数缺失"]})
+
+        # 3) 参数校验（负向）：非法/边界值 → 应拒绝
+        cases.append({
+            "维度": "参数校验", "能力": name, "层": "L1",
+            "输入": {"tool_name": tool, "tool_params": {**tp, **({"productIds": ["0"]} if "id" in str(params) else {})}},
+            "期望": build_expect(cap, intent=name, params=tp,
+                                 output="非法参数被拒绝", block=True),
+            "标签": ["边界"]})
+
+        # 4) 安全与权限（负向）：无权限/越权 → 应拒绝
+        neg = cap.get("负向场景") or []
+        for i, n in enumerate(neg[:2]):
+            if not isinstance(n, dict) or not n.get("输入"):
+                continue
+            cases.append({
+                "维度": "安全与权限", "能力": name, "层": "L2",
+                "输入": {"tool_name": tool, "tool_params": n.get("工具参数") or tp},
+                "期望": build_expect(cap, intent="权限拒绝", params=tp,
+                                     output=n.get("输入"), block=True),
+                "标签": ["越权"]})
+
+        # 5) 返回处理：正常返回校验
+        cases.append({
+            "维度": "返回处理", "能力": name, "层": "L1",
+            "输入": dict(cap_input),
+            "期望": build_expect(cap, intent=name, params=tp, output="返回结构化结果"),
+            "标签": ["正常"]})
+
+    return cases
+
+
 def build_l2(products, l1_cases, target_share=0.30):
     if not products or not l1_cases:
         return []
@@ -391,7 +478,11 @@ def finalize(cases, req_type):
     seen = set()
     uniq = []
     for c in cases:
-        key = (c.get("层"), c.get("维度"), c.get("能力"), c.get("输入"))
+        # 输入可能是字符串(C类)或 dict(A类工具调用)，统一转可哈希形式去重
+        inp = c.get("输入")
+        if isinstance(inp, (dict, list)):
+            inp = json.dumps(inp, ensure_ascii=False, sort_keys=True)
+        key = (c.get("层"), c.get("维度"), c.get("能力"), inp)
         if key in seen:
             continue
         seen.add(key)
@@ -399,7 +490,64 @@ def finalize(cases, req_type):
 
     for i, c in enumerate(uniq, 1):
         c["用例ID"] = f"{req_type}-{c.get('层', 'L1')}-{i:03d}"
+        _annotate_sample_extra(c)
+        # B 类纯对话：semantic.fields（字段结构校验）不适用（返回的是文本），
+        # 转成 contains（关键词校验）——回复里应提到这些字段名即可判对。
+        if req_type == "B":
+            _b_chat_semantic_to_contains(c)
     return uniq
+
+
+def _b_chat_semantic_to_contains(case):
+    """B 类纯对话：把期望.semantic.fields 转成 contains。
+
+    B 类执行器返回的是对话文本，无法校验「JSON 字段结构」。
+    将字段名转为「回复应包含的关键词」，使语义校验对纯对话生效。
+    """
+    exp = case.get("期望")
+    if not isinstance(exp, dict):
+        return
+    sem = exp.get("semantic")
+    if not isinstance(sem, dict):
+        return
+    fields = sem.get("fields")
+    if not fields:
+        return
+    # 字段名 → 关键词（纯对话回复里提到即可）
+    kw = sem.setdefault("contains", [])
+    for f in fields:
+        if f and f not in kw:
+            kw.append(f)
+    # 保留 contains，去掉 fields（B 类不再做结构校验）
+    sem.pop("fields", None)
+    # B 类纯对话：contains 用「任一命中」（回复体现核心信息之一即可），标记给校验器
+    sem["any_of"] = True
+
+
+def _annotate_sample_extra(case):
+    """按「维度/能力/标签」自动标注关键用例的采样次数 sample_extra。
+
+    目的：pass@k 时关键用例多跑几次（更可信），普通用例用全局 runs（省成本）。
+    只标注 sample_extra，不覆盖全局 --runs；实际采样 k = max(全局 runs, sample_extra)。
+
+    规则（优先级从高到低）：
+      - 安全/鲁棒/对抗 维度   → sample_extra 5（必须确认"能做到"，可接受高成本）
+      - 核心操作（变更/删除） → sample_extra 3
+      - 其余                    → 不标注（用全局 runs）
+    """
+    dim = case.get("维度", "") or ""
+    cap = case.get("能力", "") or ""
+    tags = case.get("标签") or []
+
+    # 安全/鲁棒/对抗 → 5 次
+    if any(k in dim for k in ("安全", "鲁棒", "对抗")) or "对抗" in tags:
+        case["sample_extra"] = 5
+        return
+    # 核心操作（变更数值/状态、删除、创建、批量）→ 3 次
+    op_kws = ("删除", "下架", "上架", "改价", "修改价格", "新增", "创建", "批量")
+    is_op = any(k in cap for k in op_kws)
+    if is_op or dim in ("参数端到端准确率", "参数生成", "操作后校验"):
+        case["sample_extra"] = 3
 
 
 def main():
@@ -450,8 +598,13 @@ def main():
         print("⚠ 未提供能力目录，将按维度表通用模板生成")
 
     # L1 黄金集 + L2 场景演化（L3 暂不接入）
-    l1 = build_l1(products, abilities, args.req_type)
-    l2 = build_l2(products, l1, target_share=TARGET_SHARE["L2"] / TARGET_SHARE["L1"])
+    if args.req_type in ("A", "D"):
+        # A/D 类：纯工具测试，生成「工具调用」格式用例（直连 MCP 执行器消费）
+        l1 = build_a(products, abilities, args.req_type)
+        l2 = []
+    else:
+        l1 = build_l1(products, abilities, args.req_type)
+        l2 = build_l2(products, l1, target_share=TARGET_SHARE["L2"] / TARGET_SHARE["L1"])
     cases = finalize(l1 + l2, args.req_type)
 
     from collections import Counter

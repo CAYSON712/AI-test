@@ -43,18 +43,23 @@ def generate_report(result_path, out_path):
     lines.append(f"- **采样次数**: 每条 {runs} 次\n")
 
     # 1. 维度得分表（score = 全局统计分或 avg，score_type 标注评分方式）
+    #    通过率以「用例」为统计单位；每条用例跑 k 次（k 由全局 runs 与用例 sample_extra 取大），
+    #    ≥1 次达标即判通过（pass@k）。
+    max_k = max((d.get("runs", 1) or 1) for d in dims.values()) if dims else 1
     lines.append("## 维度得分（5 分制 Rubric）\n")
-    lines.append("| 维度 | 得分 | 评分方式 | 等级 | 发布建议 | 通过率 | 采样 | 95%CI |")
-    lines.append("|------|------|----------|------|----------|--------|------|-------|")
+    lines.append(f"> 通过率统计口径：**pass@{max_k}**（每条用例跑 {max_k} 次、≥1 次达标即判过；关键用例 sample_extra 自动多跑，见「采样k」列）\n")
+    lines.append("| 维度 | 得分 | 评分方式 | 等级 | 发布建议 | 通过率 | 用例数 | 采样k | 95%CI |")
+    lines.append("|------|------|----------|------|----------|--------|--------|-------|-------|")
     for dim, d in sorted(dims.items(), key=lambda x: x[1].get("score", x[1].get("avg_score", 0))):
         score = d.get("score", d.get("avg_score", 0))
         stype = "程序化" if d.get("score_type") == "rate" else "逐用例"
         g = grade_info(score)
         rate = d.get("pass_rate", 0)
         n = d.get("n", 0)
+        rk = d.get("runs", 1) or 1
         ci = d.get("ci", (0, 0))
         lines.append(f"| {dim} | {score:.2f} | {stype} | {g['label']} | {g['verdict']} | "
-                     f"{rate:.0%} | {n} | [{ci[0]:.2f}, {ci[1]:.2f}] |")
+                     f"{rate:.0%} | {n} | pass@{rk} | [{ci[0]:.2f}, {ci[1]:.2f}] |")
 
     # 2. 总体通过率
     total_rate = sum(d.get("pass_rate", 0) for d in dims.values()) / len(dims) if dims else 0

@@ -29,7 +29,8 @@ from scripts.trace_client import report_case_trace
 
 
 def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=None,
-                report_trace=False, use_llm_judge=False, llm_detail=False):
+                report_trace=False, use_llm_judge=False, llm_detail=False,
+                auto_report=False):
     """执行数据集 + Rubric 评分"""
     # 加载维度表 + Rubric
     tables = load_dimension_tables()
@@ -64,18 +65,18 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
 
     print(f"需求类型: {req_type} | 系统: {system or '(自动)'} | 用例: {len(cases)} | 执行器: {executor_mode} | 每条跑 {runs} 次")
 
-    # 记录每条用例的多次运行得分（维度 → score）
-    dim_case_counts = defaultdict(int)   # 维度 → 用例数
-    dim_scores_all = defaultdict(list)   # 维度 → 所有运行的score
-    dim_binary = defaultdict(list)       # 维度 → 该用例能否程序化判定 + 是否达标 [(judgeable, passed)]
+    # 记录每条用例的多次运行得分（按 用例 分组，支撑 pass@k 判定）
+    dim_case_counts = defaultdict(int)     # 维度 → 用例数
+    dim_case_all = defaultdict(dict)       # 维度 → {用例ID: [(score, judgeable, passed), ...各run]}
+    dim_scores_all = defaultdict(list)     # 维度 → 所有运行的score（供 avg）
     failed_cases = []
-    case_traces = {}                     # 用例ID → {用例ID, 能力, 维度, 层, trace_ids:[]}
-    trace_offline = None                 # trace_platform 离线状态（仅提醒一次）
+    case_traces = {}                       # 用例ID → {用例ID, 能力, 维度, 层, trace_ids:[]}
+    trace_offline = None                   # trace_platform 离线状态（仅提醒一次）
 
     for case in cases:
         dim = case.get("维度", "")
         dim_case_counts[dim] += 1
-        uid = case.get("用例ID", "")
+        uid = case.get("用例ID", "") or f"case-{len(dim_case_all[dim])}"
         if report_trace and uid:
             case_traces.setdefault(uid, {
                 "用例ID": uid,
@@ -84,7 +85,14 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                 "层": case.get("层", ""),
                 "trace_ids": [],
             })
-        for run in range(runs):
+        # 每条用例实际采样次数：
+        #   runs==1（默认/纯 pass@1）→ 所有用例固定跑 1 次，忽略 sample_extra（保证对比纯粹）
+        #   runs>1  → 关键用例用 sample_extra 提升（安全/核心操作多跑），普通用全局 runs
+        if int(runs) <= 1:
+            case_k = 1
+        else:
+            case_k = max(int(runs), int(case.get("sample_extra") or 0))
+        for run in range(case_k):
             result = registry.dispatch(case)
             if result is None:
                 failed_cases.append({"用例ID": uid, "维度": dim,
@@ -97,8 +105,9 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                                        llm_detail=llm_detail)
             for k, v in scores.items():
                 dim_scores_all[k].append(v["score"])
-                # 该维度该用例的"二元判定"：judgeable=True 才参与准确率统计；达标 = score>=3
-                dim_binary[k].append((v.get("judgeable", False), v["score"] >= 3))
+                # 按用例分组收集各 run 的二元判定，供 pass@k 使用
+                dim_case_all[k].setdefault(uid, []).append(
+                    (v.get("judgeable", False), v["score"] >= 3, v["score"]))
             if result.status != "success":
                 failed_cases.append({"用例ID": uid, "维度": dim,
                                      "输入": case.get("输入", {}),
@@ -117,38 +126,52 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     # 聚合维度得分（混合评分）：
     #   - 可程序化判定（有 verify/block/error/工具匹配）→ 统计准确率 → 查 rubric 得全局分
     #   - 不可程序化判定 → 保留逐用例 avg（留给 LLM-as-Judge）
+    # pass@k：统计单位是「用例」而非「单次 run」——某用例跑 k 次，只要 ≥1 次
+    #          (judgeable=True 且 score>=3) 达标，即视为该用例通过。缓解 AI 非确定性误伤。
     dimensions = {}
     for dim, scores in dim_scores_all.items():
         if not scores:
             continue
         avg = sum(scores) / len(scores)
-        n = len(scores)
         # 取该维度 rubric，尝试查表
         dim_rubric = None
         for _rt, _dims in judger.tables.items():
             if dim in _dims:
                 dim_rubric = _dims[dim]
                 break
-        # 程序化判定统计
-        binaries = dim_binary.get(dim, [])
-        judgeable = [p for j, p in binaries if j]
+        # 按用例聚合：每个用例取 "是否达标"（judgeable 的 run 里至少一次 score>=3）
+        case_rows = dim_case_all.get(dim, {})   # {用例ID: [(judgeable, passed, score), ...]}
+        judgeable_cases = 0
+        passed_cases = 0
+        max_k = 0
+        for _uid, run_rows in case_rows.items():
+            # 该用例实际采样次数（可能因 sample_extra 而异）
+            max_k = max(max_k, len(run_rows))
+            # 该用例是否有任何一次 run 可被程序化判定（judgeable）
+            if not any(j for j, p, s in run_rows):
+                continue
+            judgeable_cases += 1
+            # pass@k：任意一次 run (judgeable 且 passed) → 该用例通过
+            if any(j and p for j, p, s in run_rows):
+                passed_cases += 1
         final_score = None
         score_type = "avg"
-        if judgeable:
-            rate = sum(judgeable) / len(judgeable)
+        if judgeable_cases:
+            rate = passed_cases / judgeable_cases
             rate_score = dim_rubric.score_from_rate(rate) if dim_rubric else None
             if rate_score is not None:
                 final_score = rate_score
                 score_type = "rate"
         if final_score is None:
             final_score = round(avg, 2)
-        passed = sum(1 for s in scores if s >= 3)
+        # pass@k 通过率（以用例计）；k 为该维度实际采样次数（可能受 sample_extra 提升）
         dimensions[dim] = {
             "avg_score": round(avg, 2),
             "score": final_score,           # 最终得分（全局统计分或 avg）
             "score_type": score_type,       # rate=程序化统计 / avg=逐用例均值
-            "pass_rate": round(passed / n, 3),
-            "n": n,
+            "pass_rate": round(passed_cases / judgeable_cases, 3) if judgeable_cases else 0,
+            "n": judgeable_cases,           # 可程序化判定的用例数
+            "runs": max_k,                  # 该维度用例实际采样次数（pass@k 的 k）
             "ci": (0, 0),
         }
 
@@ -168,6 +191,17 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     print(f"结果已写入: {out_path}")
     print(f"覆盖维度: {len(dimensions)} 个 | 失败用例: {len(failed_cases)} 条")
 
+    # 可选：跑完自动生成评估报告（--report）
+    if auto_report:
+        try:
+            from scripts.report import generate_report
+            report_path = os.path.join(_ROOT, "report",
+                                       f"评估报告_{req_type}.md")
+            generate_report(out_path, report_path)
+            print(f"报告已自动生成: {report_path}")
+        except Exception as e:
+            print(f"⚠ 自动生成报告失败（{e}），可稍后手动运行 report.py")
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -180,6 +214,8 @@ def main():
     parser.add_argument("--out", default=None)
     parser.add_argument("--trace", action="store_true",
                         help="上报 trace 到 trace_platform（需先启动该服务）")
+    parser.add_argument("--report", action="store_true",
+                        help="跑完自动生成评估报告（report/评估报告_<req_type>.md）")
     parser.add_argument("--llm-judge", action="store_true",
                         help="启用 LLM-as-Judge：对规则判不了的主观维度由 LLM 打分（更慢、耗 token）")
     parser.add_argument("--llm-detail", action="store_true",
@@ -189,7 +225,7 @@ def main():
     out = args.out or os.path.join(_ROOT, "results", f"result_{args.req_type}.yaml")
     run_dataset(args.req_type, args.dataset, args.executor, args.runs, out,
                 args.system, report_trace=args.trace, use_llm_judge=args.llm_judge,
-                llm_detail=args.llm_detail)
+                llm_detail=args.llm_detail, auto_report=args.report)
 
 
 if __name__ == "__main__":

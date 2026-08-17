@@ -163,7 +163,10 @@ def verify_case(expectation, actual):
             checks.append(("fields", [f]))
         for kw in sem.get("contains", []):
             checks.append(("contains", kw))
+        # B 类纯对话标记：contains 用「任一命中」（对话回复只需体现核心信息之一）
+        any_of = sem.get("any_of", False)
     else:
+        any_of = False
         # 无 semantic 时，回退到顶层期望（手工用例可能直接写 output/fields）
         # 1) 期望输出文本 → 输出包含
         exp_out = expectation.get("output")
@@ -187,12 +190,35 @@ def verify_case(expectation, actual):
         # 优先取"输出"字段；否则取整段
         actual_text = actual.get("output") or actual.get("reply") or actual
 
-    all_pass = True
+    # 拆分 contains 与 非 contains 检查，便于 any_of（任一命中）与全量（全部命中）区分
+    contains_checks = [p for k, p in checks if k == "contains"]
+    other_checks = [(k, p) for k, p in checks if k != "contains"]
+
     details = []
-    for kind, payload in checks:
-        if kind == "contains":
-            ok, d = contains_text(actual_text, payload)
-        elif kind == "fields":
+    all_pass = True
+
+    # any_of（B 类纯对话）：contains 里任一命中即可（对话回复只需体现核心信息之一）
+    if any_of and contains_checks:
+        hits = []
+        for kw in contains_checks:
+            ok, d = contains_text(actual_text, kw)
+            hits.append(ok)
+            details.append(d)
+        if any(hits):
+            # 任一命中 → contains 部分通过
+            pass
+        else:
+            all_pass = False
+    else:
+        for kw in contains_checks:
+            ok, d = contains_text(actual_text, kw)
+            details.append(d)
+            if not ok:
+                all_pass = False
+
+    # 非 contains 检查（fields/value）：全部命中
+    for kind, payload in other_checks:
+        if kind == "fields":
             ok, d = has_fields(actual_text, payload)
         elif kind == "value":
             ok, d = value_eq(actual_text, payload.get("field"), payload.get("value"))
