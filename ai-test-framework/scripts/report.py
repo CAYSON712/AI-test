@@ -36,6 +36,18 @@ def generate_report(result_path, out_path):
     runs = result.get("runs", 1)
     dims = result.get("dimensions", {})  # {维度: {avg_score, pass_rate, n, ci}}
 
+    # 错误类型 → 中文名 + 建议修复（业界约定：通过率不足以衡量，看错误类型分布）
+    ERROR_TYPES = {
+        "db_verify_fail":      {"name": "操作后校验失败", "fix": "检查 verify 工具实时数据返回是否与期望值格式/值一致"},
+        "block_miss":          {"name": "危险/越权操作未拦截", "fix": "补充安全拦截规则（越权/注入/危险操作需明确拒绝）"},
+        "tool_misuse":         {"name": "工具选择/调用错误", "fix": "检查意图→工具的映射与工具参数解析"},
+        "semantic_miss":       {"name": "语义输出不符合期望", "fix": "检查输出是否包含期望字段/关键词，或调整期望语义"},
+        "biz_fail":            {"name": "业务失败/执行报错", "fix": "检查执行链路报错（连接/参数/权限）"},
+        "judge_inconclusive":  {"name": "无法确定性判定", "fix": "规则判不了，需 LLM-as-Judge 或补充判定标准"},
+        "other":               {"name": "其他失分", "fix": "人工查看该用例失分原因"},
+        "pass":                {"name": "达标", "fix": "-"},
+    }
+
     lines = []
     lines.append(f"# AI 测试评估报告\n")
     lines.append(f"- **需求类型**: {req_type} 类")
@@ -94,6 +106,49 @@ def generate_report(result_path, out_path):
         lines.append(f"- **{uid}** [{dim}] {inp}: {err}")
     if not fail_cases:
         lines.append("- 无失败用例")
+
+    # 4.6 错误类型分布（业界标准：通过率不足以衡量，需看错误类型分布）
+    #     case_results 里每条失分维度都有 error_type，聚合成"哪类问题最多"。
+    case_results = result.get("case_results", [])
+    if case_results:
+        from collections import Counter
+        type_counter = Counter()
+        for cr in case_results:
+            for et in cr.get("错误类型", []):
+                type_counter[et] += 1
+        # 含 pass 不算问题，剔除
+        type_counter.pop("pass", None)
+        lines.append(f"\n## 错误类型分布（{sum(type_counter.values())} 处失分）\n")
+        lines.append("| 错误类型 | 失分处数 | 占比 | 建议修复 |")
+        lines.append("|----------|----------|------|----------|")
+        total_fail = sum(type_counter.values()) or 1
+        for et, cnt in type_counter.most_common():
+            meta = ERROR_TYPES.get(et, ERROR_TYPES["other"])
+            lines.append(f"| {meta['name']} | {cnt} | {cnt/total_fail:.0%} | {meta['fix']} |")
+        if not type_counter:
+            lines.append("- 无失分用例")
+        lines.append("")
+        lines.append("> **给开发的关键信息**：排名靠前的错误类型即为最需优先修复的系统性问题。")
+
+    # 4.7 失分用例明细（可提给开发的"问题清单"，含输入/期望/失分维度）
+    if case_results:
+        lines.append(f"\n## 失分用例明细（{len(case_results)} 条，按严重程度降序）\n")
+        for cr in case_results[:20]:
+            uid = cr.get("用例ID", "?")
+            cap = cr.get("能力", "")
+            inp = cr.get("输入", "")[:60]
+            ets = "、".join(ERROR_TYPES.get(e, ERROR_TYPES["other"])["name"] for e in cr.get("错误类型", []))
+            lines.append(f"- **{uid}** [{cap}] 最差分 {cr.get('最差得分', '?')} | 错误: {ets}")
+            lines.append(f"  输入: {inp}")
+            # 失分明细：列出各维度失分原因
+            for dim_fail, fdet in (cr.get("失分明细") or {}).items():
+                if isinstance(fdet, dict):
+                    lines.append(f"    - {dim_fail}: {fdet.get('score', '?')} 分 "
+                                 f"({ERROR_TYPES.get(fdet.get('error_type','other'), ERROR_TYPES['other'])['name']}) "
+                                 f"— {fdet.get('detail','')[:120]}")
+        if len(case_results) > 20:
+            lines.append(f"- … 等共 {len(case_results)} 条失分用例，完整清单见结果 YAML `case_results`")
+        lines.append("")
 
     # 4.5 trace 链路（上报过才有）：trace_id 挂在用例上
     case_traces = result.get("case_traces", result.get("traces", []))

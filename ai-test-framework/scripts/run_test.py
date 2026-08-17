@@ -71,6 +71,10 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     dim_scores_all = defaultdict(list)     # 维度 → 所有运行的score（供 avg）
     failed_cases = []
     case_traces = {}                       # 用例ID → {用例ID, 能力, 维度, 层, trace_ids:[]}
+    # 每条用例的评分明细（供报告做"错误类型分布 + 失分用例明细"）
+    # case_fails[uid] = {维度: {"score","error_type","detail","input","capability"}}
+    # 取多次 run 里最差的一次（失分记录最有诊断价值）
+    case_fails = {}
     trace_offline = None                   # trace_platform 离线状态（仅提醒一次）
 
     for case in cases:
@@ -108,6 +112,19 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                 # 按用例分组收集各 run 的二元判定，供 pass@k 使用
                 dim_case_all[k].setdefault(uid, []).append(
                     (v.get("judgeable", False), v["score"] >= 3, v["score"]))
+                # 收集失分明细：记录该用例该维度最差的一次（失分对诊断最有价值）
+                # 仅失分(score<3)才记录；先判失分再 setdefault，避免全通过用例产生空 dict
+                if v["score"] < 3:
+                    cur = case_fails.get(uid, {}).get(k)
+                    if cur is None or v["score"] < cur["score"]:
+                        case_fails.setdefault(uid, {})[k] = {
+                            "score": v["score"],
+                            "error_type": v.get("error_type", "other"),
+                            "detail": (v.get("detail") or "")[:200],
+                            "input": str(case.get("输入", ""))[:200],
+                            "capability": case.get("能力", ""),
+                            "via": v.get("via", ""),
+                        }
             if result.status != "success":
                 failed_cases.append({"用例ID": uid, "维度": dim,
                                      "输入": case.get("输入", {}),
@@ -175,6 +192,24 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
             "ci": (0, 0),
         }
 
+    # 组装失分用例明细（供报告"错误类型分布 + 失分用例明细"）
+    case_results = []
+    for uid, dims_fail in case_fails.items():
+        if not dims_fail:
+            continue
+        case_results.append({
+            "用例ID": uid,
+            "能力": next((c.get("能力", "") for c in cases if (c.get("用例ID") or "") == uid), ""),
+            "输入": next((str(c.get("输入", ""))[:200] for c in cases if (c.get("用例ID") or "") == uid), ""),
+            "期望": next((c.get("期望", {}) for c in cases if (c.get("用例ID") or "") == uid), {}),
+            "失败维度": list(dims_fail.keys()),
+            "错误类型": sorted({d.get("error_type") for d in dims_fail.values()}),
+            "最差得分": min(d["score"] for d in dims_fail.values()),
+            "失分明细": dims_fail,   # {维度: {score,error_type,detail,...}}
+        })
+    # 按最差得分升序（最严重在前）
+    case_results.sort(key=lambda x: x["最差得分"])
+
     result_data = {
         "req_type": req_type,
         "system": system,
@@ -183,6 +218,7 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
         "failed_cases": failed_cases,
         "dim_case_counts": dict(dim_case_counts),
         "case_traces": list(case_traces.values()),   # 按用例挂 trace_id（含 trace_ids 列表）
+        "case_results": case_results,                # 失分用例明细（错误类型分布 + 失分归因）
     }
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

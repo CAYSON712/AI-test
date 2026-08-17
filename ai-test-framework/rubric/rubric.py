@@ -164,8 +164,45 @@ class RubricJudger:
                 "judgeable": judgeable,
                 "via": via,
                 "detail": detail,
+                # 结构化错误类型：score<3（未达标）时按 detail 归类，供"错误类型分布"统计
+                "error_type": self._derive_error_type(dim, s, via, detail),
             }
         return scores
+
+    @staticmethod
+    def _derive_error_type(dim, score, via, detail):
+        """根据单维度评分结果推导结构化「错误类型」。
+
+        仅对 score<3（未达标）的评分打错误标签；达标(>=3)统一标 "pass"。
+        业界约定：通过率不足以衡量，需看错误类型分布——每条失分都有可归类的根因，
+        便于报告层聚类成"哪类问题最多"。
+
+        错误类型枚举：
+          pass                达标（无缺陷）
+          db_verify_fail      操作后实时校验失败（实际数据与期望不符）
+          block_miss          危险/越权操作未拦截（安全缺口）
+          tool_misuse         工具选择/调用错误
+          semantic_miss       语义输出不符合期望（字段/关键词缺失）
+          biz_fail            业务失败 / 执行报错
+          judge_inconclusive  无法确定性判定（规则判不了）
+          other               其他未识别失分原因
+        """
+        if score is not None and score >= 3:
+            return "pass"
+        d = (detail or "").lower()
+        if "操作后校验失败" in d or "校验失败" in d:
+            return "db_verify_fail"
+        if "未按预期拦截" in d or "拦截" in d:
+            return "block_miss"
+        if "工具选择错误" in d or "工具" in d and "错" in d:
+            return "tool_misuse"
+        if "语义校验" in d or "不含" in d or "未含" in d or "语义" in d:
+            return "semantic_miss"
+        if "业务失败" in d or "执行报错" in d or "执行失败" in d:
+            return "biz_fail"
+        if via == "default":
+            return "judge_inconclusive"
+        return "other"
 
     def _get_dimensions(self, req_type):
         """取某个需求类型的维度 Rubric。
