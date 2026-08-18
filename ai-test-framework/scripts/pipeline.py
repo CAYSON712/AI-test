@@ -9,7 +9,7 @@ AI 测试一键流水线入口（端到端）
   python scripts/pipeline.py --req-type C --system POS商品管理 --executor auto --runs 3 --trace
 
   # 只执行已有数据集（跳过生成）
-  python scripts/pipeline.py --req-type B --dataset datasets/B_POS_chat.yaml --executor auto
+  python scripts/pipeline.py --req-type B --dataset "datasets/B_POS 商品管理.yaml" --executor auto
 
   # 快速 mock 验证（不连真实系统）
   python scripts/pipeline.py --req-type C --system POS商品管理 --executor mock
@@ -110,7 +110,7 @@ def main():
                 use_llm_judge=args.llm_judge, llm_detail=args.llm_detail,
                 auto_report=not args.no_report)
 
-    print("\n✅ 流水线完成")
+    print("\n[OK] 流水线完成")
     print(f"   结果: {out}")
     if not args.no_report:
         print(f"   报告: {os.path.join(_ROOT, 'report', f'评估报告_{args.req_type}.md')}")

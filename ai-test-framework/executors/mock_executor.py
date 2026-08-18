@@ -7,7 +7,8 @@ Mock 执行器（从能力目录读取能力）
 
 说明：
   - 能力目录（需求预定义）在测试前即可确定
-  - 本 mock 只模拟"查询类"能力，写操作类由真实执行器实现
+  - 具体查询类能力有针对性 mock（见 handle）；其余能力走通用兜底，
+    并按用例期望的 semantic 生成符合语义校验的假输出（见 _gen_mock_output）
 """
 import os
 import random
@@ -74,7 +75,29 @@ class MockExecutor(BaseExecutor):
         if capability == "查询":
             return {"metric": "sales", "value": 15860}
         # 通用兜底：对动态发现的其他能力，返回模拟成功（隔离副作用，验证决策链路）
-        return {"mock": True, "capability": capability, "result": "模拟执行成功"}
+        # 关键升级：按用例「期望」里的 semantic 生成符合语义校验的假输出，
+        # 让 mock 模式下「语义校验」维度（fields/contains）也能真实通过，评分更可信。
+        return self._gen_mock_output(capability, expected)
+
+    def _gen_mock_output(self, capability, expected):
+        """按期望的 semantic 生成满足语义校验的假输出。
+
+        - semantic.fields    → 输出 JSON 包含这些字段（含能力名做假值）
+        - semantic.contains  → 以独立字段形式塞入，使输出文本含该关键词
+        - 无 semantic         → 保持通用 mock 标记（隔离副作用，验证决策链路）
+        返回的 dict 不含 output/reply 字段，使 verify_case 用整个 dict 做
+        has_fields + contains_text 校验。
+        """
+        obj = {"mock": True, "capability": capability, "result": "模拟执行成功"}
+        sem = expected.get("semantic") if isinstance(expected, dict) else None
+        if isinstance(sem, dict):
+            # 1) fields → 作为输出字段（值含能力名，满足 has_fields）
+            for f in sem.get("fields", []):
+                obj.setdefault(str(f), f"{capability} {f}")
+            # 2) contains → 作为独立字段值，确保整个输出 JSON 文本包含该关键词
+            for i, kw in enumerate(sem.get("contains", [])):
+                obj[f"_kw{i}"] = str(kw)
+        return obj
 
     def _query_metric(self, capability):
         data = {

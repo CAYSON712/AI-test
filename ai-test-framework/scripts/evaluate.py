@@ -33,7 +33,7 @@ TYPE_FILES = {
 def load_dimension_tables(req_types=("A", "B", "C", "D", "E")):
     """加载维度表为 {需求类型: {维度: Rubric}}。
 
-    C 类 = A 类 + B 类 + 集成特有维度（23 维），此处直接展开合并。
+    C 类 = A 类(8) + B 类(11) + 集成特有维度(4)，按维度名去重合并后为 20 维。
     """
     raw = {}  # 原始加载
     for t in req_types:

@@ -23,7 +23,7 @@
 │   ├── rubric/                     #   Rubric 评分体系
 │   │   ├── rubric.py               #     5 分制评分 + 阈值 + 统计 + 错误归因(数据集/AI系统/环境)
 │   │   ├── llm_judge.py            #     LLM-as-Judge 评分器
-│   │   └── templates/              #     （预留）Rubric JSON 模板
+│   │   └── templates/              #     Rubric 模板（rubric_template.json 含新增维度步骤）
 │   ├── executors/                  #   执行器（通用，不绑系统，按需求类型路由）
 │   │   ├── base.py                 #     执行器基类 + ExecResult
 │   │   ├── mock_executor.py        #     Mock 执行器（测 Agent/Skill 层，零配置）
