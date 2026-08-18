@@ -446,7 +446,14 @@ INDEX_HTML = """<!DOCTYPE html>
   .wf-tick { position: absolute; top: 0; height: 100%; border-left: 1px solid #e0e0e0; }
   .wf-tick span { position: absolute; top: 2px; left: 3px; font-size: 10px; color: #999; white-space: nowrap; }
   .wf-timeline { position: relative; }
-  .wf-row { display: flex; align-items: center; min-height: 30px; border-bottom: 1px dashed #f0f0f0; }
+  .wf-row { display: flex; flex-wrap: wrap; align-items: center; min-height: 30px; border-bottom: 1px dashed #f0f0f0; }
+  /* 直接显示 input/output 文本 */
+  .wf-io { width: 100%; padding: 2px 8px 6px 0; margin-left: 280px; box-sizing: border-box; }
+  .wf-io-in, .wf-io-out { font-size: 12px; line-height: 1.6; margin-top: 2px; }
+  .wf-io-in b, .wf-io-out b { display: inline-block; min-width: 30px; color: #fff; border-radius: 3px; padding: 0 5px; margin-right: 6px; font-size: 10px; font-weight: 600; }
+  .wf-io-in b { background: #42a5f5; }
+  .wf-io-out b { background: #66bb6a; }
+  .wf-io-txt { color: #333; white-space: pre-wrap; word-break: break-all; font-family: Consolas, Menlo, monospace; font-size: 11px; }
   .wf-meta { width: 280px; flex-shrink: 0; padding: 2px 8px 2px 0; overflow: hidden; }
   .wf-meta .node-type { font-size: 10px; color: #aaa; margin-left: 4px; }
   .wf-meta-bits { font-size: 11px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -666,6 +673,16 @@ function renderNode(n) {
   if (n._model) metaBits.push('🧠 ' + n._model);
   if (n._tokens_in !== undefined || n._tokens_out !== undefined) metaBits.push(`⇄ ${n._tokens_in||0}/${n._tokens_out||0} tok`);
   const tooltip = escAttr(n.input || '') + '\\n⇊\\n' + escAttr(n.output || '');
+  // 直接渲染 input/output 文本（不折叠、不悬停），截断过长内容避免行超高
+  function truncStr(v, max) {
+    if (v === undefined || v === null) return '';
+    var s = String(v);
+    return s.length > max ? s.slice(0, max) + '…' : s;
+  }
+  const ioIn = escHtml(truncStr(n.input, 400));
+  const ioOut = escHtml(truncStr(n.output, 400));
+  const hasIo = !!(n.input !== undefined && n.input !== null && String(n.input).trim()) ||
+                !!(n.output !== undefined && n.output !== null && String(n.output).trim());
 
   return `<div class="wf-row ${typeCls}${stateCls}">
     <div class="wf-meta">
@@ -679,6 +696,12 @@ function renderNode(n) {
       <div class="wf-bar ${isErr ? 'bar-err' : isWarn ? 'bar-warn' : ''}" style="left:${left}%;width:${width}%"
         title="${tooltip}"></div>
     </div>
+    ${hasIo ? `<div class="wf-io">
+      ${n.input !== undefined && n.input !== null && String(n.input).trim() !== ''
+        ? `<div class="wf-io-in"><b>IN</b><span class="wf-io-txt">${ioIn}</span></div>` : ''}
+      ${n.output !== undefined && n.output !== null && String(n.output).trim() !== ''
+        ? `<div class="wf-io-out"><b>OUT</b><span class="wf-io-txt">${ioOut}</span></div>` : ''}
+    </div>` : ''}
   </div>
   ${n.children && n.children.length ? n.children.map(renderNode).join('') : ''}`;
 }
@@ -686,6 +709,10 @@ function renderNode(n) {
 function escAttr(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
     .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\\n/g, ' ');
+}
+function escHtml(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function renderScore(s) {

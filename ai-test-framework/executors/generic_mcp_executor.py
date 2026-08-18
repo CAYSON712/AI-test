@@ -594,7 +594,15 @@ MCP 返回结果：
         )
         if not need_ids:
             return False
-        if tool_params.get("productIds") or tool_params.get("product_ids"):
+        # 修复：不能只看"非空"——LLM 可能把商品名(如 "Salt & Pepper Pork Chop")填进
+        # productIds。真实 POS 商品 ID 是纯数字（如 9088...）。只有当 productIds 里
+        # 全为数字 ID 时才视为"已有 ID"跳过；否则仍需按实体名解析成真实 ID。
+        existing = tool_params.get("productIds") or tool_params.get("product_ids") or []
+        if isinstance(existing, list):
+            valid = all(re.fullmatch(r"\d+", str(x or "")) for x in existing)
+        else:
+            valid = bool(re.fullmatch(r"\d+", str(existing or "")))
+        if valid and existing:
             return False
         name = _extract_entity(user_input, capability)
         if not name:
