@@ -173,20 +173,26 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                 passed_cases += 1
         final_score = None
         score_type = "avg"
+        rate = None
         if judgeable_cases:
             rate = passed_cases / judgeable_cases
             rate_score = dim_rubric.score_from_rate(rate) if dim_rubric else None
             if rate_score is not None:
-                final_score = rate_score
-                score_type = "rate"
+                # 评分修复：score = max(rate映射分, avg)。
+                # 通过率查 rubric 表可能比实际平均分更严（如 31.6% 通过率→1 分，
+                # 但 avg 2.95 接近可接受）。用 avg 兜底，避免严重低估。
+                # score 反映"平均质量"，pass_rate 反映"完全正确比例"，两者结合看。
+                final_score = max(rate_score, round(avg, 2))
+                score_type = "rate" if rate_score >= round(avg, 2) else "avg"
         if final_score is None:
             final_score = round(avg, 2)
         # pass@k 通过率（以用例计）；k 为该维度实际采样次数（可能受 sample_extra 提升）
         dimensions[dim] = {
             "avg_score": round(avg, 2),
-            "score": final_score,           # 最终得分（全局统计分或 avg）
+            "score": final_score,           # 最终得分 = max(rate映射分, avg)，反映平均质量
             "score_type": score_type,       # rate=程序化统计 / avg=逐用例均值
             "pass_rate": round(passed_cases / judgeable_cases, 3) if judgeable_cases else 0,
+            "rate": round(rate, 3) if rate is not None else None,  # 原始通过率（完全正确比例）
             "n": judgeable_cases,           # 可程序化判定的用例数
             "runs": max_k,                  # 该维度用例实际采样次数（pass@k 的 k）
             "ci": (0, 0),
