@@ -21,21 +21,24 @@
 │   │   ├── D_Skill原子能力.yaml    #     Skill 原子能力（6 维）
 │   │   └── E_RAG知识库.yaml        #     RAG/知识库（5 维）
 │   ├── rubric/                     #   Rubric 评分体系
-│   │   ├── rubric.py               #     5 分制评分 + 阈值 + 统计(通过率/置信区间)
+│   │   ├── rubric.py               #     5 分制评分 + 阈值 + 统计 + 错误归因(数据集/AI系统/环境)
 │   │   ├── llm_judge.py            #     LLM-as-Judge 评分器
 │   │   └── templates/              #     （预留）Rubric JSON 模板
-│   ├── executors/                  #   执行器（通用，不绑系统）
+│   ├── executors/                  #   执行器（通用，不绑系统，按需求类型路由）
 │   │   ├── base.py                 #     执行器基类 + ExecResult
-│   │   ├── mock_executor.py        #     Mock 执行器（测 Agent/Skill 层）
-│   │   ├── generic_mcp_executor.py #     通用真实执行器（配置驱动，测 E2E）
+│   │   ├── mock_executor.py        #     Mock 执行器（测 Agent/Skill 层，零配置）
+│   │   ├── direct_mcp_executor.py  #     A/D 类：纯工具调用（直连 MCP）
+│   │   ├── generic_chat_executor.py#     B 类：纯对话 Agent（不连 MCP）
+│   │   ├── generic_mcp_executor.py #     C 类：Agent+MCP 集成（配置驱动，测 E2E）
+│   │   ├── generic_rag_executor.py #     E 类：RAG 知识库检索
 │   │   └── registry.py             #     执行器注册表（按需求类型+系统路由）
 │   ├── configs/                    #   系统配置（连接+工具schema，驱动真实执行器）
 │   │   └── POS_商品管理.yaml       #     POS 系统配置样板
 │   ├── scripts/                    #   工具脚本
-│   │   ├── generate_dataset.py     #     结构化生成数据集（维度表+能力+实体+规则模板）
-│   │   ├── run_test.py             #     测试执行 + Rubric 评分 + 统计
+│   │   ├── generate_dataset.py     #     按手册维度驱动生成数据集（五类各按维度表，不用LLM）
+│   │   ├── run_test.py             #     测试执行 + Rubric 评分 + 统计 + 归因透传
 │   │   ├── evaluate.py             #     评估入口
-│   │   ├── report.py               #     评估报告生成
+│   │   ├── report.py               #     评估报告生成（含错误归因分组）
 │   │   └── llm_client.py           #     LLM 封装（绕代理/JSON容错）
 │   ├── ability/                    #   能力目录 + 真实实体清单（按系统）
 │   │   ├── 能力目录_POS商品管理.yaml
@@ -58,11 +61,12 @@
 1. **AI 测试 = 统计学测试**：每条用例跑 ≥5 次，用通过率 + 置信区间，而非单次 pass/fail
 2. **Rubric 量化评分**：5 分制（优秀/良好/可接受/一般缺陷/严重缺陷）
 3. **LLM-as-Judge**：主观维度用 LLM 当裁判打分
-4. **需求类型驱动**：先判断 A/B/C/D/E，再用对应维度表
+4. **需求类型驱动**：先判断 A/B/C/D/E，再用对应维度表（A=8/B=11/C=20/D=6/E=5）
 5. **能力×类型覆盖**：每个能力覆盖正常/边界/异常/对抗/模糊
 6. **测试集分层**：L1 黄金集 60% + L2 场景演化 30%（L3 生产回放 10% 暂不接入）
-7. **结构化生成**：L1 用规则模板、L2 用确定性变异（**不用 LLM**），可复现可回溯
-8. **通用化**：能力目录 + 真实实体清单通过参数注入，真实执行器由系统配置驱动，可复用到任意系统
+7. **按维度驱动生成**：`generate_dataset.py` 遍历维度表，每个维度按手册「核心测试方法」生成针对性用例（**不用 LLM**，可复现可回溯）。五类各按独立维度表：A→build_a、D→build_d、E→build_e、B/C→build_l1
+8. **错误归因升级**：每条失分标注 `attribution`（数据集问题/ AI 系统问题/ 环境问题/ 测试通过），报告分组展示，让开发只看真系统问题、测试修数据缺陷
+9. **通用化**：能力目录 + 真实实体清单通过参数注入，真实执行器由系统配置驱动，可复用到任意系统
 
 ## 五类需求类型
 

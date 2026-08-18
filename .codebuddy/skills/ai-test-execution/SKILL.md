@@ -40,8 +40,8 @@ description: AI 测试「测试执行」专用入口。当用户需要对已生�
 | **E** RAG/知识库 | 检索相关性 / 答案忠实度 | RAG 检索+生成 | ✅（配置驱动） |
 
 > 说明：
-> - 通用真实执行器 `generic_mcp_executor` 覆盖 A/C/D 的直连与对话接入（按需求类型 + 系统配置驱动）
-> - RAG 执行器 `generic_rag_executor` 覆盖 E（检索+生成），按 E 类维度表（召回率/精准率/幻觉率/时效性/Groundedness）评分
+> - 按需求类型自动路由执行器：A/D → `direct_mcp_executor`（纯工具调用直连）、B → `generic_chat_executor`（纯对话）、C → `generic_mcp_executor`（Agent+MCP 集成）、E → `generic_rag_executor`（检索+生成）
+> - C 类按 20 维（A8+B11+集成4）评分，B 类 11 维，A/D 按各自维度表，E 类按召回率/精准率/幻觉率/时效性/Groundedness 评分
 > - A-E 五类已全部支持
 >
 > ⚠️ **注意**：`configs/客服知识库.yaml`、`ability/能力目录_客服知识库.yaml`、`datasets/E_客服知识库.yaml` 均为**占位样例**，用于验证 E 类链路，**非真实系统**。真实接入请按被测知识库改写。
@@ -104,13 +104,15 @@ python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --
 | 执行器 | 用途 | 依赖 |
 |---|---|---|
 | `mock_executor.py` | Mock（测 Agent/Skill 决策，隔离副作用） | 无 |
-| `generic_mcp_executor.py` | 通用真实执行器（A/C/D：直连/对话，E2E，操作后实时校验） | `configs/` + `ability/` 配置 + `.env` token |
-| `generic_rag_executor.py` | RAG 执行器（E：检索+生成，按 E 类维度评分） | `configs/` + `ability/` 配置（内置 Mock 检索） |
+| `direct_mcp_executor.py` | A/D 类：纯工具调用（直连 MCP，直接校验参数/返回/边界） | `configs/` + `ability/` + `.env` |
+| `generic_chat_executor.py` | B 类：纯对话 Agent（不连 MCP，Mock 隔离工具） | 无（对话） |
+| `generic_mcp_executor.py` | C 类：Agent+MCP 集成（E2E，操作后实时校验） | `configs/` + `ability/` + `.env` |
+| `generic_rag_executor.py` | E 类：RAG（检索+生成，按 E 类维度评分） | `configs/` + `ability/`（内置 Mock 检索） |
 | `base.py` | 执行器基类（统一接口） | 无 |
 
 - `--executor mock/real/auto` 切换执行器模式
 - `auto`：有 token 或 RAG 系统则真实优先，否则纯 Mock（新系统自动降级）
-- 按需求类型自动选执行器：A/C/D → MCP，E → RAG
+- 按需求类型自动路由：A/D → direct MCP，B → chat，C → MCP+Agent，E → RAG
 
 ## 评分说明
 
@@ -119,6 +121,7 @@ python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --
 - **操作后实时校验**（E2E）：操作后调真实查询接口拉实时状态核对
 - **确定性语义校验**（`semantic_verify.py`）：能力目录「成功标准:语义」的期望自动解析为可校验项（字段/关键词），评分时自动评分（免费/稳定/可解释，via=rule）
 - **评分优先级**：规则判定 → 确定性语义校验 → 主观维度用 LLM-as-Judge（`--llm-judge`）；`--llm-detail` 让 LLM 输出详细评分理由（更耗 token）
+- **错误归因**（`attribution`）：每条失分标注「数据集问题 / AI 系统问题 / 环境问题 / 测试通过」，结合执行器真实 `biz_error` 判定，报告据此分组（开发看系统问题、测试修数据）
 
 ## 输出
 

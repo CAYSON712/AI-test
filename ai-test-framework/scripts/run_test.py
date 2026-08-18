@@ -120,6 +120,7 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                         case_fails.setdefault(uid, {})[k] = {
                             "score": v["score"],
                             "error_type": v.get("error_type", "other"),
+                            "attribution": v.get("attribution", "ai_system"),
                             "detail": (v.get("detail") or "")[:200],
                             "input": str(case.get("输入", ""))[:200],
                             "capability": case.get("能力", ""),
@@ -203,6 +204,11 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     for uid, dims_fail in case_fails.items():
         if not dims_fail:
             continue
+        # 归因汇总：统计该用例各维度的归因，取"主归因"（数量最多的非 test_pass 归因）
+        from collections import Counter as _C
+        att_counter = _C(d.get("attribution", "ai_system") for d in dims_fail.values()
+                         if d.get("attribution") != "test_pass")
+        primary_attribution = att_counter.most_common(1)[0][0] if att_counter else "ai_system"
         case_results.append({
             "用例ID": uid,
             "能力": next((c.get("能力", "") for c in cases if (c.get("用例ID") or "") == uid), ""),
@@ -210,8 +216,10 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
             "期望": next((c.get("期望", {}) for c in cases if (c.get("用例ID") or "") == uid), {}),
             "失败维度": list(dims_fail.keys()),
             "错误类型": sorted({d.get("error_type") for d in dims_fail.values()}),
+            "归因": primary_attribution,          # 主归因：dataset/ai_system/env/test_pass
+            "归因统计": dict(att_counter),         # 各归因数量分布
             "最差得分": min(d["score"] for d in dims_fail.values()),
-            "失分明细": dims_fail,   # {维度: {score,error_type,detail,...}}
+            "失分明细": dims_fail,   # {维度: {score,error_type,attribution,detail,...}}
         })
     # 按最差得分升序（最严重在前）
     case_results.sort(key=lambda x: x["最差得分"])

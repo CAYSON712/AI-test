@@ -157,6 +157,7 @@ class RubricJudger:
         for dim, rubric in dims.items():
             s, judgeable, via, detail = self._judge_single(
                 rubric, case, result, judge_text, judge, use_llm, llm_detail)
+            et = self._derive_error_type(dim, s, via, detail)
             scores[dim] = {
                 "score": s,
                 "label": score_to_label(s),
@@ -165,7 +166,10 @@ class RubricJudger:
                 "via": via,
                 "detail": detail,
                 # 结构化错误类型：score<3（未达标）时按 detail 归类，供"错误类型分布"统计
-                "error_type": self._derive_error_type(dim, s, via, detail),
+                "error_type": et,
+                # 错误归因升级：区分「数据集问题 / AI 系统问题 / 测试通过 / 环境问题」，
+                # 让报告能直接告诉用户"这个问题该提给谁"（测试修数据 vs 开发修系统）。
+                "attribution": self._derive_attribution(dim, s, via, detail, et, result),
             }
         return scores
 
@@ -203,6 +207,77 @@ class RubricJudger:
         if via == "default":
             return "judge_inconclusive"
         return "other"
+
+    # ---- 错误归因升级 ----
+    # 让报告区分三类失分该提给谁：
+    #   dataset   数据集问题 → 提给测试人员修数据/期望（不是 AI 系统问题）
+    #   ai_system AI 系统问题 → 提给开发（真做错了）
+    #   env       环境/前置问题 → 提给运维/环境（连接/ID解析/配置）
+    #   test_pass 测试通过（误报失分）→ 无需处理
+    # 判定优先级：先看是否测试通过，再看是否数据集/环境问题，其余为 AI 系统问题。
+    # 依据 detail（规则判定文本）里的关键线索，不用 LLM，零成本可解释。
+    @staticmethod
+    def _derive_attribution(dim, score, via, detail, error_type, result=None):
+        """根据单维度评分结果推导「归因」：这条失分该提给谁。
+
+        result 为执行器返回（可选），其 error/biz_error 常含真实业务信息
+        （如"商品ID列表不能为空"），比 detail 更准，用于识别数据集/前置问题。
+        """
+        d = (detail or "").lower()
+        et = error_type or ""
+        # 补充 result 的真实业务错误文本（便于识别 ID/实体/参数缺失类前置问题）
+        rtext = ""
+        if result is not None:
+            err = str(getattr(result, "error", "") or "")
+            out = getattr(result, "output_data", None)
+            biz = ""
+            if isinstance(out, dict):
+                biz = str(out.get("biz_error", "") or "")
+            elif isinstance(out, list):  # 兼容输出为 list 的执行器
+                biz = str(out) if out else ""
+            rtext = f"{err} {biz}"
+        d += " " + rtext.lower()
+        # 规则判不了 / 判定标准缺失 → 数据集期望没写清楚，属数据集问题
+        # 注意：judge_inconclusive 时 score 常为默认 3 分，但它是"无法判定"而非"真通过"，
+        #      必须优先于 score>=3 判断，否则会把"判不了"误标为测试通过。
+        if via == "default" or et == "judge_inconclusive":
+            return "dataset"
+        # 达标(score>=3) → 测试通过（非问题）
+        if score is not None and score >= 3:
+            return "test_pass"
+        # ---- 数据集问题（实体/期望/数据缺陷，非 AI 决策错误）----
+        # 操作后校验失败但 actual 是"实体不存在/ID 为空"等 → 数据集实体/参数问题
+        # 判定关键字：ID 缺失/为空/无法解析/实体不存在/找不到对象 → 前置数据问题
+        ds_kw = ("商品id", "id不能为空", "id为空", "列表不能为空", "未找到", "not_found",
+                 "无实体id", "id解析", "实体不存在", "无法解析", "id列表",
+                 "参数缺失", "缺少必填", "对象不存在", "商品不存在", "不存在或已删除")
+        env_kw = ("连接", "超时", "timeout", "token", "网络", "exception",
+                  "connect", "mcp调用失败", "无法连接")
+        # 先判数据集问题（ID/实体/参数缺失 → 前置数据缺陷，非 AI 决策错）
+        if any(k in d for k in ds_kw):
+            return "dataset"
+        # 再判环境问题（连接/超时/网络 → 运维）
+        if any(k in d for k in env_kw):
+            return "env"
+        # block_miss（该拦截没拦截）→ 安全缺陷，AI 系统问题
+        if et == "block_miss":
+            return "ai_system"
+        # tool_misuse（工具/意图错）→ 决策缺陷，AI 系统问题
+        if et == "tool_misuse":
+            return "ai_system"
+        # semantic_miss：输出不含期望关键词 → 先看是否期望本身含糊
+        if et == "semantic_miss":
+            if any(k in d for k in ("期望含糊", "期望多义", "无明确期望", "判定标准")):
+                return "dataset"
+            return "ai_system"
+        # db_verify_fail：能走到这里说明不是数据集/环境问题 → 真实数据不符，AI 操作未生效
+        if et == "db_verify_fail":
+            return "ai_system"
+        # biz_fail：非数据集/环境（上面已过滤）→ 业务真失败，AI 系统问题
+        if et == "biz_fail":
+            return "ai_system"
+        # 其余未识别 → 默认按 AI 系统问题（保守），但标注待人工复核
+        return "ai_system"
 
     def _get_dimensions(self, req_type):
         """取某个需求类型的维度 Rubric。

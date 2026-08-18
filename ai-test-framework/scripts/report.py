@@ -47,6 +47,17 @@ def generate_report(result_path, out_path):
         "other":               {"name": "其他失分", "fix": "人工查看该用例失分原因"},
         "pass":                {"name": "达标", "fix": "-"},
     }
+    # 错误归因升级：区分失分「该提给谁」
+    #   dataset   数据集问题 → 提给测试修数据/期望（不是 AI 系统问题）
+    #   ai_system AI 系统问题 → 提给开发
+    #   env       环境/前置问题 → 提给运维
+    #   test_pass 测试通过（误报）→ 无需处理
+    ATTRIBUTIONS = {
+        "dataset":    {"name": "数据集问题", "to": "提给测试人员修数据/期望，非 AI 系统问题", "icon": "📊"},
+        "ai_system":  {"name": "AI 系统问题", "to": "提给开发（真做错了）", "icon": "🔧"},
+        "env":        {"name": "环境/前置问题", "to": "提给运维（连接/ID解析/配置）", "icon": "🌐"},
+        "test_pass":  {"name": "测试通过（误报）", "to": "无需处理", "icon": "✅"},
+    }
 
     lines = []
     lines.append(f"# AI 测试评估报告\n")
@@ -112,47 +123,103 @@ def generate_report(result_path, out_path):
         lines.append("- 无失败用例")
 
     # 4.6 错误类型分布（业界标准：通过率不足以衡量，需看错误类型分布）
-    #     case_results 里每条失分维度都有 error_type，聚合成"哪类问题最多"。
+    #     case_results 里每条失分维度都有 error_type + attribution，聚合成"哪类问题最多"。
     case_results = result.get("case_results", [])
     if case_results:
         from collections import Counter
         type_counter = Counter()
+        att_counter = Counter()
+        # 关联错误类型 → 归因（一个错误类型可能对应多个归因，用失分明细逐条统计）
+        et_att_map = {}   # error_type -> Counter(attribution)
         for cr in case_results:
-            for et in cr.get("错误类型", []):
+            for dim_fail, fdet in (cr.get("失分明细") or {}).items():
+                if not isinstance(fdet, dict):
+                    continue
+                et = fdet.get("error_type", "other")
+                att = fdet.get("attribution", "ai_system")
                 type_counter[et] += 1
+                att_counter[att] += 1
+                et_att_map.setdefault(et, Counter())[att] += 1
         # 含 pass 不算问题，剔除
         type_counter.pop("pass", None)
-        lines.append(f"\n## 错误类型分布（{sum(type_counter.values())} 处失分）\n")
-        lines.append("| 错误类型 | 失分处数 | 占比 | 建议修复 |")
-        lines.append("|----------|----------|------|----------|")
+        att_counter.pop("test_pass", None)
+        et_att_map.pop("pass", None)
+
+        # ★ 问题归属汇总（错误归因升级核心）：三类问题各占多少、该提给谁
+        lines.append(f"\n## 问题归属汇总（{sum(att_counter.values())} 处失分 → 该提给谁？）\n")
+        lines.append("> 错误归因升级：每条失分都标注「该提给谁」，报告不再把数据问题当系统问题误导开发。")
+        total_att = sum(att_counter.values()) or 1
+        for att in ("ai_system", "dataset", "env"):
+            cnt = att_counter.get(att, 0)
+            meta = ATTRIBUTIONS.get(att, ATTRIBUTIONS["ai_system"])
+            lines.append(f"- {meta['icon']} **{meta['name']}**：{cnt} 处（{cnt/total_att:.0%}）→ **{meta['to']}**")
+        # 优先级建议：AI 系统问题优先给开发，数据集问题优先给测试
+        ai_cnt = att_counter.get("ai_system", 0)
+        ds_cnt = att_counter.get("dataset", 0)
+        lines.append("")
+        if ai_cnt > 0:
+            lines.append(f"> **给开发**：AI 系统问题 {ai_cnt} 处，见下方「AI 系统问题清单」，是核心待修复项。")
+        if ds_cnt > 0:
+            lines.append(f"> **给测试**：数据集问题 {ds_cnt} 处（实体/期望/数据缺陷），修数据集后重跑，**不是 AI 系统问题**。")
+
+        lines.append(f"\n### 错误类型分布（{sum(type_counter.values())} 处失分）\n")
+        lines.append("| 错误类型 | 失分处数 | 占比 | 主要归因 | 建议修复 |")
+        lines.append("|----------|----------|------|----------|----------|")
         total_fail = sum(type_counter.values()) or 1
         for et, cnt in type_counter.most_common():
             meta = ERROR_TYPES.get(et, ERROR_TYPES["other"])
-            lines.append(f"| {meta['name']} | {cnt} | {cnt/total_fail:.0%} | {meta['fix']} |")
+            # 该错误类型的主要归因
+            att_c = et_att_map.get(et, Counter())
+            main_att = att_c.most_common(1)[0][0] if att_c else "ai_system"
+            att_name = ATTRIBUTIONS.get(main_att, {}).get("name", "AI 系统问题")
+            lines.append(f"| {meta['name']} | {cnt} | {cnt/total_fail:.0%} | {att_name} | {meta['fix']} |")
         if not type_counter:
             lines.append("- 无失分用例")
         lines.append("")
         lines.append("> **给开发的关键信息**：排名靠前的错误类型即为最需优先修复的系统性问题。")
 
-    # 4.7 失分用例明细（可提给开发的"问题清单"，含输入/期望/失分维度）
+    # 4.7 失分用例明细（错误归因升级：按「归因」分组——AI 系统问题给开发、数据集问题给测试）
     if case_results:
-        lines.append(f"\n## 失分用例明细（{len(case_results)} 条，按严重程度降序）\n")
-        for cr in case_results[:20]:
-            uid = cr.get("用例ID", "?")
-            cap = cr.get("能力", "")
-            inp = cr.get("输入", "")[:60]
-            ets = "、".join(ERROR_TYPES.get(e, ERROR_TYPES["other"])["name"] for e in cr.get("错误类型", []))
-            lines.append(f"- **{uid}** [{cap}] 最差分 {cr.get('最差得分', '?')} | 错误: {ets}")
-            lines.append(f"  输入: {inp}")
-            # 失分明细：列出各维度失分原因
-            for dim_fail, fdet in (cr.get("失分明细") or {}).items():
-                if isinstance(fdet, dict):
-                    lines.append(f"    - {dim_fail}: {fdet.get('score', '?')} 分 "
-                                 f"({ERROR_TYPES.get(fdet.get('error_type','other'), ERROR_TYPES['other'])['name']}) "
-                                 f"— {fdet.get('detail','')[:120]}")
-        if len(case_results) > 20:
-            lines.append(f"- … 等共 {len(case_results)} 条失分用例，完整清单见结果 YAML `case_results`")
+        def _is(att): return [cr for cr in case_results if cr.get("归因", "ai_system") == att]
+        ai_cases = _is("ai_system")
+        ds_cases = _is("dataset")
+        env_cases = _is("env")
+
+        # 分组展示：AI 系统问题（核心待修）优先
+        for att, title in (("ai_system", f"🔧 AI 系统问题（{len(ai_cases)} 条 → 给开发）"),
+                           ("dataset", f"📊 数据集问题（{len(ds_cases)} 条 → 给测试，非 AI 问题）"),
+                           ("env", f"🌐 环境问题（{len(env_cases)} 条 → 给运维）")):
+            group = _is(att)
+            if not group:
+                continue
+            lines.append(f"\n### {title}\n")
+            for cr in group[:10]:
+                uid = cr.get("用例ID", "?")
+                cap = cr.get("能力", "")
+                inp = str(cr.get("输入", ""))[:50]
+                att_stats = cr.get("归因统计", {})
+                # 主要错误类型
+                ets = "、".join(ERROR_TYPES.get(e, ERROR_TYPES["other"])["name"]
+                                for e in cr.get("错误类型", [])[:3])
+                lines.append(f"- **{uid}** [{cap}] 最差分 {cr.get('最差得分', '?')} | {ets}")
+                lines.append(f"  输入: {inp}")
+                # 只列该归因下最典型的一条失分维度原因（避免 20 维刷屏）
+                shown = False
+                for dim_fail, fdet in (cr.get("失分明细") or {}).items():
+                    if not isinstance(fdet, dict) or fdet.get("attribution") != att:
+                        continue
+                    lines.append(f"    - [{dim_fail}] {fdet.get('detail','')[:120]}")
+                    shown = True
+                    break
+                if not shown:  # 兜底：没有该归因维度的细节，列最差分维度
+                    for dim_fail, fdet in (cr.get("失分明细") or {}).items():
+                        if isinstance(fdet, dict):
+                            lines.append(f"    - [{dim_fail}] {fdet.get('detail','')[:120]}")
+                            break
+            if len(group) > 10:
+                lines.append(f"- … 等共 {len(group)} 条，完整清单见结果 YAML `case_results`")
         lines.append("")
+        lines.append("> **使用说明**：给开发看「AI 系统问题」，给测试看「数据集问题」，避免把数据缺陷当系统 bug。")
 
     # 4.5 trace 链路（上报过才有）：trace_id 挂在用例上
     case_traces = result.get("case_traces", result.get("traces", []))
