@@ -189,28 +189,58 @@ def _parse_llm_call(text):
 
 
 def _extract_entity(user_input, capability):
-    """从用户自然语言里粗提取实体名（去掉常见动词/数量词）。
+    """从用户自然语言里粗提取实体名（去掉常见动词/数量词/收尾干扰词）。
+
     用于操作类工具缺 ID 时按名查 ID。通用实现：不同系统可覆盖提取逻辑。
+
+    修复：此前取"最后一个片段"，但商品名常是中间词，收尾往往是
+     "信息/详情/价格/多少钱"等干扰词，导致提取到干扰词而非商品名
+     （如"查 Curry Fish Fillet 的信息"→ 取到"信息"）。改为识别并去掉
+     收尾干扰词，取最可能是实体名的片段。
     """
     if not user_input:
         return ""
     quoted = re.findall(r"['\"「『]([^'\"」』]+)['\"」』]", user_input)
     if quoted:
         return quoted[0].strip()
-    # 通用停止词（操作类动词 + 数量词）
+
+    # 通用停止词（操作类动词 + 数量词），按长度降序替换，避免短词破坏长词/商品名
     stop_words = [
-        "把", "将", "给", "对", "帮", "我", "的", "改成", "改为", "变成",
-        "下架", "上架", "删除", "删掉", "移除", "价格", "调整到", "改成",
-        "新增", "添加", "元", "块", "修改", "改名", "英文名", "查询", "多少",
-        "所有", "全部", "重新", "店内", "菜单", "里", "的", "请", "麻烦",
-        "请问", "一下", "了", "啊", "呢",
+        # 多字词（先替换）
+        "商品名称为", "商品名称", "把那个", "调整到", "批量删除", "批量修改",
+        "批量新增", "批量上架", "批量下架", "删除所有", "查询一下", "查一下",
+        "请问一下", "告诉我", "查看一下", "改成", "改为", "变成", "下架", "上架",
+        "删除", "删掉", "移除", "修改", "改名", "新增", "添加", "查询", "查看",
+        "英文名", "多少", "所有", "全部", "重新", "店内", "菜单", "麻烦", "请问",
+        "一下", "商品", "名称",
+        # 单字词（最后替换）
+        "把", "将", "给", "对", "帮", "我", "的", "里", "请", "查",
+        "了", "啊", "呢", "下", "上", "为", "以",
+    ]
+    stop_words.sort(key=len, reverse=True)
+    # 收尾干扰词：出现在实体名之后、不应作为实体的一部分（若实体是末尾则剔除）
+    tail_words = [
+        "信息", "详情", "资料", "价格", "多少钱", "售价", "是什么", "怎么样",
+        "状态", "信息吗", "一下", "呢", "？", "?",
     ]
     for token in stop_words:
         user_input = user_input.replace(token, " ")
-    parts = [p.strip() for p in re.split(r"[\s,，。]+", user_input) if p.strip()]
-    candidates = [p for p in parts if len(p) >= 2]
-    candidates = [p for p in candidates if not re.fullmatch(r"\d+(\.\d+)?", p)]
-    return candidates[-1] if candidates else ""
+    # 先剔除收尾干扰词（只剔末尾出现的）
+    lowered = user_input.lower()
+    for tw in tail_words:
+        if lowered.rstrip().endswith(tw):
+            user_input = user_input[: -len(tw)]
+    # 去停止词后剩余内容整体作为实体名（保留多词商品名，如 "Curry Fish Fillet"）
+    # 注意：英文商品名与中文操作词混排，去掉停止词后剩下的整段即实体名。
+    remaining = re.sub(r"[\s,，。]+", " ", user_input).strip()
+    if not remaining:
+        return ""
+    # 去掉孤立标点/纯数字残留
+    remaining = re.sub(r"^[\s&]+|[\s&]+$", "", remaining)
+    # 若是"批量删除 A、B、C"这类多实体，取第一段（框架按名反查仅支持单实体）
+    if "、" in remaining or "," in remaining or "，" in remaining:
+        remaining = re.split(r"[、,，]", remaining)[0].strip()
+    return remaining
 
 
 class GenericMcpExecutor(BaseExecutor):
@@ -222,8 +252,23 @@ class GenericMcpExecutor(BaseExecutor):
     def __init__(self, system):
         self.sys = _SysConfig(system)
         self.capabilities = self.sys.capabilities
+        import os as _os
         from llm_client import LLMClient
-        self.llm = LLMClient()
+        # 支持用被测系统(AI POS)的 LLM 做决策：
+        #   若 .env 配置了 POS_LLM_MODEL / POS_LLM_API_BASE / POS_LLM_API_KEY，
+        #   决策层用被测系统的模型；否则回退全局 LLM_MODEL（默认 metis-coder）。
+        self.llm = LLMClient(
+            api_base=_os.getenv("POS_LLM_API_BASE") or None,
+            api_key=_os.getenv("POS_LLM_API_KEY") or None,
+            model=_os.getenv("POS_LLM_MODEL") or None,
+        )
+        # 可配置系统提示词：.env 配置 POS_SYSTEM_PROMPT(文件路径) 时用它（被测系统的真实 prompt），
+        # 否则用框架默认。prompt 文件第一行可作为占位；支持 {tools}/{capability} 模板。
+        self._system_prompt = ""
+        pos_prompt_path = _os.getenv("POS_SYSTEM_PROMPT", "")
+        if pos_prompt_path and _os.path.exists(pos_prompt_path):
+            with open(pos_prompt_path, encoding="utf-8") as _f:
+                self._system_prompt = _f.read().strip()
 
     # ---- 连接上下文 ----
     def _client_headers(self):
@@ -465,10 +510,18 @@ class GenericMcpExecutor(BaseExecutor):
     def _llm_parse(self, user_input, capability):
         hint_tool = self.sys.cap_tool.get(capability, "")
         hint_line = f"必须使用工具：{hint_tool}" if hint_tool else ""
-        prompt = f"""
+        tools_txt = self._build_tools_prompt()
+        # 若配置了被测系统(AI POS)的真实 system prompt，则用它的模板（{tools}/{capability}/{merchant_id} 占位替换）
+        if self._system_prompt:
+            prompt = self._system_prompt.format(
+                tools=tools_txt, capability=capability,
+                merchant_id=self.sys.merchant_id or "",
+            ) + f"\n\n用户请求：{user_input}"
+        else:
+            prompt = f"""
 你是 {self.sys.system} 的意图解析引擎。请把用户的自然语言请求，解析为对真实 MCP 工具的一次调用。
 
-{self._build_tools_prompt()}
+{tools_txt}
 
 当前任务类型（能力）：{capability}
 {hint_line}
@@ -488,6 +541,9 @@ class GenericMcpExecutor(BaseExecutor):
 - 涉及店铺操作但用户未指明店铺时，toolParams 用 merchantIds: ["{self.sys.merchant_id}"]
 - 上架/下架等状态用工具描述里定义的枚举
 - 若是删除操作，务必先想清楚是否合理，删除不可恢复
+- 重要：若操作/查询目标是"按商品名"，而目标工具的参数需要 productId（真实商品ID），
+  你不能直接留空或写 0——请先用 search/search_products_by_name 类工具查出该商品名的真实
+  productId 填入；若拿不到，在 toolParams 里保留商品名字段并说明，不要传空数组。
 """
         t0 = time.monotonic()
         try:
