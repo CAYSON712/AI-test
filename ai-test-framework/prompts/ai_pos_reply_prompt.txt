@@ -1,0 +1,71 @@
+Analyze the following API data and output a natural language introduction followed by a raw Markdown table.
+
+## Output Structure — MANDATORY
+1. A **one-sentence** description of what the data represents (keep it under 40 words).
+2. **One blank line.**
+3. **A Markdown table.** This is required regardless of data shape or row count. Your entire response must end with a pipe-delimited table.
+
+**FORBIDDEN formats（禁止使用）:**
+- ❌ Key-value lists like `- name: xxx`
+- ❌ JSON dumps or code blocks
+- ❌ Bullet-point summaries or paragraph descriptions of each row
+- ✅ ONLY: 1 sentence + blank line + Markdown table
+
+## Table Rules
+
+### Data Shape Detection — DO FIRST
+Before building any table, check the top-level data shape:
+
+**Case A: Array of objects** → standard table, each object is a row, keys become column headers.
+  `[{name:"A", age:1}, {name:"B", age:2}]` → 2-row table with Name, Age columns.
+
+**Case B: Single object (not in an array)** → 2-column Field/Value table.
+  `{name:"X", type:"bot", count:5}` →
+  | Field | Value |
+  |---|---|
+  | name | X |
+  | type | bot |
+  | count | 5 |
+
+**Case C: Data wrapped in a wrapper object** (e.g. `{total:10, items:[...]}`) → extract the array from the obvious key (items/list/data/results/records) and use Case A. If there are summary fields like total/count, include them in the description sentence, NOT in the table.
+
+**Fallback rule:** If you cannot map the data into any of these shapes, still output a 2-column Field/Value table listing every top-level key. Never give up and output raw text.
+
+### Column Selection
+- Include all meaningful columns from the data. Only skip columns that are purely internal (IDs, hashes, raw configs).
+- **EXCLUDE** any column whose key contains "id", "ID", "uuid", "guid", or "_id" (case-insensitive), even inside nested objects.
+
+### Flatten Nested Objects
+- For each cell value that is a **nested object** (not an array), flatten it. Use the parent key as a prefix to avoid name collisions. Example:
+  - `{"space": {"name": "QA Workspace"}}` → column header: `space.name`, cell value: `QA Workspace`
+  - `{"application": {"name": "MyApp"}}` → column header: `application.name`, cell value: `MyApp`
+- NEVER output a raw JSON object in a table cell. Always extract the value.
+
+### Handling Arrays
+- If a cell value is an **array of objects** where each item has a `name` field, extract all names into a comma-separated list. If there are many items, list the first 4 then append `等N项`.
+  - `{"members": [{"name": "Alice"}, {"name": "Bob"}, {"name": "Carol"}]}` → cell value: `Alice, Bob, Carol`
+  - More than 4 → `Alice, Bob, Carol, Dave 等8项`
+- If the objects don't have a `name` field, show the count: `3 items`.
+- If a cell value is an **array of strings**, display all items as a comma-separated list. Truncate the whole cell at 80 characters and append `…`.
+  - `["urgent", "backend", "frontend"]` → cell value: `urgent, backend, frontend`
+- NEVER output raw JSON arrays in a table cell.
+
+### Value Formatting
+- **NULL / empty / missing**: replace with `-`
+- **Long text over 50 characters**: truncate to the first 47 characters and append `…`
+- **Boolean**: display as `true` / `false`
+
+### Table Output
+- Use standard Markdown pipe syntax: `| Header | Header |`
+- The separator row must use at least 3 dashes: `|---|---|`
+- Each cell must fit on a single line — no line breaks inside cells.
+- DO NOT wrap the table in a code block. Output raw table text directly.
+- Ensure every row has the exact same number of columns as the header.
+- **Every response must produce a table. Even a single-row result gets a table. No exceptions.**
+
+### Self-Check (before final output)
+Before you respond, verify:
+1. Does my output contain `|` pipe characters forming at least 2 columns? → If not, DELETE and rebuild.
+2. Is there any line break inside a table cell? → If so, fix it.
+3. Did I accidentally output a key-value list or bullet points? → Replace with a table.
+4. Does every data row have the same number of `|` separators as the header? → Fix missing columns.
