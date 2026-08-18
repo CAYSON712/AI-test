@@ -511,14 +511,10 @@ class GenericMcpExecutor(BaseExecutor):
         hint_tool = self.sys.cap_tool.get(capability, "")
         hint_line = f"必须使用工具：{hint_tool}" if hint_tool else ""
         tools_txt = self._build_tools_prompt()
-        # 若配置了被测系统(AI POS)的真实 system prompt，则用它的模板（{tools}/{capability}/{merchant_id} 占位替换）
-        if self._system_prompt:
-            prompt = self._system_prompt.format(
-                tools=tools_txt, capability=capability,
-                merchant_id=self.sys.merchant_id or "",
-            ) + f"\n\n用户请求：{user_input}"
-        else:
-            prompt = f"""
+        # 注意：意图解析始终用框架的 prompt（输出 JSON 工具调用）。
+        # 不复用 _system_prompt——它是被测系统(AI POS)的"回复生成/转表格"prompt，
+        # 若用于意图解析会让 LLM 输出表格而非 JSON，破坏工具调用。
+        prompt = f"""
 你是 {self.sys.system} 的意图解析引擎。请把用户的自然语言请求，解析为对真实 MCP 工具的一次调用。
 
 {tools_txt}
@@ -554,7 +550,19 @@ class GenericMcpExecutor(BaseExecutor):
             return {"tool": hint_tool, "toolParams": {}}, round((time.monotonic() - t0) * 1000, 1)
 
     def _gen_reply(self, capability, user_input, tool_name, mcp_result):
-        prompt = f"""
+        t0 = time.monotonic()
+        try:
+            # 若配置了被测系统(AI POS)的真实回复生成 prompt（POS_SYSTEM_PROMPT），
+            # 则用它把 MCP/API 数据整理成 AI POS 风格的回复（如 Markdown 表格）。
+            # 否则用框架默认的一句话中文回复。
+            if self._system_prompt:
+                prompt = (
+                    self._system_prompt
+                    + f"\n\n工具：{tool_name}\n能力：{capability}\n用户请求：{user_input}\nAPI 数据：\n{mcp_result[:2000]}"
+                )
+                text = self.llm.chat_text(prompt)
+            else:
+                prompt = f"""
 你是 {self.sys.system} 的回复生成器。基于真实 MCP 工具返回结果，生成一句面向用户的中文回复。
 
 工具：{tool_name}
@@ -565,9 +573,7 @@ MCP 返回结果：
 
 请生成简洁的中文回复（一句话），如实反映操作结果。不要编造不存在的成功/失败信息。
 """
-        t0 = time.monotonic()
-        try:
-            text = self.llm.chat_text(prompt)
+                text = self.llm.chat_text(prompt)
             return text, round((time.monotonic() - t0) * 1000, 1)
         except Exception:
             return f"已处理请求（工具:{tool_name}），结果见 MCP 返回。", round((time.monotonic() - t0) * 1000, 1)
