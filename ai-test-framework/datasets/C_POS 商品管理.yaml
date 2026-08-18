@@ -33,10 +33,11 @@
     output: 询问具体是哪个商品、做什么操作
     block: false
     semantic:
-      fields:
+      contains:
       - 名称
       - 价格
       - 状态
+      any_of: true
   verify: null
   标签:
   - 模糊
@@ -150,10 +151,11 @@
     output: 返回 Pork Chop Cutlet w. Curry Sauce 信息
     block: false
     semantic:
-      fields:
+      contains:
       - 名称
       - 价格
       - 状态
+      any_of: true
   verify: null
   标签:
   - 正常
@@ -276,10 +278,11 @@
     output: 返回 Pan Fried Rice Flour Roll 价格 6.95
     block: false
     semantic:
-      fields:
+      contains:
       - 名称
       - 价格
       - 状态
+      any_of: true
   verify:
     field: price
     expect: 6.95
@@ -620,10 +623,11 @@
     output: 询问具体是哪个商品、做什么操作
     block: false
     semantic:
-      fields:
+      contains:
       - 名称
       - 价格
       - 状态
+      any_of: true
   verify: null
   标签:
   - 表达改写
@@ -835,10 +839,11 @@
     output: 返回 Pan Fried Rice Flour Roll 价格 6.95
     block: false
     semantic:
-      fields:
+      contains:
       - 名称
       - 价格
       - 状态
+      any_of: true
   verify:
     field: price
     expect: 6.95
@@ -904,10 +909,11 @@
     output: 返回 Pan Fried Rice Flour Roll 价格 6.95
     block: false
     semantic:
-      fields:
+      contains:
       - 名称
       - 价格
       - 状态
+      any_of: true
   verify:
     field: price
     expect: 6.95

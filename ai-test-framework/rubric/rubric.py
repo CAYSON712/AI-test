@@ -325,11 +325,31 @@ class RubricJudger:
         if dim in ("返回处理", "异常与容错", "非确定性与稳定性"):
             if getattr(result, "status", "") != "success" or getattr(result, "error", None):
                 return (1 if dim == "返回处理" else 2), True, "执行失败/报错"
-        # 意图识别 / 工具选择：用执行器返回的 tool_correct（能力目录期望工具 vs LLM原始选择）
-        if dim in tool_dims:
-            if isinstance(output, dict) and "tool_correct" in output:
-                return (5 if output["tool_correct"] else 2), True, (
-                    "工具选择正确" if output["tool_correct"] else "工具选择错误")
+        # 决策维度：各维度用「执行器区分产出的判定」，不再全用 tool_correct 一刀切。
+        # 手册要求各维度独立测一层：
+        #   - 意图识别 / 意图到工具映射：intent_correct（LLM 解析的意图 vs 期望意图）
+        #   - 工具调用 / 工具选择准确率：tool_correct（选对工具）
+        #   - 规划与推理：intent_correct 且 tool_correct 都对才算对
+        #   - 参数生成 / 参数端到端 / 参数校验：param_correct（参数与期望一致）
+        if dim in tool_dims and isinstance(output, dict):
+            if dim in ("意图识别", "意图到工具映射准确率"):
+                if "intent_correct" in output and output["intent_correct"] is not None:
+                    return (5 if output["intent_correct"] else 2), True, (
+                        "意图识别正确" if output["intent_correct"] else "意图识别错误")
+            elif dim == "规划与推理":
+                if "intent_correct" in output and "tool_correct" in output:
+                    both = bool(output.get("intent_correct")) and bool(output.get("tool_correct"))
+                    return (5 if both else 2), True, (
+                        "规划正确" if both else "规划错误")
+            else:  # 工具调用 / 工具选择准确率 / 工具选择与调用
+                if "tool_correct" in output:
+                    return (5 if output["tool_correct"] else 2), True, (
+                        "工具选择正确" if output["tool_correct"] else "工具选择错误")
+        # 参数类维度：用 param_correct（执行器对比期望参数）
+        if dim in ("参数生成", "参数端到端准确率", "参数校验") and isinstance(output, dict):
+            if "param_correct" in output and output["param_correct"] is not None:
+                return (5 if output["param_correct"] else 2), True, (
+                    "参数正确" if output["param_correct"] else "参数生成错误")
         # 语义校验（通用确定性校验器）：仅对「输出内容类」维度生效，且仅当用例
         # 期望里声明了「成功标准:语义」解析出的确定性校验项时做自动评分。
         # 修复：此前对所有维度一刀切复用同一 semantic 期望，导致有语义期望的用例

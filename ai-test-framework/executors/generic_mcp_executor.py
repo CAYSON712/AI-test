@@ -177,6 +177,7 @@ def _parse_llm_call(text):
     except Exception:
         tool = re.search(r'"tool"\s*:\s*"([^"]+)"', text)
         params = re.search(r'"toolParams"\s*:\s*(\{.*?\})', text, re.DOTALL)
+        intent = re.search(r'"intent"\s*:\s*"([^"]+)"', text)
         if tool:
             params_obj = {}
             if params:
@@ -184,7 +185,8 @@ def _parse_llm_call(text):
                     params_obj = json.loads(params.group(1))
                 except Exception:
                     params_obj = {}
-            return {"tool": tool.group(1), "toolParams": params_obj}
+            return {"tool": tool.group(1), "toolParams": params_obj,
+                    "intent": intent.group(1) if intent else ""}
         raise ValueError(f"无法解析 LLM 工具调用: {text[:300]}")
 
 
@@ -307,27 +309,58 @@ class GenericMcpExecutor(BaseExecutor):
         steps = []
         cap_tool = self.sys.cap_tool.get(capability, "")
 
-        # 1. LLM 意图理解：记录 LLM 原始选择的工具（供评分判断工具选择/意图识别）
+        # 1. LLM 意图理解：记录 LLM 原始选择的工具 + 解析的意图（供评分区分维度）
         llm_tool = ""
+        llm_intent = ""
         llm_intent_latency = 0.0
         try:
             intent_raw, llm_intent_latency = self._llm_parse(user_input, capability)
             llm_tool = intent_raw.get("tool") or cap_tool
+            llm_intent = intent_raw.get("intent") or ""
             tool_params = intent_raw.get("toolParams") or {}
         except Exception:
             llm_tool = cap_tool
             tool_params = {}
-        # LLM 原始选择的工具是否与能力目录期望工具一致（用于工具选择/意图评分）
+        # 工具选择正确率：LLM 原始选择的工具是否与能力目录期望工具一致
         tool_correct = bool(cap_tool) and llm_tool == cap_tool
+        # 意图识别正确率：LLM 解析出的意图 vs 用例期望意图（能力名/期望intent）
+        exp = expected if isinstance(expected, dict) else {}
+        exp_intent = exp.get("intent") or capability or ""
+        intent_correct = None  # None=无法判定（LLM 未输出意图）
+        if llm_intent:
+            # 期望意图(能力名/中文)与 LLM 意图做宽松匹配：任一关键片段命中即算识别对
+            _ei = str(exp_intent).lower().replace(" ", "")
+            _li = llm_intent.lower().replace(" ", "")
+            intent_correct = (_ei in _li) or (_li in _ei) or (_ei == _li)
+        # 参数生成/端到端正确率：实际 tool_params vs 用例期望 params（含值/字段）
+        param_correct = None
+        exp_params = exp.get("params") if isinstance(exp, dict) else None
+        if isinstance(exp_params, dict) and exp_params:
+            _ok = True
+            for k, v in exp_params.items():
+                if k in tool_params:
+                    # 值匹配：期望值可能因 ID 解析而变，数值宽松、字符串精确
+                    if isinstance(v, list):
+                        if not isinstance(tool_params[k], list) or not any(
+                            str(x) in [str(y) for y in tool_params[k]] for x in v):
+                            _ok = False
+                    elif str(v) not in str(tool_params[k]):
+                        _ok = False
+                else:
+                    _ok = False  # 期望参数字段缺失
+            param_correct = _ok
         # 工具纠正：能力目录有明确工具时，强制用它（避免 LLM 选成查询类）
         # 注意：纠正只影响实际调用，原始选择 llm_tool 保留给评分
         tool_name = cap_tool if cap_tool else llm_tool
         steps.append({
             "name": "LLM-意图理解", "type": "GENERATION",
             "input": user_input,
-            "output": json.dumps({"tool": llm_tool, "toolParams": tool_params}, ensure_ascii=False),
+            "output": json.dumps({"intent": llm_intent, "tool": llm_tool,
+                                  "toolParams": tool_params}, ensure_ascii=False),
             "metadata": {"capability": capability, "system": self.sys.system,
                          "expected_tool": cap_tool, "tool_correct": tool_correct,
+                         "intent_correct": intent_correct, "param_correct": param_correct,
+                         "expected_intent": exp_intent, "llm_intent": llm_intent,
                          "latency_ms": llm_intent_latency},
         })
         if not tool_name:
@@ -391,7 +424,9 @@ class GenericMcpExecutor(BaseExecutor):
                     "error": f"业务拒绝/异常: {biz_error}", "biz_error": biz_error,
                     "block": True, "level": biz_level, "steps": steps,
                     "llm_tool": llm_tool, "tool_correct": tool_correct,
-                    "expected_tool": cap_tool}
+                    "intent_correct": intent_correct, "param_correct": param_correct,
+                    "llm_intent": llm_intent,
+                    "expected_tool": cap_tool, "expected_intent": exp_intent}
 
         # 4. 操作后实时校验
         verify = None
@@ -421,7 +456,9 @@ class GenericMcpExecutor(BaseExecutor):
         return {"tool": tool_name, "result": text, "params": tool_params,
                 "reply": reply, "verify": verify, "steps": steps,
                 "llm_tool": llm_tool, "tool_correct": tool_correct,
-                "expected_tool": cap_tool}
+                "intent_correct": intent_correct, "param_correct": param_correct,
+                "llm_intent": llm_intent,
+                "expected_tool": cap_tool, "expected_intent": exp_intent}
 
     # ---- 操作后校验 ----
     async def _verify_after(self, capability, tool_name, tool_params):
@@ -525,6 +562,7 @@ class GenericMcpExecutor(BaseExecutor):
 
 请解析以下用户请求，输出 JSON（不要其他文字）：
 {{
+  "intent": "一句话概括用户意图",
   "tool": "工具名",
   "toolParams": {{ 工具参数 }}
 }}
@@ -532,6 +570,7 @@ class GenericMcpExecutor(BaseExecutor):
 用户请求：{user_input}
 
 注意：
+- "intent" 必须用简洁中文概括用户真实意图（如：查询商品、删除商品、修改价格、越权操作、指令注入等）
 - 严格优先使用上面"必须使用工具"指定的工具（若有），不要用查询类工具替代操作类工具
 - 参数名必须用列表里定义的字段名
 - 涉及店铺操作但用户未指明店铺时，toolParams 用 merchantIds: ["{self.sys.merchant_id}"]

@@ -491,9 +491,11 @@ def finalize(cases, req_type):
     for i, c in enumerate(uniq, 1):
         c["用例ID"] = f"{req_type}-{c.get('层', 'L1')}-{i:03d}"
         _annotate_sample_extra(c)
-        # B 类纯对话：semantic.fields（字段结构校验）不适用（返回的是文本），
-        # 转成 contains（关键词校验）——回复里应提到这些字段名即可判对。
-        if req_type == "B":
+        # B/C 类返回的是 AI 生成的「文本/表格」回复（非 JSON 结构）：
+        # semantic.fields（JSON 字段结构校验）不适用，转成 contains（关键词校验）
+        # ——回复里提到这些字段名/关键词即判对，避免查询类用例因"非 JSON"全判失败。
+        # A/D 类返回结构化 dict，保留 fields 校验。
+        if req_type in ("B", "C"):
             _b_chat_semantic_to_contains(c)
     return uniq
 
