@@ -258,7 +258,7 @@ def get_trace(trace_id: str):
     _synthetic = (_total <= 0) or (not _has_dur)
     if _synthetic:
         _base, _total = _synthesize_timeline(tree)
-        return {
+    return {
         "trace": dict(trace),
         "tree": tree,
         "scores": scores,
