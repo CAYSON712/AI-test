@@ -15,8 +15,24 @@
   token_env: "POS_MCP_TOKEN"     # .env 里存 token 的变量名
   company_id_env: "POS_MCP_COMPANY_ID"   # 可选：请求头 CompanyId
   merchant_id_env: "POS_MERCHANT_ID"     # 可选：默认店铺
+  llm_base_url_env: "POS_LLM_API_BASE"   # LLM 决策层环境变量名（可覆盖 executor 的通用默认）
+  llm_api_key_env: "POS_LLM_API_KEY"
+  llm_model_env: "POS_LLM_MODEL"
+  system_prompt_env: "POS_SYSTEM_PROMPT"
   请求头: {CompanyId: "{{company_id}}"}
   auth_header: "Authorization: Bearer {{token}}"
+
+# ---- 通用命名（可覆盖字段；新系统复制时改成自己的字段名/工具名即可）----
+# 这些字段让 generic_mcp_executor 的业务命名可被配置覆盖，不再写死 POS。
+# 未配置时走 executor 内置默认（与下面示例一致，保持 POS 配置兼容）。
+公司ID请求头: "CompanyId"                     # 请求头携带公司ID的字段名
+默认上下文参数名: "merchantIds"               # 默认上下文参数名（复数，批量操作）
+实体ID参数名: "productIds"                    # 实体ID参数名（复数，批量操作）
+实体名参数名: "productName"                   # 按名搜索时传的实体名参数
+按名搜索工具: [search_products_by_name]       # 「实体名→ID」解析工具白名单
+需ID解析的工具: [update_products_by_ids, delete_products_by_ids,
+                 query_products_by_ids, query_product_detail_by_id]
+连接演示工具: "query_merchants"               # _demo_connect 验证连接用工具
 
 # ---- MCP 工具 schema（给 LLM 做工具选择 + 参数抽取）----
 # name 必须与能力目录里的「工具」字段一致
@@ -72,7 +88,7 @@ verify:
   query_products_by_filter: {查询: true}
 
 # ---- 需要自动补默认店铺的「操作类」工具（缺 merchantIds 时填默认店铺）----
-需要店铺参数的工具:
+需要默认上下文参数的工具:
   - update_products_by_ids
   - delete_products_by_ids
   - query_products_by_ids

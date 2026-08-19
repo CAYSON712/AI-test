@@ -24,6 +24,8 @@ B 类纯对话判定：
 """
 import os
 
+import yaml
+
 from mock_executor import MockExecutor
 from generic_mcp_executor import GenericMcpExecutor
 from generic_rag_executor import GenericRagExecutor
@@ -32,11 +34,37 @@ from generic_chat_executor import GenericChatExecutor
 
 
 def _resolve_system(system, req_type):
-    """未显式指定系统时，按需求类型给默认系统名"""
+    """未显式指定系统时，按需求类型自动发现可用系统（通用化）。
+
+    规则：
+      1. 优先按「连接.需求类型」匹配 configs/<系统>.yaml（要求一致或未声明类型）
+      2. 兜底：取 ability/ 能力目录第一个可用系统
+      3. 都没有 → 通用占位名（后续加载会提示缺配置）
+    """
     if system:
         return system
-    # 默认系统（示例）：POS 商品管理
-    return "POS_商品管理"
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # 1) 按需求类型匹配 configs/<系统>.yaml 的「连接.需求类型」
+    cfg_dir = os.path.join(root, "configs")
+    if os.path.isdir(cfg_dir):
+        for f in sorted(os.listdir(cfg_dir)):
+            if not f.endswith(".yaml"):
+                continue
+            try:
+                with open(os.path.join(cfg_dir, f), encoding="utf-8") as fh:
+                    _cfg = yaml.safe_load(fh) or {}
+                _rtype = (_cfg.get("连接") or {}).get("需求类型")
+            except Exception:
+                _rtype = None
+            if not _rtype or _rtype == req_type:
+                return os.path.splitext(f)[0]
+    # 2) 兜底：能力目录第一个可用系统
+    abi_dir = os.path.join(root, "ability")
+    if os.path.isdir(abi_dir):
+        for f in sorted(os.listdir(abi_dir)):
+            if f.startswith("能力目录_") and f.endswith(".yaml"):
+                return f[len("能力目录_"):-len(".yaml")]
+    return "被测系统"
 
 
 class ExecutorRegistry:
@@ -66,6 +94,12 @@ class ExecutorRegistry:
 
     def _init_executors(self):
         if self.mode == "mock":
+            # E 类：RAG 执行器自带内置 Mock 检索，mock 模式也注册它，
+            # 否则 E 数据集在 mock 模式会被 MockExecutor 判定"无执行器能处理"。
+            if self.req_type == "E":
+                rag = self._make_executor()
+                if rag and rag.capabilities:
+                    self.register(rag)
             self.register(MockExecutor())
             return
         # real / auto：按需求类型创建配置驱动的真实执行器

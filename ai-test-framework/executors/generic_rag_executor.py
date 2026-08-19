@@ -108,6 +108,20 @@ class _RagConfig:
                 if c.get("能力"):
                     self.capabilities.append(c["能力"])
 
+        # 问答对（E 类数据源：能力目录「问答对」节点，支持顶层/分组级/能力项级）
+        self.qa_pairs = []
+        _top_qa = abi.get("问答对")
+        if isinstance(_top_qa, list):
+            self.qa_pairs.extend(k for k in _top_qa if isinstance(k, dict) and k.get("问题"))
+        for group in abi.get("能力分组", []):
+            _gqa = group.get("问答对")
+            if isinstance(_gqa, list):
+                self.qa_pairs.extend(k for k in _gqa if isinstance(k, dict) and k.get("问题"))
+            for c in group.get("能力列表", []):
+                _cqa = c.get("问答对")
+                if isinstance(_cqa, list):
+                    self.qa_pairs.extend(k for k in _cqa if isinstance(k, dict) and k.get("问题"))
+
 
 class GenericRagExecutor(BaseExecutor):
     """通用 RAG 执行器：检索 → 生成 → 打包证据 + RAG 指标"""
@@ -142,16 +156,28 @@ class GenericRagExecutor(BaseExecutor):
                      "score": d.get("score", 0)} for d in docs]
 
     def _mock_search(self, query):
-        """内置 Mock 检索数据（骨架验证用），可按 query 关键词返回不同文档"""
-        docs = {
-            "退货": [{"id": "RET-01", "content": "支持7天无理由退货，需保留原包装", "score": 0.95}],
-            "退款": [{"id": "RET-02", "content": "退款将在3-5个工作日内原路退回", "score": 0.92}],
-            "营业时间": [{"id": "HOUR-01", "content": "营业时间 10:00-22:00，节假日照常", "score": 0.90}],
-            "物流": [{"id": "LOG-01", "content": "默认快递配送，预计3-5天送达", "score": 0.88}],
-        }
-        for kw, ds in docs.items():
-            if kw in query:
-                return ds
+        """内置 Mock 检索（骨架验证用）：从能力目录「问答对」动态生成文档，
+        不绑定任何知识库业务词。query 与问句共享的 2-gram 越多越相关。"""
+        qa = self.sys.qa_pairs
+        if not qa:
+            return [{"id": "GEN-01", "content": "抱歉，未找到相关文档", "score": 0.1}]
+        best, best_score = None, 0
+        for k in qa:
+            q = str(k.get("问题", ""))
+            if not q:
+                continue
+            if q == query:
+                best, best_score = k, 10 ** 9
+                break
+            grams = {q[i:i + 2] for i in range(max(0, len(q) - 1))}
+            score = sum(1 for g in grams if g in query)
+            if score > best_score:
+                best, best_score = k, score
+        if best and best_score > 0:
+            doc_id = best.get("期望文档") or "DOC-01"
+            ans = best.get("答案") or ""
+            return [{"id": doc_id,
+                     "content": f"{best.get('问题', '')}：{ans}", "score": 0.95}]
         return [{"id": "GEN-01", "content": "抱歉，未找到相关文档", "score": 0.1}]
 
     # ---- 生成回答 ----
@@ -174,7 +200,7 @@ class GenericRagExecutor(BaseExecutor):
         from llm_client import LLMClient
         content = "\n".join(f"- {d['content']}" for d in docs)
         prompt = f"""
-你是客服助手。请基于以下知识库文档回答用户问题，只依据文档内容，不要编造。
+你是{self.sys.system}的智能助手。请基于以下知识库文档回答用户问题，只依据文档内容，不要编造。
 
 用户问题：{query}
 

@@ -1,46 +1,341 @@
-# 数据状态: 占位样例（Demo）
-# 说明: 用例为虚构演示数据，验证 E 类执行链路。真实测试需基于真实知识库文档。
-系统: "客服知识库"
+系统: 客服知识库
 需求类型: E
 分层说明:
   L1: 黄金集(60%)：手工精选，覆盖能力×核心维度
   L2: 场景演化(30%)：纯规则变异，不用LLM
-数据源: 客服知识库(检索增强)
-用例数: 4
+  L3: 生产回放(10%)：需生产日志，暂未接入不预留接口
+数据源: 商品清单_Test01参考.yaml
+用例数: 25
 用例列表:
 - 维度: 检索召回率
-  能力: 政策问答
+  能力: 退货政策
   层: L1
   输入: 退货政策是什么？
   期望:
-    expect_docs: [RET-01]
-    expect_answer: 支持7天无理由退货
-  标签: [正常]
+    intent: 退货政策
+    expect_docs: &id001
+    - RET-01
+    expect_answer: 支持7天无理由退货，需保留原包装
+    output: 支持7天无理由退货，需保留原包装
+  verify: null
+  标签:
+  - 检索
   用例ID: E-L1-001
 - 维度: 检索精准率
-  能力: 政策问答
+  能力: 退货政策
   层: L1
-  输入: 退款需要多久？
+  输入: 退货政策是什么？
   期望:
-    expect_docs: [RET-02]
-    expect_answer: 3-5个工作日
-  标签: [正常]
+    intent: 退货政策
+    expect_docs: *id001
+    expect_answer: 支持7天无理由退货，需保留原包装
+    output: 支持7天无理由退货，需保留原包装
+  verify: null
+  标签:
+  - 检索
   用例ID: E-L1-002
 - 维度: 幻觉率
-  能力: 业务规则问答
+  能力: 退货政策
   层: L1
-  输入: 营业时间是什么？
+  输入: 退货政策是什么？
   期望:
-    expect_docs: [HOUR-01]
-    expect_answer: 10:00-22:00
-  标签: [正常]
+    intent: 退货政策
+    expect_docs: *id001
+    expect_answer: 支持7天无理由退货，需保留原包装
+    output: 支持7天无理由退货，需保留原包装
+  verify: null
+  标签:
+  - 忠实
   用例ID: E-L1-003
 - 维度: 答案 Groundedness
-  能力: 故障处理问答
+  能力: 退货政策
   层: L1
-  输入: 物流要多久？
+  输入: 退货政策是什么？
   期望:
-    expect_docs: [LOG-01]
-    expect_answer: 3-5天送达
-  标签: [正常]
+    intent: 退货政策
+    expect_docs: *id001
+    expect_answer: 支持7天无理由退货，需保留原包装
+    output: 支持7天无理由退货，需保留原包装
+  verify: null
+  标签:
+  - 忠实
   用例ID: E-L1-004
+- 维度: 检索召回率
+  能力: 退款时效
+  层: L1
+  输入: 退款需要多长时间？
+  期望:
+    intent: 退款时效
+    expect_docs: &id002
+    - RET-02
+    expect_answer: 退款将在3-5个工作日内原路退回
+    output: 退款将在3-5个工作日内原路退回
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-005
+- 维度: 检索精准率
+  能力: 退款时效
+  层: L1
+  输入: 退款需要多长时间？
+  期望:
+    intent: 退款时效
+    expect_docs: *id002
+    expect_answer: 退款将在3-5个工作日内原路退回
+    output: 退款将在3-5个工作日内原路退回
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-006
+- 维度: 幻觉率
+  能力: 退款时效
+  层: L1
+  输入: 退款需要多长时间？
+  期望:
+    intent: 退款时效
+    expect_docs: *id002
+    expect_answer: 退款将在3-5个工作日内原路退回
+    output: 退款将在3-5个工作日内原路退回
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-007
+- 维度: 答案 Groundedness
+  能力: 退款时效
+  层: L1
+  输入: 退款需要多长时间？
+  期望:
+    intent: 退款时效
+    expect_docs: *id002
+    expect_answer: 退款将在3-5个工作日内原路退回
+    output: 退款将在3-5个工作日内原路退回
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-008
+- 维度: 检索召回率
+  能力: 退换货流程
+  层: L1
+  输入: 退换货的具体流程是怎样的？
+  期望:
+    intent: 退换货流程
+    expect_docs: &id003
+    - RET-03
+    expect_answer: 联系客服提交退换货申请，审核通过后寄回商品
+    output: 联系客服提交退换货申请，审核通过后寄回商品
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-009
+- 维度: 检索精准率
+  能力: 退换货流程
+  层: L1
+  输入: 退换货的具体流程是怎样的？
+  期望:
+    intent: 退换货流程
+    expect_docs: *id003
+    expect_answer: 联系客服提交退换货申请，审核通过后寄回商品
+    output: 联系客服提交退换货申请，审核通过后寄回商品
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-010
+- 维度: 幻觉率
+  能力: 退换货流程
+  层: L1
+  输入: 退换货的具体流程是怎样的？
+  期望:
+    intent: 退换货流程
+    expect_docs: *id003
+    expect_answer: 联系客服提交退换货申请，审核通过后寄回商品
+    output: 联系客服提交退换货申请，审核通过后寄回商品
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-011
+- 维度: 答案 Groundedness
+  能力: 退换货流程
+  层: L1
+  输入: 退换货的具体流程是怎样的？
+  期望:
+    intent: 退换货流程
+    expect_docs: *id003
+    expect_answer: 联系客服提交退换货申请，审核通过后寄回商品
+    output: 联系客服提交退换货申请，审核通过后寄回商品
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-012
+- 维度: 检索召回率
+  能力: 营业时间
+  层: L1
+  输入: 你们的营业时间是什么时候？
+  期望:
+    intent: 营业时间
+    expect_docs: &id004
+    - HOUR-01
+    expect_answer: 营业时间 10:00-22:00，节假日照常
+    output: 营业时间 10:00-22:00，节假日照常
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-013
+- 维度: 检索精准率
+  能力: 营业时间
+  层: L1
+  输入: 你们的营业时间是什么时候？
+  期望:
+    intent: 营业时间
+    expect_docs: *id004
+    expect_answer: 营业时间 10:00-22:00，节假日照常
+    output: 营业时间 10:00-22:00，节假日照常
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-014
+- 维度: 幻觉率
+  能力: 营业时间
+  层: L1
+  输入: 你们的营业时间是什么时候？
+  期望:
+    intent: 营业时间
+    expect_docs: *id004
+    expect_answer: 营业时间 10:00-22:00，节假日照常
+    output: 营业时间 10:00-22:00，节假日照常
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-015
+- 维度: 答案 Groundedness
+  能力: 营业时间
+  层: L1
+  输入: 你们的营业时间是什么时候？
+  期望:
+    intent: 营业时间
+    expect_docs: *id004
+    expect_answer: 营业时间 10:00-22:00，节假日照常
+    output: 营业时间 10:00-22:00，节假日照常
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-016
+- 维度: 检索召回率
+  能力: 物流配送
+  层: L1
+  输入: 一般多久能收到货？
+  期望:
+    intent: 物流配送
+    expect_docs: &id005
+    - LOG-01
+    expect_answer: 默认快递配送，预计3-5天送达
+    output: 默认快递配送，预计3-5天送达
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-017
+- 维度: 检索精准率
+  能力: 物流配送
+  层: L1
+  输入: 一般多久能收到货？
+  期望:
+    intent: 物流配送
+    expect_docs: *id005
+    expect_answer: 默认快递配送，预计3-5天送达
+    output: 默认快递配送，预计3-5天送达
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-018
+- 维度: 幻觉率
+  能力: 物流配送
+  层: L1
+  输入: 一般多久能收到货？
+  期望:
+    intent: 物流配送
+    expect_docs: *id005
+    expect_answer: 默认快递配送，预计3-5天送达
+    output: 默认快递配送，预计3-5天送达
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-019
+- 维度: 答案 Groundedness
+  能力: 物流配送
+  层: L1
+  输入: 一般多久能收到货？
+  期望:
+    intent: 物流配送
+    expect_docs: *id005
+    expect_answer: 默认快递配送，预计3-5天送达
+    output: 默认快递配送，预计3-5天送达
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-020
+- 维度: 检索召回率
+  能力: 物流查询
+  层: L1
+  输入: 如何查询我的订单物流？
+  期望:
+    intent: 物流查询
+    expect_docs: &id006
+    - LOG-02
+    expect_answer: 在订单详情页点击物流跟踪即可查看实时配送进度
+    output: 在订单详情页点击物流跟踪即可查看实时配送进度
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-021
+- 维度: 检索精准率
+  能力: 物流查询
+  层: L1
+  输入: 如何查询我的订单物流？
+  期望:
+    intent: 物流查询
+    expect_docs: *id006
+    expect_answer: 在订单详情页点击物流跟踪即可查看实时配送进度
+    output: 在订单详情页点击物流跟踪即可查看实时配送进度
+  verify: null
+  标签:
+  - 检索
+  用例ID: E-L1-022
+- 维度: 幻觉率
+  能力: 物流查询
+  层: L1
+  输入: 如何查询我的订单物流？
+  期望:
+    intent: 物流查询
+    expect_docs: *id006
+    expect_answer: 在订单详情页点击物流跟踪即可查看实时配送进度
+    output: 在订单详情页点击物流跟踪即可查看实时配送进度
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-023
+- 维度: 答案 Groundedness
+  能力: 物流查询
+  层: L1
+  输入: 如何查询我的订单物流？
+  期望:
+    intent: 物流查询
+    expect_docs: *id006
+    expect_answer: 在订单详情页点击物流跟踪即可查看实时配送进度
+    output: 在订单详情页点击物流跟踪即可查看实时配送进度
+  verify: null
+  标签:
+  - 忠实
+  用例ID: E-L1-024
+- 维度: 知识时效性
+  能力: 退货政策
+  层: L1
+  输入: 退货政策是什么？
+  期望:
+    intent: 退货政策
+    expect_docs:
+    - RET-01
+    expect_answer: 支持7天无理由退货，需保留原包装
+    output: 使用最新知识
+  verify: null
+  标签:
+  - 时效
+  用例ID: E-L1-025

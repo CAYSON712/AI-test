@@ -6,8 +6,8 @@
 
 用法：
   cd ai-test-framework/scripts
-  python run_test.py --req-type C --dataset ../datasets/C_POS.yaml --executor mock
-  python run_test.py --req-type C --dataset ../datasets/C_POS.yaml --executor real --runs 5
+  python run_test.py --req-type C --dataset ../datasets/C_某系统.yaml --executor mock
+  python run_test.py --req-type C --dataset ../datasets/C_某系统.yaml --executor real --runs 5
 """
 import argparse
 import os
@@ -70,6 +70,7 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     dim_case_all = defaultdict(dict)       # 维度 → {用例ID: [(score, judgeable, passed), ...各run]}
     dim_scores_all = defaultdict(list)     # 维度 → 所有运行的score（供 avg）
     failed_cases = []
+    blocked_cases = []                     # 期望拦截且确实被拦截的用例（符合预期，非失败）
     case_traces = {}                       # 用例ID → {用例ID, 能力, 维度, 层, trace_ids:[]}
     # 每条用例的评分明细（供报告做"错误类型分布 + 失分用例明细"）
     # case_fails[uid] = {维度: {"score","error_type","detail","input","capability"}}
@@ -127,9 +128,20 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                             "via": v.get("via", ""),
                         }
             if result.status != "success":
-                failed_cases.append({"用例ID": uid, "维度": dim,
-                                     "输入": case.get("输入", {}),
-                                     "error": result.error or result.status})
+                exp = case.get("期望") or {}
+                out = getattr(result, "output_data", None)
+                # 期望拦截且确实被拦截（业务拒绝/显式 block，排除传输层真异常）→ 符合预期
+                blocked = isinstance(out, dict) and (
+                    out.get("biz_error") or (out.get("block") is True and out.get("level") != "ERROR")
+                )
+                if exp.get("block") and blocked:
+                    blocked_cases.append({"用例ID": uid, "维度": dim,
+                                          "输入": case.get("输入", {}),
+                                          "error": result.error or result.status})
+                else:
+                    failed_cases.append({"用例ID": uid, "维度": dim,
+                                         "输入": case.get("输入", {}),
+                                         "error": result.error or result.status})
             # 上报 trace（可选，全部用例）：trace_id 挂到该用例的 trace_ids 列表
             if report_trace and uid:
                 tid = report_case_trace(case, result, scores, system=system,
@@ -230,6 +242,7 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
         "runs": runs,
         "dimensions": dimensions,
         "failed_cases": failed_cases,
+        "blocked_cases": blocked_cases,      # 期望拦截且已拦截的用例（符合预期，非失败）
         "dim_case_counts": dict(dim_case_counts),
         "case_traces": list(case_traces.values()),   # 按用例挂 trace_id（含 trace_ids 列表）
         "case_results": case_results,                # 失分用例明细（错误类型分布 + 失分归因）
@@ -239,7 +252,8 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     with open(out_path, "w", encoding="utf-8") as f:
         yaml.safe_dump(result_data, f, allow_unicode=True, sort_keys=False, width=120)
     print(f"结果已写入: {out_path}")
-    print(f"覆盖维度: {len(dimensions)} 个 | 失败用例: {len(failed_cases)} 条")
+    print(f"覆盖维度: {len(dimensions)} 个 | 失败用例: {len(failed_cases)} 条"
+          f" | 已拦截(符合预期): {len(blocked_cases)} 条")
 
     # 可选：跑完自动生成评估报告（--report）
     if auto_report:

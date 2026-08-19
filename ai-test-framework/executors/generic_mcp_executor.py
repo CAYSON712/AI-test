@@ -2,18 +2,18 @@
 """
 通用真实执行器（配置驱动）
 ==========================
-把 pos_mcp_executor 里写死的 POS 逻辑，改为由「系统配置 + 能力目录」驱动，
-从而一套执行器可测任意系统的 Agent+MCP（C 类）、Agent（B 类）、工具（A/D 类）。
+由「系统配置 + 能力目录」驱动，一套执行器可测任意系统的
+Agent+MCP（C 类）、Agent（B 类）、工具（A/D 类）。
 
 设计：
-  - 连接：从 configs/<系统>.yaml 读取（base_url/token/公司/店铺 的 .env 变量名）
+  - 连接：从 configs/<系统>.yaml 读取（base_url/token 等 .env 变量名）
   - 工具 schema：从 configs/<系统>.yaml 的 mcp_tools 读取（给 LLM 选工具/抽参数）
   - 能力→工具映射：从 ability/能力目录_<系统>.yaml 读取（每能力有「工具」字段）
   - verify 配置：从能力目录读取（verify_tool / verify_field / verify_expect）
-  - 校验查询工具、需要店铺参数的工具、需要校验的工具：从 configs 读取
+  - 校验查询工具、需默认上下文参数的工具、需校验的工具：从 configs 读取
 
 接入新系统（C 类）只需：
-  1. 复制 configs/POS_商品管理.yaml → configs/<系统名>.yaml，填连接 + mcp_tools
+  1. 新建 configs/<系统名>.yaml，填连接 + mcp_tools（可参考已有系统配置）
   2. 准备 ability/能力目录_<系统名>.yaml（含 能力/工具/verify_*）
   3. 在 registry 里按系统名实例化即可，不写任何 Python 逻辑
 
@@ -75,15 +75,15 @@ def _find_config_file(system):
 def _find_ability_file(system):
     """按系统名匹配 ability/ 下能力目录，返回完整路径；无精确匹配返回空串。
     文件名格式「能力目录_<系统名>.yaml」，系统名可能带/不带分隔符，
-    用完整 base 名与系统名双向包含匹配，兼容 POS_商品管理 vs POS商品管理。
+    用完整 base 名与系统名双向包含匹配（忽略下划线/空格等分隔符差异）。
     """
     if not system or not os.path.isdir(ABILITY_DIR):
         return ""
     for f in os.listdir(ABILITY_DIR):
         if not (f.startswith("能力目录_") and f.endswith(".yaml")):
             continue
-        base = os.path.splitext(f)[0]          # 完整 base：能力目录_POS商品管理
-        stripped = base.replace("能力目录_", "")  # POS商品管理
+        base = os.path.splitext(f)[0]          # 完整 base：能力目录_<系统名>
+        stripped = base.replace("能力目录_", "")  # <系统名>
         if _name_match(stripped, system) or _name_match(base, system):
             return os.path.join(ABILITY_DIR, f)
     return ""
@@ -91,7 +91,7 @@ def _find_ability_file(system):
 
 def _name_match(stripped, system):
     """容错匹配：忽略下划线/空格分隔符差异，任一方向包含即可。
-    兼容 POS商品管理 vs POS_商品管理（能力目录与系统名分隔符可能不一致）。
+    兼容带/不带分隔符的系统名（能力目录与系统名分隔符可能不一致）。
     """
     if not stripped or not system:
         return False
@@ -118,11 +118,29 @@ class _SysConfig:
         self.company_id = os.getenv(conn.get("company_id_env", ""), "")
         self.merchant_id = os.getenv(conn.get("merchant_id_env", ""), "")
 
+        # ---- 通用命名（配置驱动，默认值通用，新系统可在 configs/<系统>.yaml 覆盖）----
+        # LLM 决策层环境变量名（优先配置字段，回退通用 LLM_* 前缀）
+        self.llm_base_url_env = conn.get("llm_base_url_env", "LLM_API_BASE")
+        self.llm_api_key_env = conn.get("llm_api_key_env", "LLM_API_KEY")
+        self.llm_model_env = conn.get("llm_model_env", "LLM_MODEL")
+        self.system_prompt_env = conn.get("system_prompt_env", "SYSTEM_PROMPT")
+        # 业务字段名 / 工具名（不绑定任何系统命名，全部可由配置覆盖）
+        self.company_header = cfg.get("公司ID请求头", "CompanyId")
+        self.merchant_param = cfg.get("默认上下文参数名", "merchantIds")   # 复数（列表）
+        self.entity_id_param = cfg.get("实体ID参数名", "entityIds")  # 复数（列表）
+        self.entity_name_param = cfg.get("实体名参数名", "entityName")
+        self.lookup_tools = list(cfg.get("按名搜索工具", [
+            "search_by_name", "search", "lookup"]))
+        self.id_resolve_tools = list(cfg.get("需ID解析的工具", [
+            "update_by_ids", "delete_by_ids",
+            "query_by_ids", "query_detail_by_id"]))
+        self.demo_connect_tool = cfg.get("连接演示工具", "query_merchants")
+
         # ---- 工具 schema ----
         self.tools = cfg.get("mcp_tools", [])
 
-        # ---- 需要店铺参数 / 需要校验的工具 ----
-        self.merchant_needed_tools = set(cfg.get("需要店铺参数的工具", []))
+        # ---- 需默认上下文参数 / 需校验的工具 ----
+        self.merchant_needed_tools = set(cfg.get("需要默认上下文参数的工具", []))
         self.verify_tools = set(cfg.get("需要校验的工具", []))
 
         # ---- 能力→工具 / verify / 操作类型 映射（来自能力目录）----
@@ -195,9 +213,9 @@ def _extract_entity(user_input, capability):
 
     用于操作类工具缺 ID 时按名查 ID。通用实现：不同系统可覆盖提取逻辑。
 
-    修复：此前取"最后一个片段"，但商品名常是中间词，收尾往往是
-     "信息/详情/价格/多少钱"等干扰词，导致提取到干扰词而非商品名
-     （如"查 Curry Fish Fillet 的信息"→ 取到"信息"）。改为识别并去掉
+    修复：此前取"最后一个片段"，但实体名常是中间词，收尾往往是
+     "信息/详情/价格/多少钱"等干扰词，导致提取到干扰词而非实体名
+     （如"查 XX 的信息"→ 取到"信息"）。改为识别并去掉
      收尾干扰词，取最可能是实体名的片段。
     """
     if not user_input:
@@ -206,15 +224,15 @@ def _extract_entity(user_input, capability):
     if quoted:
         return quoted[0].strip()
 
-    # 通用停止词（操作类动词 + 数量词），按长度降序替换，避免短词破坏长词/商品名
+    # 通用停止词（操作类动词 + 数量词），按长度降序替换，避免短词破坏长词/实体名
     stop_words = [
         # 多字词（先替换）
-        "商品名称为", "商品名称", "把那个", "调整到", "批量删除", "批量修改",
-        "批量新增", "批量上架", "批量下架", "删除所有", "查询一下", "查一下",
-        "请问一下", "告诉我", "查看一下", "改成", "改为", "变成", "下架", "上架",
+        "把那个", "调整到", "批量删除", "批量修改",
+        "批量新增", "删除所有", "查询一下", "查一下",
+        "请问一下", "告诉我", "查看一下", "改成", "改为", "变成",
         "删除", "删掉", "移除", "修改", "改名", "新增", "添加", "查询", "查看",
-        "英文名", "多少", "所有", "全部", "重新", "店内", "菜单", "麻烦", "请问",
-        "一下", "商品", "名称",
+        "多少", "所有", "全部", "重新", "麻烦", "请问",
+        "一下", "名称",
         # 单字词（最后替换）
         "把", "将", "给", "对", "帮", "我", "的", "里", "请", "查",
         "了", "啊", "呢", "下", "上", "为", "以",
@@ -232,8 +250,8 @@ def _extract_entity(user_input, capability):
     for tw in tail_words:
         if lowered.rstrip().endswith(tw):
             user_input = user_input[: -len(tw)]
-    # 去停止词后剩余内容整体作为实体名（保留多词商品名，如 "Curry Fish Fillet"）
-    # 注意：英文商品名与中文操作词混排，去掉停止词后剩下的整段即实体名。
+    # 去停止词后剩余内容整体作为实体名（保留多词实体名）
+    # 注意：实体名与中文操作词混排，去掉停止词后剩下的整段即实体名。
     remaining = re.sub(r"[\s,，。]+", " ", user_input).strip()
     if not remaining:
         return ""
@@ -256,20 +274,20 @@ class GenericMcpExecutor(BaseExecutor):
         self.capabilities = self.sys.capabilities
         import os as _os
         from llm_client import LLMClient
-        # 支持用被测系统(AI POS)的 LLM 做决策：
-        #   若 .env 配置了 POS_LLM_MODEL / POS_LLM_API_BASE / POS_LLM_API_KEY，
-        #   决策层用被测系统的模型；否则回退全局 LLM_MODEL（默认 metis-coder）。
+        # 支持用被测系统的 LLM 做决策：
+        #   优先读 configs/<系统>.yaml「连接」声明的 llm_*_env 环境变量，
+        #   回退通用 LLM_* 环境变量，再回退 LLMClient 内置默认。
         self.llm = LLMClient(
-            api_base=_os.getenv("POS_LLM_API_BASE") or None,
-            api_key=_os.getenv("POS_LLM_API_KEY") or None,
-            model=_os.getenv("POS_LLM_MODEL") or None,
+            api_base=_os.getenv(self.sys.llm_base_url_env) or None,
+            api_key=_os.getenv(self.sys.llm_api_key_env) or None,
+            model=_os.getenv(self.sys.llm_model_env) or None,
         )
-        # 可配置系统提示词：.env 配置 POS_SYSTEM_PROMPT(文件路径) 时用它（被测系统的真实 prompt），
+        # 可配置系统提示词：环境变量指向 prompt 文件路径时用它（被测系统的真实 prompt），
         # 否则用框架默认。prompt 文件第一行可作为占位；支持 {tools}/{capability} 模板。
         self._system_prompt = ""
-        pos_prompt_path = _os.getenv("POS_SYSTEM_PROMPT", "")
-        if pos_prompt_path and _os.path.exists(pos_prompt_path):
-            with open(pos_prompt_path, encoding="utf-8") as _f:
+        sp_prompt_path = _os.getenv(self.sys.system_prompt_env, "")
+        if sp_prompt_path and _os.path.exists(sp_prompt_path):
+            with open(sp_prompt_path, encoding="utf-8") as _f:
                 self._system_prompt = _f.read().strip()
 
     # ---- 连接上下文 ----
@@ -278,7 +296,7 @@ class GenericMcpExecutor(BaseExecutor):
         if self.sys.token:
             headers["Authorization"] = f"Bearer {self.sys.token}"
         if self.sys.company_id:
-            headers["CompanyId"] = self.sys.company_id
+            headers[self.sys.company_header] = self.sys.company_id
         return headers
 
     async def _session_context(self):
@@ -367,7 +385,7 @@ class GenericMcpExecutor(BaseExecutor):
             return {"error": f"LLM 未能解析出工具，能力: {capability}",
                     "block": True, "steps": steps}
 
-        # 2. 补默认店铺 + ID 解析
+        # 2. 补默认上下文参数 + ID 解析
         tool_params = self._ensure_merchant(tool_name, tool_params)
         await self._resolve_entity_id(tool_name, tool_params, user_input, steps, capability)
 
@@ -471,13 +489,13 @@ class GenericMcpExecutor(BaseExecutor):
 
         query_params = {}
         if self.sys.merchant_id:
-            query_params["merchantIds"] = [self.sys.merchant_id]
+            query_params[self.sys.merchant_param] = [self.sys.merchant_id]
         if vfield != "exists":
             ids = self._extract_ids(tool_params)
             if not ids:
                 return {"verify_tool": vtool, "field": vfield, "expect": vexpect,
                         "actual": None, "match": None, "note": "无实体ID可校验"}
-            query_params["productIds"] = ids
+            query_params[self.sys.entity_id_param] = ids
 
         try:
             stack, session = await self._session_context()
@@ -491,12 +509,16 @@ class GenericMcpExecutor(BaseExecutor):
         return {"verify_tool": vtool, "field": vfield, "expect": vexpect,
                 "actual": actual, "match": match}
 
-    @staticmethod
-    def _extract_ids(tool_params):
-        ids = tool_params.get("productIds") or tool_params.get("product_ids") or []
-        if isinstance(ids, str):
-            ids = [ids]
-        return list(ids) if ids else []
+    def _extract_ids(self, tool_params):
+        """从调用参数里抽取实体 ID 列表。优先用 config 声明的「实体ID参数名」，
+        回退常见复数别名（entityIds/ids/entity_ids）。"""
+        for k in (self.sys.entity_id_param, "entityIds", "entity_ids",
+                  "ids", "id"):
+            v = tool_params.get(k)
+            if v:
+                ids = v if isinstance(v, list) else [v]
+                return [x for x in ids if x is not None]
+        return []
 
     def _compare_verify(self, field, expect, op_params, verify_text):
         try:
@@ -522,19 +544,37 @@ class GenericMcpExecutor(BaseExecutor):
         first = flat[0]
         if field == "exists":
             return "found", (expect is True)
-        if field == "price":
-            expect_price = op_params.get("price")
-            actual_price = first.get("price")
-            return str(actual_price), (actual_price is not None and str(actual_price) == str(expect_price))
-        if field == "status":
-            expect_status = op_params.get("status")
-            actual_status = first.get("status")
-            return str(actual_status), (actual_status is not None and str(actual_status).lower() == str(expect_status).lower())
-        if field in ("name", "nameEn"):
-            expect_name = op_params.get("name") or op_params.get("nameEn")
-            actual_name = first.get("name") or first.get("nameEn")
-            return str(actual_name), (actual_name is not None and str(actual_name).lower() == str(expect_name).lower())
-        return str(first), None
+        # 通用字段校验：期望值优先取操作参数里同名字段（支持语义别名），
+        # 实际值从返回数据里按字段名/别名取（price/价格、status/状态、name/名称...）。
+        expected = self._field_value(op_params, field)
+        if expected is None and not isinstance(expect, bool):
+            expected = expect
+        actual = self._field_value(first, field)
+        if actual is None:
+            return "missing_field", False
+        if expected is None:
+            return str(actual), False
+        return str(actual), (str(actual).lower() == str(expected).lower())
+
+    @staticmethod
+    def _field_value(d, field):
+        """从 dict 里按字段名取实际值，兼容中英文/大小写别名（不绑定任何业务字段名）。"""
+        if not isinstance(d, dict):
+            return None
+        fl = str(field).lower()
+        for k in d:
+            if str(k).lower() == fl:
+                return d[k]
+        if fl in ("price", "价格", "prices"):
+            return d.get("price") or d.get("价格") or d.get("prices")
+        if fl in ("status", "状态"):
+            return d.get("status") or d.get("状态")
+        if fl in ("name", "名称", "nameen", "name_en", "英文名称"):
+            return d.get("name") or d.get("nameEn") or d.get("name_en") or d.get("名称")
+        for k, v in d.items():
+            if fl in str(k).lower():
+                return v
+        return None
 
     # ---- LLM 解析 / 回复 ----
     def _build_tools_prompt(self):
@@ -549,8 +589,8 @@ class GenericMcpExecutor(BaseExecutor):
         hint_line = f"必须使用工具：{hint_tool}" if hint_tool else ""
         tools_txt = self._build_tools_prompt()
         # 注意：意图解析始终用框架的 prompt（输出 JSON 工具调用）。
-        # 不复用 _system_prompt——它是被测系统(AI POS)的"回复生成/转表格"prompt，
-        # 若用于意图解析会让 LLM 输出表格而非 JSON，破坏工具调用。
+        # 不复用 _system_prompt——它是被测系统的"回复生成"prompt，
+        # 若用于意图解析会让 LLM 输出非 JSON 内容，破坏工具调用。
         prompt = f"""
 你是 {self.sys.system} 的意图解析引擎。请把用户的自然语言请求，解析为对真实 MCP 工具的一次调用。
 
@@ -558,7 +598,7 @@ class GenericMcpExecutor(BaseExecutor):
 
 当前任务类型（能力）：{capability}
 {hint_line}
-默认店铺ID：{self.sys.merchant_id}
+默认上下文ID：{self.sys.merchant_id}
 
 请解析以下用户请求，输出 JSON（不要其他文字）：
 {{
@@ -570,15 +610,15 @@ class GenericMcpExecutor(BaseExecutor):
 用户请求：{user_input}
 
 注意：
-- "intent" 必须用简洁中文概括用户真实意图（如：查询商品、删除商品、修改价格、越权操作、指令注入等）
+- "intent" 必须用简洁中文概括用户真实意图（查询/删除/修改/越权操作/指令注入等）
 - 严格优先使用上面"必须使用工具"指定的工具（若有），不要用查询类工具替代操作类工具
 - 参数名必须用列表里定义的字段名
-- 涉及店铺操作但用户未指明店铺时，toolParams 用 merchantIds: ["{self.sys.merchant_id}"]
-- 上架/下架等状态用工具描述里定义的枚举
+- 操作需带默认上下文参数但用户未指明时，toolParams 用 {self.sys.merchant_param}: ["{self.sys.merchant_id}"]
+- 状态/枚举用工具描述里定义的值
 - 若是删除操作，务必先想清楚是否合理，删除不可恢复
-- 重要：若操作/查询目标是"按商品名"，而目标工具的参数需要 productId（真实商品ID），
-  你不能直接留空或写 0——请先用 search/search_products_by_name 类工具查出该商品名的真实
-  productId 填入；若拿不到，在 toolParams 里保留商品名字段并说明，不要传空数组。
+- 重要：若操作目标是"按实体名"，而目标工具的参数需要真实 ID，
+  你不能直接留空或写 0——请先用 {','.join(self.sys.lookup_tools[:3])} 类工具查出该实体名的真实
+  ID 填入；若拿不到，在 toolParams 里保留实体名字段并说明，不要传空数组。
 """
         t0 = time.monotonic()
         try:
@@ -591,8 +631,8 @@ class GenericMcpExecutor(BaseExecutor):
     def _gen_reply(self, capability, user_input, tool_name, mcp_result):
         t0 = time.monotonic()
         try:
-            # 若配置了被测系统(AI POS)的真实回复生成 prompt（POS_SYSTEM_PROMPT），
-            # 则用它把 MCP/API 数据整理成 AI POS 风格的回复（如 Markdown 表格）。
+            # 若配置了被测系统的真实回复生成 prompt（system_prompt_env 指向文件），
+            # 则用它把 MCP/API 数据整理成被测系统风格的回复。
             # 否则用框架默认的一句话中文回复。
             if self._system_prompt:
                 prompt = (
@@ -620,39 +660,40 @@ MCP 返回结果：
     # ---- 参数补齐 / ID 解析 ----
     def _ensure_merchant(self, tool_name, tool_params):
         if tool_name in self.sys.merchant_needed_tools:
-            has = any(k in tool_params for k in ("merchantIds", "merchantId"))
+            singular = self.sys.merchant_param
+            if singular.endswith("s") and len(singular) > 1:
+                singular = singular[:-1]
+            has = any(k in tool_params for k in (self.sys.merchant_param, singular))
             if not has and self.sys.merchant_id:
-                tool_params["merchantIds"] = [self.sys.merchant_id]
+                tool_params[self.sys.merchant_param] = [self.sys.merchant_id]
         return tool_params
 
     async def _resolve_entity_id(self, tool_name, tool_params, user_input, steps, capability):
-        """操作类工具缺 productIds 时，先按实体名查出真实 ID 填入。"""
-        need_ids = tool_name in (
-            "update_products_by_ids", "delete_products_by_ids",
-            "query_products_by_ids", "query_product_detail_by_id",
-        )
+        """操作类工具缺实体 ID 时，先按实体名查出真实 ID 填入。"""
+        need_ids = tool_name in self.sys.id_resolve_tools
         if not need_ids:
             return False
-        # 修复：不能只看"非空"——LLM 可能把商品名(如 "Salt & Pepper Pork Chop")填进
-        # productIds。真实 POS 商品 ID 是纯数字（如 9088...）。只有当 productIds 里
-        # 全为数字 ID 时才视为"已有 ID"跳过；否则仍需按实体名解析成真实 ID。
-        existing = tool_params.get("productIds") or tool_params.get("product_ids") or []
+        # 修复：不能只看"非空"——LLM 可能把实体名填进 ID 参数。
+        # ID 应是数字/UUID 等紧凑标识（无空格、无中文）。只有满足时才视为"已有 ID"，
+        # 否则仍需按实体名解析成真实 ID。
+        id_key = self.sys.entity_id_param
+        existing = tool_params.get(id_key) or []
         if isinstance(existing, list):
-            valid = all(re.fullmatch(r"\d+", str(x or "")) for x in existing)
+            valid = all(bool(re.fullmatch(r"[A-Za-z0-9_-]+", str(x or ""))) for x in existing)
         else:
-            valid = bool(re.fullmatch(r"\d+", str(existing or "")))
+            valid = bool(re.fullmatch(r"[A-Za-z0-9_-]+", str(existing or "")))
         if valid and existing:
             return False
         name = _extract_entity(user_input, capability)
         if not name:
             return False
-        # 找一个可用的"按名搜索"工具（能力目录里 search 类工具）
+        # 找一个可用的"按名搜索"工具（config 声明的 lookup 工具）
         lookup_tool = self._find_lookup_tool()
         if not lookup_tool:
             return False
         resolved = await self._lookup_id(lookup_tool, name)
         if resolved:
-            tool_params["productIds"] = [resolved]
+            tool_params[id_key] = [resolved]
             steps.append({
                 "name": "ID解析-查询实体ID", "type": "SPAN",
                 "input": f"实体名: {name}", "output": f"ID: {resolved}",
@@ -662,9 +703,9 @@ MCP 返回结果：
         return False
 
     def _find_lookup_tool(self):
-        """从工具 schema 找一个 search/lookup 类工具用于 ID 解析"""
+        """从工具 schema 找一个按名搜索类工具用于 ID 解析（config 声明，回退 search/lookup）"""
         for t in self.sys.tools:
-            if t["name"] in ("search_products_by_name", "search", "lookup"):
+            if t["name"] in self.sys.lookup_tools:
                 return t["name"]
         return ""
 
@@ -672,11 +713,10 @@ MCP 返回结果：
         try:
             stack, session = await self._session_context()
             async with stack:
-                # 通用：用第一个非必填外的 name/productName 字段
                 params = {}
                 if self.sys.merchant_id:
-                    params["merchantIds"] = [self.sys.merchant_id]
-                params["productName"] = name
+                    params[self.sys.merchant_param] = [self.sys.merchant_id]
+                params[self.sys.entity_name_param] = name
                 is_error, text, _ = await self._call_tool(session, tool_name, params)
                 if is_error:
                     return None
@@ -684,10 +724,12 @@ MCP 返回结果：
                 if data.get("code") != 0 or not data.get("data"):
                     return None
                 for k, v in data["data"].items():
-                    if isinstance(v, list) and v:
-                        return v[0].get("id")
-                    if isinstance(v, dict) and v.get("id"):
-                        return v.get("id")
+                    if isinstance(v, list) and v and isinstance(v[0], dict):
+                        return v[0].get("id") or v[0].get("ID") or next(
+                            (x for key, x in v[0].items() if "id" in key.lower()), None)
+                    if isinstance(v, dict):
+                        return v.get("id") or v.get("ID") or next(
+                            (x for key, x in v.items() if "id" in key.lower()), None)
                 return None
         except Exception:
             return None
@@ -705,13 +747,17 @@ async def _demo_connect(system):
         stack, session = await ex._session_context()
         async with stack:
             print(f"✅ 已连接 {ex.sys.system}\n")
-            is_error, text = await ex._call_tool(session, "query_merchants", {})
-            print(f"query_merchants: is_error={is_error}\n  {text[:800]}")
+            demo_tool = ex.sys.demo_connect_tool
+            is_error, text = await ex._call_tool(session, demo_tool, {})
+            print(f"{demo_tool}: is_error={is_error}\n  {text[:800]}")
     except Exception as e:
         print(f"连接失败: {e}")
 
 
 if __name__ == "__main__":
     import sys as _s
-    system = _s.argv[1] if len(_s.argv) > 1 else "POS_商品管理"
+    system = _s.argv[1] if len(_s.argv) > 1 else ""
+    if not system:
+        print("用法: python generic_mcp_executor.py <系统名>")
+        _s.exit(1)
     asyncio.run(_demo_connect(system))

@@ -1,0 +1,109 @@
+# =====================================================================
+# 小韩面 业务实体清单（参考基准）
+# =====================================================================
+# 来源：需求文档（DATAX 小韩面业务数据），尚未接入真实数据源
+# 用途：数据集生成时的业务实体基准——测试用例的"门店/商品/会员"名称
+#       应使用本清单里的实体，避免虚构名称导致执行时找不到数据。
+# 注意：真实数据待 Retail POS MCP 发测后，建议用 MCP 查询工具拉取最新清单
+#       （query_product / query_store / query_member 等）替换本文件。
+# =====================================================================
+
+# 门店（业务主体：公司 > 商户 > 门店/Location）
+门店清单:
+  - 名称: "小韩面-中环店"
+    id: "XHM-STORE-001"
+    storeId: "XHM-STORE-001"
+    merchantId: "XHM-MERCHANT-001"
+    companyId: "XHM-COMPANY-001"
+  - 名称: "小韩面-尖沙咀店"
+    id: "XHM-STORE-002"
+    storeId: "XHM-STORE-002"
+    merchantId: "XHM-MERCHANT-001"
+    companyId: "XHM-COMPANY-001"
+  - 名称: "小韩面-旺角店"
+    id: "XHM-STORE-003"
+    storeId: "XHM-STORE-003"
+    merchantId: "XHM-MERCHANT-002"
+    companyId: "XHM-COMPANY-001"
+
+# 商品（小韩面菜品）
+商品清单:
+  - 名称: "招牌牛肉面"
+    id: "XHM-PROD-001"
+    productId: "XHM-PROD-001"
+    category: "面食"
+  - 名称: "韩式炸酱面"
+    id: "XHM-PROD-002"
+    productId: "XHM-PROD-002"
+    category: "面食"
+  - 名称: "泡菜炒饭"
+    id: "XHM-PROD-003"
+    productId: "XHM-PROD-003"
+    category: "饭类"
+  - 名称: "辣炒年糕"
+    id: "XHM-PROD-004"
+    productId: "XHM-PROD-004"
+    category: "小吃"
+  - 名称: "韩式炸鸡"
+    id: "XHM-PROD-005"
+    productId: "XHM-PROD-005"
+    category: "小吃"
+
+# 会员（会员系统 CN 数据）
+会员清单:
+  - 名称: "会员-金小姐"
+    id: "XHM-MEM-001"
+    memberId: "XHM-MEM-001"
+  - 名称: "会员-朴先生"
+    id: "XHM-MEM-002"
+    memberId: "XHM-MEM-002"
+  - 名称: "会员-李太太"
+    id: "XHM-MEM-003"
+    memberId: "XHM-MEM-003"
+
+# 实体清单（load_products 兼容：把上面三个清单合并为统一列表）
+实体清单:
+  - 名称: "小韩面-中环店"
+    id: "XHM-STORE-001"
+    storeId: "XHM-STORE-001"
+    merchantId: "XHM-MERCHANT-001"
+    companyId: "XHM-COMPANY-001"
+  - 名称: "小韩面-尖沙咀店"
+    id: "XHM-STORE-002"
+    storeId: "XHM-STORE-002"
+    merchantId: "XHM-MERCHANT-001"
+    companyId: "XHM-COMPANY-001"
+  - 名称: "小韩面-旺角店"
+    id: "XHM-STORE-003"
+    storeId: "XHM-STORE-003"
+    merchantId: "XHM-MERCHANT-002"
+    companyId: "XHM-COMPANY-001"
+  - 名称: "招牌牛肉面"
+    id: "XHM-PROD-001"
+    productId: "XHM-PROD-001"
+    category: "面食"
+  - 名称: "韩式炸酱面"
+    id: "XHM-PROD-002"
+    productId: "XHM-PROD-002"
+    category: "面食"
+  - 名称: "泡菜炒饭"
+    id: "XHM-PROD-003"
+    productId: "XHM-PROD-003"
+    category: "饭类"
+  - 名称: "辣炒年糕"
+    id: "XHM-PROD-004"
+    productId: "XHM-PROD-004"
+    category: "小吃"
+  - 名称: "韩式炸鸡"
+    id: "XHM-PROD-005"
+    productId: "XHM-PROD-005"
+    category: "小吃"
+  - 名称: "会员-金小姐"
+    id: "XHM-MEM-001"
+    memberId: "XHM-MEM-001"
+  - 名称: "会员-朴先生"
+    id: "XHM-MEM-002"
+    memberId: "XHM-MEM-002"
+  - 名称: "会员-李太太"
+    id: "XHM-MEM-003"
+    memberId: "XHM-MEM-003"

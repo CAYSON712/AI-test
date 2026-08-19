@@ -6,16 +6,16 @@ AI 测试一键流水线入口（端到端）
 
 用法：
   # 全流程：生成数据集 → 执行 → 报告 → trace（推荐，落地一键跑）
-  python scripts/pipeline.py --req-type C --system POS商品管理 --executor auto --runs 3 --trace
+  python scripts/pipeline.py --req-type C --system 某系统 --executor auto --runs 3 --trace
 
   # 只执行已有数据集（跳过生成）
-  python scripts/pipeline.py --req-type B --dataset "datasets/B_POS 商品管理.yaml" --executor auto
+  python scripts/pipeline.py --req-type B --dataset "datasets/B_某系统.yaml" --executor auto
 
   # 快速 mock 验证（不连真实系统）
-  python scripts/pipeline.py --req-type C --system POS商品管理 --executor mock
+  python scripts/pipeline.py --req-type C --system 某系统 --executor mock
 
   # LLM-as-Judge 主观维度打分
-  python scripts/pipeline.py --req-type C --system POS商品管理 --executor auto --llm-judge
+  python scripts/pipeline.py --req-type C --system 某系统 --executor auto --llm-judge
 
 参数说明：
   --req-type   A/B/C/D/E（需求类型，决定执行器）
@@ -78,7 +78,8 @@ def _gen_dataset(req_type, system, ability, products):
 def main():
     parser = argparse.ArgumentParser(description="AI 测试一键流水线")
     parser.add_argument("--req-type", default="C", choices=["A", "B", "C", "D", "E"])
-    parser.add_argument("--system", default="POS商品管理")
+    parser.add_argument("--system", default=None,
+                        help="被测系统名（默认按需求类型自动发现）")
     parser.add_argument("--dataset", default=None, help="已有数据集路径（给则跳过生成）")
     parser.add_argument("--executor", default="auto", choices=["mock", "auto", "real"])
     parser.add_argument("--runs", type=int, default=1)
@@ -94,7 +95,7 @@ def main():
     # 1) 数据集：有 --dataset 则复用；否则自动生成
     dataset_path = args.dataset
     if not dataset_path:
-        print(f"① 自动生成 {args.req_type} 类数据集（系统: {args.system}）...")
+        print(f"① 自动生成 {args.req_type} 类数据集（系统: {args.system or '自动发现'}）...")
         dataset_path = _gen_dataset(args.req_type, args.system, args.ability, args.products)
         print(f"   → {dataset_path}")
     else:

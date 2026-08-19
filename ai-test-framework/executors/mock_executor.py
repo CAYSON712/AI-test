@@ -7,7 +7,7 @@ Mock 执行器（从能力目录读取能力）
 
 说明：
   - 能力目录（需求预定义）在测试前即可确定
-  - 具体查询类能力有针对性 mock（见 handle）；其余能力走通用兜底，
+  - 不绑定任何具体业务：负向用例走 block 拦截，其余能力走通用兜底，
     并按用例期望的 semantic 生成符合语义校验的假输出（见 _gen_mock_output）
 """
 import os
@@ -37,43 +37,30 @@ def _load_capabilities(ability_file):
     return caps
 
 
-def _find_any_ability_file():
-    """扫描 ability/ 下第一个能力目录文件（动态发现，不依赖特定文件名）。
-    保证删除旧能力目录后 mock 仍能读取现存能力清单。
+def _find_ability_files():
+    """扫描 ability/ 下所有能力目录文件（动态发现，不依赖特定文件名）。
+    合并所有能力目录的能力清单，使 Mock 执行器能处理任意被测系统
+    （多个被测系统并存时都能命中）。
     """
     if not os.path.isdir(ABILITY_DIR):
-        return ""
-    for f in sorted(os.listdir(ABILITY_DIR)):
-        if f.startswith("能力目录_") and f.endswith(".yaml"):
-            return f
-    return ""
+        return []
+    return sorted(f for f in os.listdir(ABILITY_DIR)
+                  if f.startswith("能力目录_") and f.endswith(".yaml"))
 
 
 class MockExecutor(BaseExecutor):
-    # 能力清单来自现存能力目录（动态发现），去重
-    capabilities = list(dict.fromkeys(_load_capabilities(_find_any_ability_file())))
+    # 能力清单来自所有现存能力目录（动态发现），去重
+    capabilities = list(dict.fromkeys(
+        c for f in _find_ability_files() for c in _load_capabilities(f)))
 
     def handle(self, capability, user_input, inp, expected):
         time.sleep(random.uniform(0.1, 0.3))
 
-        if capability in ("查询销售额", "查询订单数", "查询退货金额"):
-            return self._query_metric(capability)
-        if capability == "查询商品":
-            return self._query_product(user_input)
-        if capability == "查询商品排行":
-            return [{"name": "可乐", "sales": 1200}, {"name": "薯条", "sales": 800}]
-        if capability == "查询订单":
-            return {"orderId": "ORD10086", "status": "completed", "amount": 158.5}
-        if capability == "查询无数据":
-            return {"msg": "未找到相关数据", "empty": True}
-        if capability == "跨店查询":
-            return {"error": "越权：无权查询该店铺数据", "block": True}
-        if capability == "指令注入":
-            return {"error": "检测到注入攻击，已拒绝", "block": True}
-        if capability == "组合查询":
-            return {"sales": 452000, "estimate_next": 460000}
-        if capability == "查询":
-            return {"metric": "sales", "value": 15860}
+        # 负向/对抗用例（安全/鲁棒/越权/非法参数等，期望 block=True）：
+        # 应返回「拒绝」结果（不绑定任何业务能力名）。
+        if isinstance(expected, dict) and expected.get("block"):
+            return {"error": f"已拒绝请求（{capability}）", "block": True,
+                    "msg": "非法/越权请求被拦截"}
         # 通用兜底：对动态发现的其他能力，返回模拟成功（隔离副作用，验证决策链路）
         # 关键升级：按用例「期望」里的 semantic 生成符合语义校验的假输出，
         # 让 mock 模式下「语义校验」维度（fields/contains）也能真实通过，评分更可信。
@@ -98,21 +85,3 @@ class MockExecutor(BaseExecutor):
             for i, kw in enumerate(sem.get("contains", [])):
                 obj[f"_kw{i}"] = str(kw)
         return obj
-
-    def _query_metric(self, capability):
-        data = {
-            "查询销售额": {"metric": "sales", "value": 15860},
-            "查询订单数": {"metric": "orders", "value": 320},
-            "查询退货金额": {"metric": "refund", "value": 320},
-        }
-        return data.get(capability, {})
-
-    def _query_product(self, text):
-        if "可乐" in text or "柠檬" in text:
-            return [
-                {"name": "Salted Lemon w. 7 Up", "price": 4.5, "sales": 200},
-                {"name": "Iced Ribera w. Lemon", "price": 4.95, "sales": 150},
-            ]
-        if "薯条" in text:
-            return [{"name": "薯条", "price": 5.0, "sales": 800}]
-        return [{"name": "未知商品", "price": 0}]

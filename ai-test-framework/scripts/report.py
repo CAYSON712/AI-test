@@ -10,7 +10,7 @@
 
 用法：
   cd ai-test-framework/scripts
-  python report.py --result results.yaml --out ../report/C_POS.md
+  python report.py --result results.yaml --out ../report/C_某系统.md
 """
 import argparse
 import os
