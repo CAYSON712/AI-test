@@ -17,6 +17,11 @@
     - RET-01
     expect_answer: 支持7天无理由退货，需保留原包装
     output: 支持7天无理由退货，需保留原包装
+    params: &id002 {}
+    block: false
+    semantic: &id003
+      contains:
+      - 支持7天无理由退货，需保留原包装
   verify: null
   标签:
   - 检索
@@ -30,6 +35,9 @@
     expect_docs: *id001
     expect_answer: 支持7天无理由退货，需保留原包装
     output: 支持7天无理由退货，需保留原包装
+    params: *id002
+    block: false
+    semantic: *id003
   verify: null
   标签:
   - 检索
@@ -43,6 +51,9 @@
     expect_docs: *id001
     expect_answer: 支持7天无理由退货，需保留原包装
     output: 支持7天无理由退货，需保留原包装
+    params: *id002
+    block: false
+    semantic: *id003
   verify: null
   标签:
   - 忠实
@@ -56,6 +67,9 @@
     expect_docs: *id001
     expect_answer: 支持7天无理由退货，需保留原包装
     output: 支持7天无理由退货，需保留原包装
+    params: *id002
+    block: false
+    semantic: *id003
   verify: null
   标签:
   - 忠实
@@ -66,10 +80,15 @@
   输入: 退款需要多长时间？
   期望:
     intent: 退款时效
-    expect_docs: &id002
+    expect_docs: &id004
     - RET-02
     expect_answer: 退款将在3-5个工作日内原路退回
     output: 退款将在3-5个工作日内原路退回
+    params: &id005 {}
+    block: false
+    semantic: &id006
+      contains:
+      - 退款将在3-5个工作日内原路退回
   verify: null
   标签:
   - 检索
@@ -80,9 +99,12 @@
   输入: 退款需要多长时间？
   期望:
     intent: 退款时效
-    expect_docs: *id002
+    expect_docs: *id004
     expect_answer: 退款将在3-5个工作日内原路退回
     output: 退款将在3-5个工作日内原路退回
+    params: *id005
+    block: false
+    semantic: *id006
   verify: null
   标签:
   - 检索
@@ -93,9 +115,12 @@
   输入: 退款需要多长时间？
   期望:
     intent: 退款时效
-    expect_docs: *id002
+    expect_docs: *id004
     expect_answer: 退款将在3-5个工作日内原路退回
     output: 退款将在3-5个工作日内原路退回
+    params: *id005
+    block: false
+    semantic: *id006
   verify: null
   标签:
   - 忠实
@@ -106,9 +131,12 @@
   输入: 退款需要多长时间？
   期望:
     intent: 退款时效
-    expect_docs: *id002
+    expect_docs: *id004
     expect_answer: 退款将在3-5个工作日内原路退回
     output: 退款将在3-5个工作日内原路退回
+    params: *id005
+    block: false
+    semantic: *id006
   verify: null
   标签:
   - 忠实
@@ -119,10 +147,15 @@
   输入: 退换货的具体流程是怎样的？
   期望:
     intent: 退换货流程
-    expect_docs: &id003
+    expect_docs: &id007
     - RET-03
     expect_answer: 联系客服提交退换货申请，审核通过后寄回商品
     output: 联系客服提交退换货申请，审核通过后寄回商品
+    params: &id008 {}
+    block: false
+    semantic: &id009
+      contains:
+      - 联系客服提交退换货申请，审核通过后寄回商品
   verify: null
   标签:
   - 检索
@@ -133,9 +166,12 @@
   输入: 退换货的具体流程是怎样的？
   期望:
     intent: 退换货流程
-    expect_docs: *id003
+    expect_docs: *id007
     expect_answer: 联系客服提交退换货申请，审核通过后寄回商品
     output: 联系客服提交退换货申请，审核通过后寄回商品
+    params: *id008
+    block: false
+    semantic: *id009
   verify: null
   标签:
   - 检索
@@ -146,9 +182,12 @@
   输入: 退换货的具体流程是怎样的？
   期望:
     intent: 退换货流程
-    expect_docs: *id003
+    expect_docs: *id007
     expect_answer: 联系客服提交退换货申请，审核通过后寄回商品
     output: 联系客服提交退换货申请，审核通过后寄回商品
+    params: *id008
+    block: false
+    semantic: *id009
   verify: null
   标签:
   - 忠实
@@ -159,9 +198,12 @@
   输入: 退换货的具体流程是怎样的？
   期望:
     intent: 退换货流程
-    expect_docs: *id003
+    expect_docs: *id007
     expect_answer: 联系客服提交退换货申请，审核通过后寄回商品
     output: 联系客服提交退换货申请，审核通过后寄回商品
+    params: *id008
+    block: false
+    semantic: *id009
   verify: null
   标签:
   - 忠实
@@ -172,10 +214,15 @@
   输入: 你们的营业时间是什么时候？
   期望:
     intent: 营业时间
-    expect_docs: &id004
+    expect_docs: &id010
     - HOUR-01
     expect_answer: 营业时间 10:00-22:00，节假日照常
     output: 营业时间 10:00-22:00，节假日照常
+    params: &id011 {}
+    block: false
+    semantic: &id012
+      contains:
+      - 营业时间 10:00-22:00，节假日照常
   verify: null
   标签:
   - 检索
@@ -186,9 +233,12 @@
   输入: 你们的营业时间是什么时候？
   期望:
     intent: 营业时间
-    expect_docs: *id004
+    expect_docs: *id010
     expect_answer: 营业时间 10:00-22:00，节假日照常
     output: 营业时间 10:00-22:00，节假日照常
+    params: *id011
+    block: false
+    semantic: *id012
   verify: null
   标签:
   - 检索
@@ -199,9 +249,12 @@
   输入: 你们的营业时间是什么时候？
   期望:
     intent: 营业时间
-    expect_docs: *id004
+    expect_docs: *id010
     expect_answer: 营业时间 10:00-22:00，节假日照常
     output: 营业时间 10:00-22:00，节假日照常
+    params: *id011
+    block: false
+    semantic: *id012
   verify: null
   标签:
   - 忠实
@@ -212,9 +265,12 @@
   输入: 你们的营业时间是什么时候？
   期望:
     intent: 营业时间
-    expect_docs: *id004
+    expect_docs: *id010
     expect_answer: 营业时间 10:00-22:00，节假日照常
     output: 营业时间 10:00-22:00，节假日照常
+    params: *id011
+    block: false
+    semantic: *id012
   verify: null
   标签:
   - 忠实
@@ -225,10 +281,15 @@
   输入: 一般多久能收到货？
   期望:
     intent: 物流配送
-    expect_docs: &id005
+    expect_docs: &id013
     - LOG-01
     expect_answer: 默认快递配送，预计3-5天送达
     output: 默认快递配送，预计3-5天送达
+    params: &id014 {}
+    block: false
+    semantic: &id015
+      contains:
+      - 默认快递配送，预计3-5天送达
   verify: null
   标签:
   - 检索
@@ -239,9 +300,12 @@
   输入: 一般多久能收到货？
   期望:
     intent: 物流配送
-    expect_docs: *id005
+    expect_docs: *id013
     expect_answer: 默认快递配送，预计3-5天送达
     output: 默认快递配送，预计3-5天送达
+    params: *id014
+    block: false
+    semantic: *id015
   verify: null
   标签:
   - 检索
@@ -252,9 +316,12 @@
   输入: 一般多久能收到货？
   期望:
     intent: 物流配送
-    expect_docs: *id005
+    expect_docs: *id013
     expect_answer: 默认快递配送，预计3-5天送达
     output: 默认快递配送，预计3-5天送达
+    params: *id014
+    block: false
+    semantic: *id015
   verify: null
   标签:
   - 忠实
@@ -265,9 +332,12 @@
   输入: 一般多久能收到货？
   期望:
     intent: 物流配送
-    expect_docs: *id005
+    expect_docs: *id013
     expect_answer: 默认快递配送，预计3-5天送达
     output: 默认快递配送，预计3-5天送达
+    params: *id014
+    block: false
+    semantic: *id015
   verify: null
   标签:
   - 忠实
@@ -278,10 +348,15 @@
   输入: 如何查询我的订单物流？
   期望:
     intent: 物流查询
-    expect_docs: &id006
+    expect_docs: &id016
     - LOG-02
     expect_answer: 在订单详情页点击物流跟踪即可查看实时配送进度
     output: 在订单详情页点击物流跟踪即可查看实时配送进度
+    params: &id017 {}
+    block: false
+    semantic: &id018
+      contains:
+      - 在订单详情页点击物流跟踪即可查看实时配送进度
   verify: null
   标签:
   - 检索
@@ -292,9 +367,12 @@
   输入: 如何查询我的订单物流？
   期望:
     intent: 物流查询
-    expect_docs: *id006
+    expect_docs: *id016
     expect_answer: 在订单详情页点击物流跟踪即可查看实时配送进度
     output: 在订单详情页点击物流跟踪即可查看实时配送进度
+    params: *id017
+    block: false
+    semantic: *id018
   verify: null
   标签:
   - 检索
@@ -305,9 +383,12 @@
   输入: 如何查询我的订单物流？
   期望:
     intent: 物流查询
-    expect_docs: *id006
+    expect_docs: *id016
     expect_answer: 在订单详情页点击物流跟踪即可查看实时配送进度
     output: 在订单详情页点击物流跟踪即可查看实时配送进度
+    params: *id017
+    block: false
+    semantic: *id018
   verify: null
   标签:
   - 忠实
@@ -318,9 +399,12 @@
   输入: 如何查询我的订单物流？
   期望:
     intent: 物流查询
-    expect_docs: *id006
+    expect_docs: *id016
     expect_answer: 在订单详情页点击物流跟踪即可查看实时配送进度
     output: 在订单详情页点击物流跟踪即可查看实时配送进度
+    params: *id017
+    block: false
+    semantic: *id018
   verify: null
   标签:
   - 忠实
@@ -335,6 +419,11 @@
     - RET-01
     expect_answer: 支持7天无理由退货，需保留原包装
     output: 使用最新知识
+    params: {}
+    block: false
+    semantic:
+      contains:
+      - 支持7天无理由退货，需保留原包装
   verify: null
   标签:
   - 时效

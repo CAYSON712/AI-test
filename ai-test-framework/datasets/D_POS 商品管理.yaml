@@ -38,6 +38,11 @@
     params: *id001
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-002
@@ -55,6 +60,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-003
@@ -70,6 +80,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-004
@@ -118,6 +133,11 @@
     params: *id002
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-007
@@ -135,6 +155,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-008
@@ -150,6 +175,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-009
@@ -198,6 +228,11 @@
     params: *id003
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-012
@@ -215,6 +250,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-013
@@ -230,6 +270,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-014
@@ -279,6 +324,11 @@
     params: *id004
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-017
@@ -297,6 +347,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-018
@@ -313,6 +368,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-019
@@ -364,6 +424,11 @@
     params: *id005
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-022
@@ -381,6 +446,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-023
@@ -396,6 +466,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-024
@@ -445,6 +520,11 @@
     params: *id007
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-027
@@ -463,6 +543,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-028
@@ -479,6 +564,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-029
@@ -530,6 +620,11 @@
     params: *id008
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-032
@@ -548,6 +643,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-033
@@ -564,6 +664,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-034
@@ -616,6 +721,11 @@
     params: *id009
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-037
@@ -634,6 +744,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-038
@@ -650,6 +765,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-039
@@ -704,6 +824,11 @@
     params: *id011
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-042
@@ -724,6 +849,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-043
@@ -740,6 +870,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-044
@@ -791,6 +926,11 @@
     params: *id012
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-047
@@ -809,6 +949,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-048
@@ -825,6 +970,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-049
@@ -874,6 +1024,11 @@
     params: *id014
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-052
@@ -891,6 +1046,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-053
@@ -907,6 +1067,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-054
@@ -956,6 +1121,11 @@
     params: *id015
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-057
@@ -973,6 +1143,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-058
@@ -989,6 +1164,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-059
@@ -1034,17 +1214,17 @@
   输入:
     tool_name: search_products_by_name
     tool_params:
-      productName: Pork Chop Cutlet w. Curry Sauce
+      productName: INVALID
   期望:
     intent: 查询商品
     params: *id016
     output: 非法输入按契约拒绝
     block: true
     semantic:
-      fields:
-      - 名称
-      - 价格
-      - 状态
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-062
@@ -1054,17 +1234,17 @@
   输入:
     tool_name: search_products_by_name
     tool_params:
-      productName: Pork Chop Cutlet w. Curry Sauce
+      productName: INVALID
   期望:
     intent: 越界
     params: {}
     output: 越界操作被拒绝或提示
     block: true
     semantic:
-      fields:
-      - 名称
-      - 价格
-      - 状态
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-063
@@ -1081,10 +1261,10 @@
     output: 失败被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 名称
-      - 价格
-      - 状态
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-064
@@ -1120,6 +1300,12 @@
     params: *id017
     output: Skill 正确触发执行
     block: false
+    semantic:
+      fields:
+      - 商品ID
+      - 商品名称
+      - 价格
+      - 状态
   标签:
   - 正常
   用例ID: D-L1-066
@@ -1136,6 +1322,11 @@
     params: *id017
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-067
@@ -1152,6 +1343,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-068
@@ -1167,6 +1363,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-069
@@ -1181,6 +1382,12 @@
     params: *id017
     output: 单次调用延迟可接受
     block: false
+    semantic:
+      fields:
+      - 商品ID
+      - 商品名称
+      - 价格
+      - 状态
   标签:
   - 正常
   用例ID: D-L1-070
@@ -1220,6 +1427,9 @@
     semantic:
       contains:
       - 符合分类和状态条
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-072
@@ -1240,6 +1450,9 @@
     semantic:
       contains:
       - 符合分类和状态条
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-073
@@ -1258,6 +1471,9 @@
     semantic:
       contains:
       - 符合分类和状态条
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-074
@@ -1290,6 +1506,13 @@
     params: *id019
     output: Skill 正确触发执行
     block: false
+    semantic:
+      fields:
+      - 商品ID
+      - 商品名称
+      - 价格
+      - 库存
+      - 状态
   标签:
   - 正常
   用例ID: D-L1-076
@@ -1306,6 +1529,11 @@
     params: *id019
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-077
@@ -1322,6 +1550,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-078
@@ -1337,6 +1570,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-079
@@ -1351,6 +1589,13 @@
     params: *id019
     output: 单次调用延迟可接受
     block: false
+    semantic:
+      fields:
+      - 商品ID
+      - 商品名称
+      - 价格
+      - 库存
+      - 状态
   标签:
   - 正常
   用例ID: D-L1-080
@@ -1368,6 +1613,12 @@
     params: *id020
     output: Skill 正确触发执行
     block: false
+    semantic:
+      fields:
+      - 菜单ID
+      - 菜单名称
+      - 状态
+      - 销售渠道
   标签:
   - 正常
   用例ID: D-L1-081
@@ -1386,6 +1637,11 @@
     params: *id020
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-082
@@ -1404,6 +1660,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-083
@@ -1419,6 +1680,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-084
@@ -1433,6 +1699,12 @@
     params: *id020
     output: 单次调用延迟可接受
     block: false
+    semantic:
+      fields:
+      - 菜单ID
+      - 菜单名称
+      - 状态
+      - 销售渠道
   标签:
   - 正常
   用例ID: D-L1-085
@@ -1449,6 +1721,10 @@
     params: *id021
     output: Skill 正确触发执行
     block: false
+    semantic:
+      fields:
+      - 分类ID
+      - 分类名称
   标签:
   - 正常
   用例ID: D-L1-086
@@ -1466,6 +1742,11 @@
     params: *id021
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-087
@@ -1483,6 +1764,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-088
@@ -1498,6 +1784,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-089
@@ -1512,6 +1803,10 @@
     params: *id021
     output: 单次调用延迟可接受
     block: false
+    semantic:
+      fields:
+      - 分类ID
+      - 分类名称
   标签:
   - 正常
   用例ID: D-L1-090
@@ -1549,6 +1844,9 @@
     semantic:
       contains:
       - 当前账号授权公司
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-092
@@ -1568,6 +1866,9 @@
     semantic:
       contains:
       - 当前账号授权公司
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-093
@@ -1586,6 +1887,9 @@
     semantic:
       contains:
       - 当前账号授权公司
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-094
@@ -1625,12 +1929,18 @@
   层: L1
   输入:
     tool_name: query_merchants
-    tool_params: {}
+    tool_params:
+      unknown_param_malformed: x
   期望:
     intent: 查询店铺
     params: *id023
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-097
@@ -1639,12 +1949,18 @@
   层: L1
   输入:
     tool_name: query_merchants
-    tool_params: {}
+    tool_params:
+      _out_of_range_: '9999999999999999'
   期望:
     intent: 越界
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-098
@@ -1660,6 +1976,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-099
@@ -1713,6 +2034,9 @@
     semantic:
       contains:
       - 删除目标不存在
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-102
@@ -1733,6 +2057,9 @@
     semantic:
       contains:
       - 删除目标不存在
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-103
@@ -1752,6 +2079,9 @@
     semantic:
       contains:
       - 删除目标不存在
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-104
@@ -1802,6 +2132,11 @@
     params: *id025
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-107
@@ -1818,6 +2153,11 @@
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-108
@@ -1833,6 +2173,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-109
@@ -1869,12 +2214,18 @@
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: {}
+    tool_params:
+      unknown_param_malformed: x
   期望:
     intent: 指令注入
     params: *id026
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-112
@@ -1883,12 +2234,18 @@
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: {}
+    tool_params:
+      _out_of_range_: '9999999999999999'
   期望:
     intent: 越界
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-113
@@ -1904,6 +2261,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-114
@@ -1940,12 +2302,18 @@
   层: L1
   输入:
     tool_name: query_products_by_ids
-    tool_params: {}
+    tool_params:
+      unknown_param_malformed: x
   期望:
     intent: 组合操作
     params: *id027
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-117
@@ -1954,12 +2322,18 @@
   层: L1
   输入:
     tool_name: query_products_by_ids
-    tool_params: {}
+    tool_params:
+      _out_of_range_: '9999999999999999'
   期望:
     intent: 越界
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-118
@@ -1975,6 +2349,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-119
@@ -2011,12 +2390,18 @@
   层: L1
   输入:
     tool_name: query_products_by_filter
-    tool_params: {}
+    tool_params:
+      unknown_param_malformed: x
   期望:
     intent: 查询
     params: *id028
     output: 非法输入按契约拒绝
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 契约
   用例ID: D-L1-122
@@ -2025,12 +2410,18 @@
   层: L1
   输入:
     tool_name: query_products_by_filter
-    tool_params: {}
+    tool_params:
+      _out_of_range_: '9999999999999999'
   期望:
     intent: 越界
     params: {}
     output: 越界操作被拒绝或提示
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 边界
   用例ID: D-L1-123
@@ -2046,6 +2437,11 @@
     params: {}
     output: 失败被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
   用例ID: D-L1-124

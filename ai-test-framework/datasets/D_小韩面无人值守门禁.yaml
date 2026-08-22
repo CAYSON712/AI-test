@@ -1,0 +1,1854 @@
+系统: 小韩面无人值守门禁
+需求类型: D
+分层说明:
+  L1: 黄金集(60%)：手工精选，覆盖能力×核心维度
+  L2: 场景演化(30%)：纯规则变异，不用LLM
+  L3: 生产回放(10%)：需生产日志，暂未接入不预留接口
+数据源: 实体清单_小韩面无人值守.yaml
+用例数: 89
+用例列表:
+- 维度: 触发条件正确性
+  能力: 查询门锁状态
+  层: L1
+  输入:
+    tool_name: get_door_lock_status
+    tool_params: &id001 {}
+  期望:
+    intent: 查询门锁状态
+    params: *id001
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 设备状态
+      - 锁定状态
+      - 提示 在线
+      - 离线
+      contains:
+      - 门锁设备状态
+  标签:
+  - 正常
+  用例ID: D-L1-001
+- 维度: 输入输出契约
+  能力: 查询门锁状态
+  层: L1
+  输入:
+    tool_name: get_door_lock_status
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 查询门锁状态
+    params: *id001
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 门锁设备状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-002
+- 维度: 能力边界
+  能力: 查询门锁状态
+  层: L1
+  输入:
+    tool_name: get_door_lock_status
+    tool_params:
+      _out_of_range_: '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 门锁设备状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-003
+- 维度: 错误处理
+  能力: 查询门锁状态
+  层: L1
+  输入:
+    tool_name: get_door_lock_status
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 门锁设备状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-004
+- 维度: 性能
+  能力: 查询门锁状态
+  层: L1
+  输入:
+    tool_name: get_door_lock_status
+    tool_params: *id001
+  期望:
+    intent: 查询门锁状态
+    params: *id001
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 设备状态
+      - 锁定状态
+      - 提示 在线
+      - 离线
+      contains:
+      - 门锁设备状态
+  标签:
+  - 正常
+  用例ID: D-L1-005
+- 维度: 触发条件正确性
+  能力: 查询值守状态
+  层: L1
+  输入:
+    tool_name: get_unattended_status
+    tool_params: &id002 {}
+  期望:
+    intent: 查询值守状态
+    params: *id002
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 值守模式
+      - 批次编号
+      - 提示 开启时间
+      contains:
+      - 当前值守模式状态
+  标签:
+  - 正常
+  用例ID: D-L1-006
+- 维度: 输入输出契约
+  能力: 查询值守状态
+  层: L1
+  输入:
+    tool_name: get_unattended_status
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 查询值守状态
+    params: *id002
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 当前值守模式状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-007
+- 维度: 能力边界
+  能力: 查询值守状态
+  层: L1
+  输入:
+    tool_name: get_unattended_status
+    tool_params:
+      _out_of_range_: '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 当前值守模式状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-008
+- 维度: 错误处理
+  能力: 查询值守状态
+  层: L1
+  输入:
+    tool_name: get_unattended_status
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 当前值守模式状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-009
+- 维度: 性能
+  能力: 查询值守状态
+  层: L1
+  输入:
+    tool_name: get_unattended_status
+    tool_params: *id002
+  期望:
+    intent: 查询值守状态
+    params: *id002
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 值守模式
+      - 批次编号
+      - 提示 开启时间
+      contains:
+      - 当前值守模式状态
+  标签:
+  - 正常
+  用例ID: D-L1-010
+- 维度: 触发条件正确性
+  能力: 开启无人值守
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: &id003 {}
+  期望:
+    intent: 开启无人值守
+    params: *id003
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 批次编号
+      - 已开启
+      - 提示 门锁已上锁
+      contains:
+      - 开启结果
+  标签:
+  - 正常
+  用例ID: D-L1-011
+- 维度: 输入输出契约
+  能力: 开启无人值守
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 开启无人值守
+    params: *id003
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 开启结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-012
+- 维度: 能力边界
+  能力: 开启无人值守
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      _out_of_range_: '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 开启结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-013
+- 维度: 错误处理
+  能力: 开启无人值守
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 开启结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-014
+- 维度: 性能
+  能力: 开启无人值守
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: *id003
+  期望:
+    intent: 开启无人值守
+    params: *id003
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 批次编号
+      - 已开启
+      - 提示 门锁已上锁
+      contains:
+      - 开启结果
+  标签:
+  - 正常
+  用例ID: D-L1-015
+- 维度: 触发条件正确性
+  能力: 关闭无人值守
+  层: L1
+  输入:
+    tool_name: disable_unattended_mode
+    tool_params: &id004 {}
+  期望:
+    intent: 关闭无人值守
+    params: *id004
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 已关闭
+      - 批次封存
+      contains:
+      - 关闭结果
+  标签:
+  - 正常
+  用例ID: D-L1-016
+- 维度: 输入输出契约
+  能力: 关闭无人值守
+  层: L1
+  输入:
+    tool_name: disable_unattended_mode
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 关闭无人值守
+    params: *id004
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 关闭结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-017
+- 维度: 能力边界
+  能力: 关闭无人值守
+  层: L1
+  输入:
+    tool_name: disable_unattended_mode
+    tool_params:
+      _out_of_range_: '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 关闭结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-018
+- 维度: 错误处理
+  能力: 关闭无人值守
+  层: L1
+  输入:
+    tool_name: disable_unattended_mode
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 关闭结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-019
+- 维度: 性能
+  能力: 关闭无人值守
+  层: L1
+  输入:
+    tool_name: disable_unattended_mode
+    tool_params: *id004
+  期望:
+    intent: 关闭无人值守
+    params: *id004
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 已关闭
+      - 批次封存
+      contains:
+      - 关闭结果
+  标签:
+  - 正常
+  用例ID: D-L1-020
+- 维度: 触发条件正确性
+  能力: 查询门禁日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id005
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 查询门禁日志
+    params: *id005
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 进场人次
+      - 离场人次
+      - 事件类型
+      - 提示 日期范围
+  标签:
+  - 正常
+  用例ID: D-L1-021
+- 维度: 输入输出契约
+  能力: 查询门禁日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      date_from: '9999-99-99'
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 查询门禁日志
+    params: *id005
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-022
+- 维度: 能力边界
+  能力: 查询门禁日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      date_from: '9999-99-99'
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-023
+- 维度: 错误处理
+  能力: 查询门禁日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-024
+- 维度: 性能
+  能力: 查询门禁日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params: *id005
+  期望:
+    intent: 查询门禁日志
+    params: *id005
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 进场人次
+      - 离场人次
+      - 事件类型
+      - 提示 日期范围
+  标签:
+  - 正常
+  用例ID: D-L1-025
+- 维度: 触发条件正确性
+  能力: 查询未离场人员
+  层: L1
+  输入:
+    tool_name: get_remaining_visitors
+    tool_params: &id006 {}
+  期望:
+    intent: 查询未离场人员
+    params: *id006
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 手机号
+      - 进场时间
+      - 逗留时长
+      contains:
+      - 未离场人员清单
+  标签:
+  - 正常
+  用例ID: D-L1-026
+- 维度: 输入输出契约
+  能力: 查询未离场人员
+  层: L1
+  输入:
+    tool_name: get_remaining_visitors
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 查询未离场人员
+    params: *id006
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 未离场人员清单
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-027
+- 维度: 能力边界
+  能力: 查询未离场人员
+  层: L1
+  输入:
+    tool_name: get_remaining_visitors
+    tool_params:
+      _out_of_range_: '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 未离场人员清单
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-028
+- 维度: 错误处理
+  能力: 查询未离场人员
+  层: L1
+  输入:
+    tool_name: get_remaining_visitors
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 未离场人员清单
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-029
+- 维度: 性能
+  能力: 查询未离场人员
+  层: L1
+  输入:
+    tool_name: get_remaining_visitors
+    tool_params: *id006
+  期望:
+    intent: 查询未离场人员
+    params: *id006
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 手机号
+      - 进场时间
+      - 逗留时长
+      contains:
+      - 未离场人员清单
+  标签:
+  - 正常
+  用例ID: D-L1-030
+- 维度: 触发条件正确性
+  能力: 无数据日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id007
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 无数据日志查询
+    params: *id007
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 无进出记录
+      contains:
+      - 无进出记录
+  标签:
+  - 正常
+  用例ID: D-L1-031
+- 维度: 输入输出契约
+  能力: 无数据日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      date_from: '9999-99-99'
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 无数据日志查询
+    params: *id007
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 无进出记录
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-032
+- 维度: 能力边界
+  能力: 无数据日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      date_from: '9999-99-99'
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 无进出记录
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-033
+- 维度: 错误处理
+  能力: 无数据日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 无进出记录
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-034
+- 维度: 性能
+  能力: 无数据日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params: *id007
+  期望:
+    intent: 无数据日志查询
+    params: *id007
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 无进出记录
+      contains:
+      - 无进出记录
+  标签:
+  - 正常
+  用例ID: D-L1-035
+- 维度: 触发条件正确性
+  能力: 越权查询日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id008
+      storeId: XHM-BATCH-002
+  期望:
+    intent: 越权查询日志
+    params: *id008
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 无权限
+      - 错误
+  标签:
+  - 正常
+  用例ID: D-L1-036
+- 维度: 输入输出契约
+  能力: 越权查询日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      storeId:
+      - '0'
+  期望:
+    intent: 越权查询日志
+    params: *id008
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-037
+- 维度: 能力边界
+  能力: 越权查询日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      storeId:
+      - '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-038
+- 维度: 错误处理
+  能力: 越权查询日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-039
+- 维度: 性能
+  能力: 越权查询日志
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params: *id008
+  期望:
+    intent: 越权查询日志
+    params: *id008
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 无权限
+      - 错误
+  标签:
+  - 正常
+  用例ID: D-L1-040
+- 维度: 触发条件正确性
+  能力: 强制解锁门锁
+  层: L1
+  输入:
+    tool_name: unlock_door
+    tool_params: &id009 {}
+  期望:
+    intent: 强制解锁门锁
+    params: *id009
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 不支持
+      - 拒绝
+  标签:
+  - 正常
+  用例ID: D-L1-041
+- 维度: 输入输出契约
+  能力: 强制解锁门锁
+  层: L1
+  输入:
+    tool_name: unlock_door
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 强制解锁门锁
+    params: *id009
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-042
+- 维度: 能力边界
+  能力: 强制解锁门锁
+  层: L1
+  输入:
+    tool_name: unlock_door
+    tool_params:
+      _out_of_range_: '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-043
+- 维度: 错误处理
+  能力: 强制解锁门锁
+  层: L1
+  输入:
+    tool_name: unlock_door
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-044
+- 维度: 性能
+  能力: 强制解锁门锁
+  层: L1
+  输入:
+    tool_name: unlock_door
+    tool_params: *id009
+  期望:
+    intent: 强制解锁门锁
+    params: *id009
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 不支持
+      - 拒绝
+  标签:
+  - 正常
+  用例ID: D-L1-045
+- 维度: 触发条件正确性
+  能力: 设备离线开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: &id010 {}
+  期望:
+    intent: 设备离线开启
+    params: *id010
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 设备离线
+      - 错误
+  标签:
+  - 正常
+  用例ID: D-L1-046
+- 维度: 输入输出契约
+  能力: 设备离线开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 设备离线开启
+    params: *id010
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-047
+- 维度: 能力边界
+  能力: 设备离线开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      _out_of_range_: '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-048
+- 维度: 错误处理
+  能力: 设备离线开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-049
+- 维度: 性能
+  能力: 设备离线开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: *id010
+  期望:
+    intent: 设备离线开启
+    params: *id010
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 设备离线
+      - 错误
+  标签:
+  - 正常
+  用例ID: D-L1-050
+- 维度: 触发条件正确性
+  能力: 未确认开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: &id011 {}
+  期望:
+    intent: 未确认开启
+    params: *id011
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 确认
+      - 拒绝
+  标签:
+  - 正常
+  用例ID: D-L1-051
+- 维度: 输入输出契约
+  能力: 未确认开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 未确认开启
+    params: *id011
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-052
+- 维度: 能力边界
+  能力: 未确认开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      _out_of_range_: '9999999999999999'
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-053
+- 维度: 错误处理
+  能力: 未确认开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-054
+- 维度: 性能
+  能力: 未确认开启
+  层: L1
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: *id011
+  期望:
+    intent: 未确认开启
+    params: *id011
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 确认
+      - 拒绝
+  标签:
+  - 正常
+  用例ID: D-L1-055
+- 维度: 触发条件正确性
+  能力: 指令注入日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id012
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 指令注入日志查询
+    params: *id012
+    output: Skill 正确触发执行
+    block: false
+    semantic:
+      fields:
+      - 参数非法
+      - 错误
+      contains:
+      - 参数非法
+  标签:
+  - 正常
+  用例ID: D-L1-056
+- 维度: 输入输出契约
+  能力: 指令注入日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      date_from: '9999-99-99'
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 指令注入日志查询
+    params: *id012
+    output: 非法输入按契约拒绝
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 契约
+  用例ID: D-L1-057
+- 维度: 能力边界
+  能力: 指令注入日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      date_from: '9999-99-99'
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 越界
+    params: {}
+    output: 越界操作被拒绝或提示
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: D-L1-058
+- 维度: 错误处理
+  能力: 指令注入日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params:
+      _invalid: ''
+  期望:
+    intent: 容错
+    params: {}
+    output: 失败被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: D-L1-059
+- 维度: 性能
+  能力: 指令注入日志查询
+  层: L1
+  输入:
+    tool_name: query_access_logs
+    tool_params: *id012
+  期望:
+    intent: 指令注入日志查询
+    params: *id012
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 参数非法
+      - 错误
+      contains:
+      - 参数非法
+  标签:
+  - 正常
+  用例ID: D-L1-060
+- 维度: 与其他Skill组合
+  能力: 查询门锁状态
+  层: L1
+  输入:
+    tool_name: get_door_lock_status
+    tool_params: {}
+  期望:
+    intent: 查询门锁状态
+    params: {}
+    output: 查询门锁状态 与 查询值守状态 组合调用无冲突
+    block: false
+    semantic:
+      fields:
+      - 设备状态
+      - 锁定状态
+      - 提示 在线
+      - 离线
+      contains:
+      - 门锁设备状态
+  标签:
+  - 组合
+  用例ID: D-L1-061
+- 维度: 触发条件正确性
+  能力: 查询门禁日志
+  层: L2
+  输入:
+    tool_name: query_access_logs_typo
+    tool_params:
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 查询门禁日志
+    params: *id005
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-062
+- 维度: 输入输出契约
+  能力: 设备离线开启
+  层: L2
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: &id013
+      unknown_param: x
+  期望:
+    intent: 设备离线开启
+    params: *id013
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-063
+- 维度: 触发条件正确性
+  能力: 无数据日志查询
+  层: L2
+  输入:
+    tool_name: query_access_logs_typo
+    tool_params:
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 无数据日志查询
+    params: *id007
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 无进出记录
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-064
+- 维度: 输入输出契约
+  能力: 指令注入日志查询
+  层: L2
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id014
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 指令注入日志查询
+    params: *id014
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: D-L2-065
+- 维度: 输入输出契约
+  能力: 查询未离场人员
+  层: L2
+  输入:
+    tool_name: get_remaining_visitors
+    tool_params: &id015
+      unknown_param: x
+  期望:
+    intent: 查询未离场人员
+    params: *id015
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 未离场人员清单
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-066
+- 维度: 输入输出契约
+  能力: 查询值守状态
+  层: L2
+  输入:
+    tool_name: get_unattended_status
+    tool_params: &id016
+      unknown_param: x
+  期望:
+    intent: 查询值守状态
+    params: *id016
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 当前值守模式状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-067
+- 维度: 触发条件正确性
+  能力: 关闭无人值守
+  层: L2
+  输入:
+    tool_name: disable_unattended_mode_typo
+    tool_params: {}
+  期望:
+    intent: 关闭无人值守
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 关闭结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-068
+- 维度: 输入输出契约
+  能力: 查询门锁状态
+  层: L2
+  输入:
+    tool_name: get_door_lock_status
+    tool_params: &id017
+      unknown_param: x
+  期望:
+    intent: 查询门锁状态
+    params: *id017
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 门锁设备状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-069
+- 维度: 触发条件正确性
+  能力: 查询未离场人员
+  层: L2
+  输入:
+    tool_name: get_remaining_visitors_typo
+    tool_params: {}
+  期望:
+    intent: 查询未离场人员
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 未离场人员清单
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-070
+- 维度: 触发条件正确性
+  能力: 强制解锁门锁
+  层: L2
+  输入:
+    tool_name: unlock_door_typo
+    tool_params: {}
+  期望:
+    intent: 强制解锁门锁
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-071
+- 维度: 输入输出契约
+  能力: 越权查询日志
+  层: L2
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id018 {}
+  期望:
+    intent: 越权查询日志
+    params: *id018
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: D-L2-072
+- 维度: 输入输出契约
+  能力: 未确认开启
+  层: L2
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: &id019
+      unknown_param: x
+  期望:
+    intent: 未确认开启
+    params: *id019
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-073
+- 维度: 输入输出契约
+  能力: 强制解锁门锁
+  层: L2
+  输入:
+    tool_name: unlock_door
+    tool_params: &id020
+      unknown_param: x
+  期望:
+    intent: 强制解锁门锁
+    params: *id020
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-074
+- 维度: 输入输出契约
+  能力: 指令注入日志查询
+  层: L2
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id021
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+      unknown_param: x
+  期望:
+    intent: 指令注入日志查询
+    params: *id021
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-075
+- 维度: 触发条件正确性
+  能力: 未确认开启
+  层: L2
+  输入:
+    tool_name: enable_unattended_mode_typo
+    tool_params: {}
+  期望:
+    intent: 未确认开启
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-076
+- 维度: 输入输出契约
+  能力: 查询门禁日志
+  层: L2
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id022
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+      unknown_param: x
+  期望:
+    intent: 查询门禁日志
+    params: *id022
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-077
+- 维度: 触发条件正确性
+  能力: 指令注入日志查询
+  层: L2
+  输入:
+    tool_name: query_access_logs_typo
+    tool_params:
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 指令注入日志查询
+    params: *id012
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-078
+- 维度: 输入输出契约
+  能力: 无数据日志查询
+  层: L2
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id023
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 无数据日志查询
+    params: *id023
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 无进出记录
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: D-L2-079
+- 维度: 触发条件正确性
+  能力: 越权查询日志
+  层: L2
+  输入:
+    tool_name: query_access_logs_typo
+    tool_params:
+      storeId: XHM-BATCH-002
+  期望:
+    intent: 越权查询日志
+    params: *id008
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-080
+- 维度: 触发条件正确性
+  能力: 查询值守状态
+  层: L2
+  输入:
+    tool_name: get_unattended_status_typo
+    tool_params: {}
+  期望:
+    intent: 查询值守状态
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 当前值守模式状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-081
+- 维度: 输入输出契约
+  能力: 关闭无人值守
+  层: L2
+  输入:
+    tool_name: disable_unattended_mode
+    tool_params: &id024
+      unknown_param: x
+  期望:
+    intent: 关闭无人值守
+    params: *id024
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 关闭结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-082
+- 维度: 输入输出契约
+  能力: 开启无人值守
+  层: L2
+  输入:
+    tool_name: enable_unattended_mode
+    tool_params: &id025
+      unknown_param: x
+  期望:
+    intent: 开启无人值守
+    params: *id025
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 开启结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-083
+- 维度: 触发条件正确性
+  能力: 查询门锁状态
+  层: L2
+  输入:
+    tool_name: get_door_lock_status_typo
+    tool_params: {}
+  期望:
+    intent: 查询门锁状态
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 门锁设备状态
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-084
+- 维度: 输入输出契约
+  能力: 无数据日志查询
+  层: L2
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id026
+      date_from: 今日
+      date_to: 今日
+      event_type: ''
+      unknown_param: x
+  期望:
+    intent: 无数据日志查询
+    params: *id026
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 无进出记录
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-085
+- 维度: 触发条件正确性
+  能力: 设备离线开启
+  层: L2
+  输入:
+    tool_name: enable_unattended_mode_typo
+    tool_params: {}
+  期望:
+    intent: 设备离线开启
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-086
+- 维度: 输入输出契约
+  能力: 越权查询日志
+  层: L2
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id027
+      storeId: XHM-BATCH-002
+      unknown_param: x
+  期望:
+    intent: 越权查询日志
+    params: *id027
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-087
+- 维度: 输入输出契约
+  能力: 查询门禁日志
+  层: L2
+  输入:
+    tool_name: query_access_logs
+    tool_params: &id028
+      date_to: 今日
+      event_type: ''
+  期望:
+    intent: 查询门禁日志
+    params: *id028
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: D-L2-088
+- 维度: 触发条件正确性
+  能力: 开启无人值守
+  层: L2
+  输入:
+    tool_name: enable_unattended_mode_typo
+    tool_params: {}
+  期望:
+    intent: 开启无人值守
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 开启结果
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-089

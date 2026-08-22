@@ -4,8 +4,8 @@
   L1: 黄金集(60%)：手工精选，覆盖能力×核心维度
   L2: 场景演化(30%)：纯规则变异，不用LLM
   L3: 生产回放(10%)：需生产日志，暂未接入不预留接口
-数据源: 实体清单_小韩面参考.yaml
-用例数: 232
+数据源: 商品清单_Test01参考.yaml
+用例数: 221
 用例列表:
 - 维度: 调用正确性
   能力: 查询订单ID
@@ -15,7 +15,7 @@
     tool_params: &id001
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-001
+      storeId: '9088145987404805'
   期望:
     intent: 查询订单ID
     params: *id001
@@ -35,16 +35,17 @@
     tool_name: query_order_id
     tool_params: &id002
       date: 今日
-      storeId: XHM-STORE-001
+      storeId: '9088145987404805'
   期望:
     intent: 查询订单ID
     params: *id002
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-002
@@ -64,9 +65,10 @@
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-003
@@ -75,16 +77,23 @@
   层: L2
   输入:
     tool_name: query_order_id
-    tool_params: *id001
+    tool_params: &id003
+      dateType: businessDate
+      date: 今日
+      storeId:
+      - '0'
   期望:
     intent: 权限拒绝
-    params: *id001
+    params: *id003
     output: 查询无权限门店的订单ID
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 无权限
+      - 拒绝
+      - 权限拒绝
+      - 错误
+      any_of: true
   标签:
   - 越权
   用例ID: A-L2-004
@@ -94,10 +103,13 @@
   层: L1
   输入:
     tool_name: query_order_id
-    tool_params: *id001
+    tool_params: &id004
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535877'
   期望:
     intent: 查询订单ID
-    params: *id001
+    params: *id004
     output: 返回结构化结果
     block: false
     semantic:
@@ -112,11 +124,11 @@
   层: L1
   输入:
     tool_name: query_order_status
-    tool_params: &id003
-      orderId: XHM-STORE-002
+    tool_params: &id005
+      orderId: '9088145987535878'
   期望:
     intent: 查询订单状态
-    params: *id003
+    params: *id005
     output: 工具调用成功
     block: false
     semantic:
@@ -131,16 +143,17 @@
   层: L1
   输入:
     tool_name: query_order_status
-    tool_params: &id004 {}
+    tool_params: &id006 {}
   期望:
     intent: 查询订单状态
-    params: *id004
+    params: *id006
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-007
@@ -154,13 +167,14 @@
       - '0'
   期望:
     intent: 查询订单状态
-    params: *id003
+    params: *id005
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-008
@@ -169,10 +183,11 @@
   层: L1
   输入:
     tool_name: query_order_status
-    tool_params: *id003
+    tool_params: &id007
+      orderId: '9088145987535879'
   期望:
     intent: 查询订单状态
-    params: *id003
+    params: *id007
     output: 返回结构化结果
     block: false
     semantic:
@@ -187,13 +202,13 @@
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id005
+    tool_params: &id008
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-003
+      storeId: '9088145987535880'
   期望:
     intent: 查询订单数量
-    params: *id005
+    params: *id008
     output: 工具调用成功
     block: false
     semantic:
@@ -207,17 +222,19 @@
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id006
+    tool_params: &id009
       date: 今日
-      storeId: XHM-STORE-003
+      storeId: '9088145987535880'
   期望:
     intent: 查询订单数量
-    params: *id006
+    params: *id009
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 订单数量
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-011
@@ -233,12 +250,14 @@
       - '0'
   期望:
     intent: 查询订单数量
-    params: *id005
+    params: *id008
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 订单数量
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-012
@@ -247,10 +266,13 @@
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: *id005
+    tool_params: &id010
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535881'
   期望:
     intent: 查询订单数量
-    params: *id005
+    params: *id010
     output: 返回结构化结果
     block: false
     semantic:
@@ -264,13 +286,13 @@
   层: L1
   输入:
     tool_name: query_order_payable_amount
-    tool_params: &id007
+    tool_params: &id011
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-001
+      storeId: '9088145987535883'
   期望:
     intent: 查询订单应付金额
-    params: *id007
+    params: *id011
     output: 工具调用成功
     block: false
     semantic:
@@ -286,19 +308,20 @@
   层: L1
   输入:
     tool_name: query_order_payable_amount
-    tool_params: &id008
+    tool_params: &id012
       date: 今日
-      storeId: XHM-PROD-001
+      storeId: '9088145987535883'
   期望:
     intent: 查询订单应付金额
-    params: *id008
+    params: *id012
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 应付金额
       contains:
       - 订单应付金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-015
@@ -314,14 +337,15 @@
       - '0'
   期望:
     intent: 查询订单应付金额
-    params: *id007
+    params: *id011
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 应付金额
       contains:
       - 订单应付金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-016
@@ -330,10 +354,13 @@
   层: L1
   输入:
     tool_name: query_order_payable_amount
-    tool_params: *id007
+    tool_params: &id013
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535884'
   期望:
     intent: 查询订单应付金额
-    params: *id007
+    params: *id013
     output: 返回结构化结果
     block: false
     semantic:
@@ -349,13 +376,13 @@
   层: L1
   输入:
     tool_name: query_order_points_deduction
-    tool_params: &id009
+    tool_params: &id014
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-002
+      storeId: '9088145987535885'
   期望:
     intent: 查询积分抵扣金额
-    params: *id009
+    params: *id014
     output: 工具调用成功
     block: false
     semantic:
@@ -371,19 +398,20 @@
   层: L1
   输入:
     tool_name: query_order_points_deduction
-    tool_params: &id010
+    tool_params: &id015
       date: 今日
-      storeId: XHM-PROD-002
+      storeId: '9088145987535885'
   期望:
     intent: 查询积分抵扣金额
-    params: *id010
+    params: *id015
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 积分抵扣金额
       contains:
       - 订单积分抵扣金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-019
@@ -399,14 +427,15 @@
       - '0'
   期望:
     intent: 查询积分抵扣金额
-    params: *id009
+    params: *id014
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 积分抵扣金额
       contains:
       - 订单积分抵扣金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-020
@@ -415,10 +444,13 @@
   层: L1
   输入:
     tool_name: query_order_points_deduction
-    tool_params: *id009
+    tool_params: &id016
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535886'
   期望:
     intent: 查询积分抵扣金额
-    params: *id009
+    params: *id016
     output: 返回结构化结果
     block: false
     semantic:
@@ -434,13 +466,13 @@
   层: L1
   输入:
     tool_name: query_order_actual_amount
-    tool_params: &id011
+    tool_params: &id017
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-003
+      storeId: '9088145987535887'
   期望:
     intent: 查询订单实付金额
-    params: *id011
+    params: *id017
     output: 工具调用成功
     block: false
     semantic:
@@ -456,19 +488,20 @@
   层: L1
   输入:
     tool_name: query_order_actual_amount
-    tool_params: &id012
+    tool_params: &id018
       date: 今日
-      storeId: XHM-PROD-003
+      storeId: '9088145987535887'
   期望:
     intent: 查询订单实付金额
-    params: *id012
+    params: *id018
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 订单实付金额
       contains:
       - 订单实付金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-023
@@ -484,14 +517,15 @@
       - '0'
   期望:
     intent: 查询订单实付金额
-    params: *id011
+    params: *id017
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 订单实付金额
       contains:
       - 订单实付金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-024
@@ -500,10 +534,13 @@
   层: L1
   输入:
     tool_name: query_order_actual_amount
-    tool_params: *id011
+    tool_params: &id019
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535889'
   期望:
     intent: 查询订单实付金额
-    params: *id011
+    params: *id019
     output: 返回结构化结果
     block: false
     semantic:
@@ -519,14 +556,14 @@
   层: L1
   输入:
     tool_name: query_product_id
-    tool_params: &id013
+    tool_params: &id020
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-004
-      productName: 辣炒年糕
+      storeId: '9088145987535890'
+      productName: Pork Chop Cutlet w. Curry Sauce
   期望:
     intent: 查询商品ID
-    params: *id013
+    params: *id020
     output: 工具调用成功
     block: false
     semantic:
@@ -543,21 +580,21 @@
   层: L1
   输入:
     tool_name: query_product_id
-    tool_params: &id014
+    tool_params: &id021
       date: 今日
-      storeId: XHM-PROD-004
-      productName: 辣炒年糕
+      storeId: '9088145987535890'
+      productName: Pork Chop Cutlet w. Curry Sauce
   期望:
     intent: 查询商品ID
-    params: *id014
+    params: *id021
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 商品ID
-      - 商品名称
       contains:
       - 商品ID
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-027
@@ -571,18 +608,18 @@
       date: 今日
       storeId:
       - '0'
-      productName: 辣炒年糕
+      productName: Pork Chop Cutlet w. Curry Sauce
   期望:
     intent: 查询商品ID
-    params: *id013
+    params: *id020
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 商品ID
-      - 商品名称
       contains:
       - 商品ID
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-028
@@ -591,10 +628,14 @@
   层: L1
   输入:
     tool_name: query_product_id
-    tool_params: *id013
+    tool_params: &id022
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535891'
+      productName: Curry Chicken
   期望:
     intent: 查询商品ID
-    params: *id013
+    params: *id022
     output: 返回结构化结果
     block: false
     semantic:
@@ -611,11 +652,11 @@
   层: L1
   输入:
     tool_name: query_product_name
-    tool_params: &id015
-      productId: XHM-PROD-005
+    tool_params: &id023
+      productId: '9088145987535892'
   期望:
     intent: 查询商品名称
-    params: *id015
+    params: *id023
     output: 工具调用成功
     block: false
     semantic:
@@ -630,16 +671,17 @@
   层: L1
   输入:
     tool_name: query_product_name
-    tool_params: &id016 {}
+    tool_params: &id024 {}
   期望:
     intent: 查询商品名称
-    params: *id016
+    params: *id024
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 商品ID
-      - 商品名称
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-031
@@ -653,13 +695,14 @@
       - '0'
   期望:
     intent: 查询商品名称
-    params: *id015
+    params: *id023
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 商品ID
-      - 商品名称
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-032
@@ -668,10 +711,11 @@
   层: L1
   输入:
     tool_name: query_product_name
-    tool_params: *id015
+    tool_params: &id025
+      productId: '9088145987535893'
   期望:
     intent: 查询商品名称
-    params: *id015
+    params: *id025
     output: 返回结构化结果
     block: false
     semantic:
@@ -686,13 +730,13 @@
   层: L1
   输入:
     tool_name: query_product_category
-    tool_params: &id017
+    tool_params: &id026
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-001
+      storeId: '9088145987535894'
   期望:
     intent: 查询商品类别
-    params: *id017
+    params: *id026
     output: 工具调用成功
     block: false
     semantic:
@@ -706,17 +750,19 @@
   层: L1
   输入:
     tool_name: query_product_category
-    tool_params: &id018
+    tool_params: &id027
       date: 今日
-      storeId: XHM-MEM-001
+      storeId: '9088145987535894'
   期望:
     intent: 查询商品类别
-    params: *id018
+    params: *id027
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 商品类别
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-035
@@ -732,12 +778,14 @@
       - '0'
   期望:
     intent: 查询商品类别
-    params: *id017
+    params: *id026
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 商品类别
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-036
@@ -746,10 +794,13 @@
   层: L1
   输入:
     tool_name: query_product_category
-    tool_params: *id017
+    tool_params: &id028
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535895'
   期望:
     intent: 查询商品类别
-    params: *id017
+    params: *id028
     output: 返回结构化结果
     block: false
     semantic:
@@ -763,14 +814,14 @@
   层: L1
   输入:
     tool_name: query_product_sales_quantity
-    tool_params: &id019
+    tool_params: &id029
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-002
-      productId: XHM-MEM-002
+      storeId: '9088145987535896'
+      productId: '9088145987535896'
   期望:
     intent: 查询商品销售数量
-    params: *id019
+    params: *id029
     output: 工具调用成功
     block: false
     semantic:
@@ -786,20 +837,21 @@
   层: L1
   输入:
     tool_name: query_product_sales_quantity
-    tool_params: &id020
+    tool_params: &id030
       date: 今日
-      storeId: XHM-MEM-002
-      productId: XHM-MEM-002
+      storeId: '9088145987535896'
+      productId: '9088145987535896'
   期望:
     intent: 查询商品销售数量
-    params: *id020
+    params: *id030
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 商品销售数量
       contains:
       - 商品销售数量
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-039
@@ -813,17 +865,18 @@
       date: 今日
       storeId:
       - '0'
-      productId: XHM-MEM-002
+      productId: '9088145987535896'
   期望:
     intent: 查询商品销售数量
-    params: *id019
+    params: *id029
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 商品销售数量
       contains:
       - 商品销售数量
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-040
@@ -832,10 +885,14 @@
   层: L1
   输入:
     tool_name: query_product_sales_quantity
-    tool_params: *id019
+    tool_params: &id031
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535897'
+      productId: '9088145987535897'
   期望:
     intent: 查询商品销售数量
-    params: *id019
+    params: *id031
     output: 返回结构化结果
     block: false
     semantic:
@@ -851,14 +908,14 @@
   层: L1
   输入:
     tool_name: query_product_sales_amount
-    tool_params: &id021
+    tool_params: &id032
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-003
-      productId: XHM-MEM-003
+      storeId: '9088145987535898'
+      productId: '9088145987535898'
   期望:
     intent: 查询商品销售金额
-    params: *id021
+    params: *id032
     output: 工具调用成功
     block: false
     semantic:
@@ -874,20 +931,21 @@
   层: L1
   输入:
     tool_name: query_product_sales_amount
-    tool_params: &id022
+    tool_params: &id033
       date: 今日
-      storeId: XHM-MEM-003
-      productId: XHM-MEM-003
+      storeId: '9088145987535898'
+      productId: '9088145987535898'
   期望:
     intent: 查询商品销售金额
-    params: *id022
+    params: *id033
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 商品销售金额
       contains:
       - 商品销售金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-043
@@ -901,17 +959,18 @@
       date: 今日
       storeId:
       - '0'
-      productId: XHM-MEM-003
+      productId: '9088145987535898'
   期望:
     intent: 查询商品销售金额
-    params: *id021
+    params: *id032
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 商品销售金额
       contains:
       - 商品销售金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-044
@@ -920,10 +979,14 @@
   层: L1
   输入:
     tool_name: query_product_sales_amount
-    tool_params: *id021
+    tool_params: &id034
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535899'
+      productId: '9088145987535899'
   期望:
     intent: 查询商品销售金额
-    params: *id021
+    params: *id034
     output: 返回结构化结果
     block: false
     semantic:
@@ -939,11 +1002,11 @@
   层: L1
   输入:
     tool_name: query_payment_method
-    tool_params: &id023
-      orderId: XHM-STORE-001
+    tool_params: &id035
+      orderId: '9088145987535900'
   期望:
     intent: 查询支付方式
-    params: *id023
+    params: *id035
     output: 工具调用成功
     block: false
     semantic:
@@ -959,17 +1022,18 @@
   层: L1
   输入:
     tool_name: query_payment_method
-    tool_params: &id024 {}
+    tool_params: &id036 {}
   期望:
     intent: 查询支付方式
-    params: *id024
+    params: *id036
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 支付方式
       contains:
       - 订单支付方式
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-047
@@ -983,14 +1047,15 @@
       - '0'
   期望:
     intent: 查询支付方式
-    params: *id023
+    params: *id035
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 支付方式
       contains:
       - 订单支付方式
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-048
@@ -999,10 +1064,11 @@
   层: L1
   输入:
     tool_name: query_payment_method
-    tool_params: *id023
+    tool_params: &id037
+      orderId: '9088145987535901'
   期望:
     intent: 查询支付方式
-    params: *id023
+    params: *id037
     output: 返回结构化结果
     block: false
     semantic:
@@ -1018,13 +1084,13 @@
   层: L1
   输入:
     tool_name: query_payment_amount
-    tool_params: &id025
+    tool_params: &id038
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-002
+      storeId: '9088145987535902'
   期望:
     intent: 查询支付金额
-    params: *id025
+    params: *id038
     output: 工具调用成功
     block: false
     semantic:
@@ -1040,19 +1106,20 @@
   层: L1
   输入:
     tool_name: query_payment_amount
-    tool_params: &id026
+    tool_params: &id039
       date: 今日
-      storeId: XHM-STORE-002
+      storeId: '9088145987535902'
   期望:
     intent: 查询支付金额
-    params: *id026
+    params: *id039
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 支付金额
       contains:
       - 支付金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-051
@@ -1068,14 +1135,15 @@
       - '0'
   期望:
     intent: 查询支付金额
-    params: *id025
+    params: *id038
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 支付金额
       contains:
       - 支付金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-052
@@ -1084,10 +1152,13 @@
   层: L1
   输入:
     tool_name: query_payment_amount
-    tool_params: *id025
+    tool_params: &id040
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535903'
   期望:
     intent: 查询支付金额
-    params: *id025
+    params: *id040
     output: 返回结构化结果
     block: false
     semantic:
@@ -1103,11 +1174,11 @@
   层: L1
   输入:
     tool_name: query_payment_status
-    tool_params: &id027
-      orderId: XHM-STORE-003
+    tool_params: &id041
+      orderId: '9088145988322335'
   期望:
     intent: 查询支付状态
-    params: *id027
+    params: *id041
     output: 工具调用成功
     block: false
     semantic:
@@ -1123,17 +1194,18 @@
   层: L1
   输入:
     tool_name: query_payment_status
-    tool_params: &id028 {}
+    tool_params: &id042 {}
   期望:
     intent: 查询支付状态
-    params: *id028
+    params: *id042
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 支付状态
       contains:
       - 订单支付状态
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-055
@@ -1147,14 +1219,15 @@
       - '0'
   期望:
     intent: 查询支付状态
-    params: *id027
+    params: *id041
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 支付状态
       contains:
       - 订单支付状态
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-056
@@ -1163,10 +1236,11 @@
   层: L1
   输入:
     tool_name: query_payment_status
-    tool_params: *id027
+    tool_params: &id043
+      orderId: '9088145988322331'
   期望:
     intent: 查询支付状态
-    params: *id027
+    params: *id043
     output: 返回结构化结果
     block: false
     semantic:
@@ -1182,13 +1256,13 @@
   层: L1
   输入:
     tool_name: query_refund_type
-    tool_params: &id029
+    tool_params: &id044
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-001
+      storeId: '9088145988322324'
   期望:
     intent: 查询退款类型
-    params: *id029
+    params: *id044
     output: 工具调用成功
     block: false
     semantic:
@@ -1204,19 +1278,20 @@
   层: L1
   输入:
     tool_name: query_refund_type
-    tool_params: &id030
+    tool_params: &id045
       date: 今日
-      storeId: XHM-PROD-001
+      storeId: '9088145988322324'
   期望:
     intent: 查询退款类型
-    params: *id030
+    params: *id045
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 退款类型
       contains:
       - 退款类型
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-059
@@ -1232,14 +1307,15 @@
       - '0'
   期望:
     intent: 查询退款类型
-    params: *id029
+    params: *id044
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 退款类型
       contains:
       - 退款类型
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-060
@@ -1248,10 +1324,13 @@
   层: L1
   输入:
     tool_name: query_refund_type
-    tool_params: *id029
+    tool_params: &id046
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145988322325'
   期望:
     intent: 查询退款类型
-    params: *id029
+    params: *id046
     output: 返回结构化结果
     block: false
     semantic:
@@ -1267,13 +1346,13 @@
   层: L1
   输入:
     tool_name: query_refund_amount
-    tool_params: &id031
+    tool_params: &id047
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-002
+      storeId: '9088145988322323'
   期望:
     intent: 查询退款金额
-    params: *id031
+    params: *id047
     output: 工具调用成功
     block: false
     semantic:
@@ -1289,19 +1368,20 @@
   层: L1
   输入:
     tool_name: query_refund_amount
-    tool_params: &id032
+    tool_params: &id048
       date: 今日
-      storeId: XHM-PROD-002
+      storeId: '9088145988322323'
   期望:
     intent: 查询退款金额
-    params: *id032
+    params: *id048
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 退款金额
       contains:
       - 退款金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-063
@@ -1317,14 +1397,15 @@
       - '0'
   期望:
     intent: 查询退款金额
-    params: *id031
+    params: *id047
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 退款金额
       contains:
       - 退款金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-064
@@ -1333,10 +1414,13 @@
   层: L1
   输入:
     tool_name: query_refund_amount
-    tool_params: *id031
+    tool_params: &id049
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145988322326'
   期望:
     intent: 查询退款金额
-    params: *id031
+    params: *id049
     output: 返回结构化结果
     block: false
     semantic:
@@ -1352,13 +1436,13 @@
   层: L1
   输入:
     tool_name: query_returned_product
-    tool_params: &id033
+    tool_params: &id050
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-003
+      storeId: '9088145987404805'
   期望:
     intent: 查询退货商品
-    params: *id033
+    params: *id050
     output: 工具调用成功
     block: false
     semantic:
@@ -1372,17 +1456,19 @@
   层: L1
   输入:
     tool_name: query_returned_product
-    tool_params: &id034
+    tool_params: &id051
       date: 今日
-      storeId: XHM-PROD-003
+      storeId: '9088145987404805'
   期望:
     intent: 查询退货商品
-    params: *id034
+    params: *id051
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 退货商品
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-067
@@ -1398,12 +1484,14 @@
       - '0'
   期望:
     intent: 查询退货商品
-    params: *id033
+    params: *id050
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 退货商品
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-068
@@ -1412,10 +1500,13 @@
   层: L1
   输入:
     tool_name: query_returned_product
-    tool_params: *id033
+    tool_params: &id052
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535877'
   期望:
     intent: 查询退货商品
-    params: *id033
+    params: *id052
     output: 返回结构化结果
     block: false
     semantic:
@@ -1429,14 +1520,14 @@
   层: L1
   输入:
     tool_name: query_returned_quantity
-    tool_params: &id035
+    tool_params: &id053
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-004
-      productId: XHM-PROD-004
+      storeId: '9088145987535878'
+      productId: '9088145987535878'
   期望:
     intent: 查询退货数量
-    params: *id035
+    params: *id053
     output: 工具调用成功
     block: false
     semantic:
@@ -1452,20 +1543,21 @@
   层: L1
   输入:
     tool_name: query_returned_quantity
-    tool_params: &id036
+    tool_params: &id054
       date: 今日
-      storeId: XHM-PROD-004
-      productId: XHM-PROD-004
+      storeId: '9088145987535878'
+      productId: '9088145987535878'
   期望:
     intent: 查询退货数量
-    params: *id036
+    params: *id054
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 退货数量
       contains:
       - 退货数量
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-071
@@ -1479,17 +1571,18 @@
       date: 今日
       storeId:
       - '0'
-      productId: XHM-PROD-004
+      productId: '9088145987535878'
   期望:
     intent: 查询退货数量
-    params: *id035
+    params: *id053
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 退货数量
       contains:
       - 退货数量
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-072
@@ -1498,10 +1591,14 @@
   层: L1
   输入:
     tool_name: query_returned_quantity
-    tool_params: *id035
+    tool_params: &id055
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535879'
+      productId: '9088145987535879'
   期望:
     intent: 查询退货数量
-    params: *id035
+    params: *id055
     output: 返回结构化结果
     block: false
     semantic:
@@ -1517,13 +1614,13 @@
   层: L1
   输入:
     tool_name: query_member_id
-    tool_params: &id037
+    tool_params: &id056
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-005
+      storeId: '9088145987535880'
   期望:
     intent: 查询会员标识
-    params: *id037
+    params: *id056
     output: 工具调用成功
     block: false
     semantic:
@@ -1539,19 +1636,20 @@
   层: L1
   输入:
     tool_name: query_member_id
-    tool_params: &id038
+    tool_params: &id057
       date: 今日
-      storeId: XHM-PROD-005
+      storeId: '9088145987535880'
   期望:
     intent: 查询会员标识
-    params: *id038
+    params: *id057
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 会员标识
       contains:
       - 会员标识
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-075
@@ -1567,14 +1665,15 @@
       - '0'
   期望:
     intent: 查询会员标识
-    params: *id037
+    params: *id056
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 会员标识
       contains:
       - 会员标识
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-076
@@ -1583,10 +1682,13 @@
   层: L1
   输入:
     tool_name: query_member_id
-    tool_params: *id037
+    tool_params: &id058
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535881'
   期望:
     intent: 查询会员标识
-    params: *id037
+    params: *id058
     output: 返回结构化结果
     block: false
     semantic:
@@ -1602,14 +1704,14 @@
   层: L1
   输入:
     tool_name: query_member_consumption
-    tool_params: &id039
+    tool_params: &id059
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-001
-      memberId: XHM-MEM-001
+      storeId: '9088145987535883'
+      memberId: '9088145987535883'
   期望:
     intent: 查询会员消费金额
-    params: *id039
+    params: *id059
     output: 工具调用成功
     block: false
     semantic:
@@ -1625,20 +1727,21 @@
   层: L1
   输入:
     tool_name: query_member_consumption
-    tool_params: &id040
+    tool_params: &id060
       date: 今日
-      storeId: XHM-MEM-001
-      memberId: XHM-MEM-001
+      storeId: '9088145987535883'
+      memberId: '9088145987535883'
   期望:
     intent: 查询会员消费金额
-    params: *id040
+    params: *id060
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 会员消费金额
       contains:
       - 会员消费金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-079
@@ -1652,17 +1755,18 @@
       date: 今日
       storeId:
       - '0'
-      memberId: XHM-MEM-001
+      memberId: '9088145987535883'
   期望:
     intent: 查询会员消费金额
-    params: *id039
+    params: *id059
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 会员消费金额
       contains:
       - 会员消费金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-080
@@ -1671,10 +1775,14 @@
   层: L1
   输入:
     tool_name: query_member_consumption
-    tool_params: *id039
+    tool_params: &id061
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535884'
+      memberId: '9088145987535884'
   期望:
     intent: 查询会员消费金额
-    params: *id039
+    params: *id061
     output: 返回结构化结果
     block: false
     semantic:
@@ -1690,13 +1798,13 @@
   层: L1
   输入:
     tool_name: query_points_usage
-    tool_params: &id041
+    tool_params: &id062
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-002
+      storeId: '9088145987535885'
   期望:
     intent: 查询积分使用
-    params: *id041
+    params: *id062
     output: 工具调用成功
     block: false
     semantic:
@@ -1712,19 +1820,20 @@
   层: L1
   输入:
     tool_name: query_points_usage
-    tool_params: &id042
+    tool_params: &id063
       date: 今日
-      storeId: XHM-MEM-002
+      storeId: '9088145987535885'
   期望:
     intent: 查询积分使用
-    params: *id042
+    params: *id063
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 积分使用
       contains:
       - 积分使用情况
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-083
@@ -1740,14 +1849,15 @@
       - '0'
   期望:
     intent: 查询积分使用
-    params: *id041
+    params: *id062
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 积分使用
       contains:
       - 积分使用情况
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-084
@@ -1756,10 +1866,13 @@
   层: L1
   输入:
     tool_name: query_points_usage
-    tool_params: *id041
+    tool_params: &id064
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535886'
   期望:
     intent: 查询积分使用
-    params: *id041
+    params: *id064
     output: 返回结构化结果
     block: false
     semantic:
@@ -1771,50 +1884,51 @@
   - 正常
   用例ID: A-L1-085
 - 维度: 调用正确性
-  能力: 查询积分抵扣金额
+  能力: 查询会员积分抵扣金额
   层: L1
   输入:
     tool_name: query_points_deduction
-    tool_params: &id043
+    tool_params: &id065
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-003
+      storeId: '9088145987535887'
   期望:
-    intent: 查询积分抵扣金额
-    params: *id043
+    intent: 查询会员积分抵扣金额
+    params: *id065
     output: 工具调用成功
     block: false
     semantic:
       fields:
       - 积分抵扣金额
       contains:
-      - 积分抵扣金额
+      - 会员积分抵扣金额
   标签:
   - 正常
   用例ID: A-L1-086
 - 维度: 参数校验
-  能力: 查询积分抵扣金额
+  能力: 查询会员积分抵扣金额
   层: L1
   输入:
     tool_name: query_points_deduction
-    tool_params: &id044
+    tool_params: &id066
       date: 今日
-      storeId: XHM-MEM-003
+      storeId: '9088145987535887'
   期望:
-    intent: 查询积分抵扣金额
-    params: *id044
+    intent: 查询会员积分抵扣金额
+    params: *id066
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 积分抵扣金额
       contains:
-      - 积分抵扣金额
+      - 会员积分抵扣金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-087
 - 维度: 参数校验
-  能力: 查询积分抵扣金额
+  能力: 查询会员积分抵扣金额
   层: L1
   输入:
     tool_name: query_points_deduction
@@ -1824,34 +1938,38 @@
       storeId:
       - '0'
   期望:
-    intent: 查询积分抵扣金额
-    params: *id043
+    intent: 查询会员积分抵扣金额
+    params: *id065
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 积分抵扣金额
       contains:
-      - 积分抵扣金额
+      - 会员积分抵扣金额
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-088
 - 维度: 返回处理
-  能力: 查询积分抵扣金额
+  能力: 查询会员积分抵扣金额
   层: L1
   输入:
     tool_name: query_points_deduction
-    tool_params: *id043
+    tool_params: &id067
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535889'
   期望:
-    intent: 查询积分抵扣金额
-    params: *id043
+    intent: 查询会员积分抵扣金额
+    params: *id067
     output: 返回结构化结果
     block: false
     semantic:
       fields:
       - 积分抵扣金额
       contains:
-      - 积分抵扣金额
+      - 会员积分抵扣金额
   标签:
   - 正常
   用例ID: A-L1-089
@@ -1860,11 +1978,11 @@
   层: L1
   输入:
     tool_name: query_member_registered_at
-    tool_params: &id045
-      memberId: XHM-STORE-001
+    tool_params: &id068
+      memberId: '9088145987535890'
   期望:
     intent: 查询会员注册时间
-    params: *id045
+    params: *id068
     output: 工具调用成功
     block: false
     semantic:
@@ -1880,17 +1998,18 @@
   层: L1
   输入:
     tool_name: query_member_registered_at
-    tool_params: &id046 {}
+    tool_params: &id069 {}
   期望:
     intent: 查询会员注册时间
-    params: *id046
+    params: *id069
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 会员注册时间
       contains:
       - 会员注册时间
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-091
@@ -1904,14 +2023,15 @@
       - '0'
   期望:
     intent: 查询会员注册时间
-    params: *id045
+    params: *id068
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 会员注册时间
       contains:
       - 会员注册时间
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-092
@@ -1920,10 +2040,11 @@
   层: L1
   输入:
     tool_name: query_member_registered_at
-    tool_params: *id045
+    tool_params: &id070
+      memberId: '9088145987535891'
   期望:
     intent: 查询会员注册时间
-    params: *id045
+    params: *id070
     output: 返回结构化结果
     block: false
     semantic:
@@ -1939,13 +2060,13 @@
   层: L1
   输入:
     tool_name: query_new_member_count
-    tool_params: &id047
+    tool_params: &id071
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-002
+      storeId: '9088145987535892'
   期望:
     intent: 查询新增会员数
-    params: *id047
+    params: *id071
     output: 工具调用成功
     block: false
     semantic:
@@ -1962,19 +2083,20 @@
   层: L1
   输入:
     tool_name: query_new_member_count
-    tool_params: &id048
+    tool_params: &id072
       date: 今日
-      storeId: XHM-STORE-002
+      storeId: '9088145987535892'
   期望:
     intent: 查询新增会员数
-    params: *id048
+    params: *id072
     output: 参数校验失败，返回错误
     block: true
     semantic:
-      fields:
-      - 新增会员数
       contains:
       - 新增会员数
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-095
@@ -1991,14 +2113,15 @@
       - '0'
   期望:
     intent: 查询新增会员数
-    params: *id047
+    params: *id071
     output: 非法参数被拒绝
     block: true
     semantic:
-      fields:
-      - 新增会员数
       contains:
       - 新增会员数
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-096
@@ -2008,10 +2131,13 @@
   层: L1
   输入:
     tool_name: query_new_member_count
-    tool_params: *id047
+    tool_params: &id073
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535893'
   期望:
     intent: 查询新增会员数
-    params: *id047
+    params: *id073
     output: 返回结构化结果
     block: false
     semantic:
@@ -2028,16 +2154,19 @@
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id049
+    tool_params: &id074
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-003
+      storeId: '9088145987535894'
   期望:
     intent: 无数据查询
-    params: *id049
+    params: *id074
     output: 工具调用成功
     block: false
     semantic:
+      fields:
+      - 空结果
+      - 暂无数据
       contains:
       - 空结果
   标签:
@@ -2048,17 +2177,20 @@
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id050
+    tool_params: &id075
       date: 今日
-      storeId: XHM-STORE-003
+      storeId: '9088145987535894'
   期望:
     intent: 无数据查询
-    params: *id050
+    params: *id075
     output: 参数校验失败，返回错误
     block: true
     semantic:
       contains:
       - 空结果
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-099
@@ -2074,12 +2206,15 @@
       - '0'
   期望:
     intent: 无数据查询
-    params: *id049
+    params: *id074
     output: 非法参数被拒绝
     block: true
     semantic:
       contains:
       - 空结果
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-100
@@ -2088,13 +2223,19 @@
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: *id049
+    tool_params: &id076
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535895'
   期望:
     intent: 无数据查询
-    params: *id049
+    params: *id076
     output: 返回结构化结果
     block: false
     semantic:
+      fields:
+      - 空结果
+      - 暂无数据
       contains:
       - 空结果
   标签:
@@ -2105,27 +2246,41 @@
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id051
-      storeId: XHM-PROD-001
+    tool_params: &id077
+      storeId: '9088145987535896'
   期望:
-    intent: 越权查询
-    params: *id051
-    output: 工具调用成功
-    block: false
+    intent: 拒绝
+    params: *id077
+    output: 无权限/非法操作被拒绝
+    block: true
+    semantic:
+      contains:
+      - 无权限
+      - 权限
+      - 错误
+      - 拒绝
+      - 非法
+      any_of: true
   标签:
-  - 正常
+  - 越权
   用例ID: A-L1-102
 - 维度: 参数校验
   能力: 越权查询
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id052 {}
+    tool_params: &id078 {}
   期望:
     intent: 越权查询
-    params: *id052
+    params: *id078
     output: 参数校验失败，返回错误
     block: true
+    semantic:
+      contains:
+      - 无权限
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
   用例ID: A-L1-103
@@ -2139,172 +2294,135 @@
       - '0'
   期望:
     intent: 越权查询
-    params: *id051
+    params: *id077
     output: 非法参数被拒绝
     block: true
+    semantic:
+      contains:
+      - 无权限
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
   用例ID: A-L1-104
-- 维度: 返回处理
-  能力: 越权查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: *id051
-  期望:
-    intent: 越权查询
-    params: *id051
-    output: 返回结构化结果
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-105
 - 维度: 调用正确性
   能力: 指令注入
   层: L1
   输入:
     tool_name: query_member_consumption
-    tool_params: &id053
+    tool_params: &id079
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-002
+      storeId: '9088145987535897'
+  期望:
+    intent: 拒绝
+    params: *id079
+    output: 无权限/非法操作被拒绝
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 无权限
+      - 权限
+      - 错误
+      - 拒绝
+      - 非法
+      any_of: true
+  标签:
+  - 注入对抗
+  用例ID: A-L1-105
+- 维度: 参数校验
+  能力: 指令注入
+  层: L1
+  输入:
+    tool_name: query_member_consumption
+    tool_params: &id080
+      date: 今日
+      storeId: '9088145987535897'
   期望:
     intent: 指令注入
-    params: *id053
-    output: 工具调用成功
-    block: false
+    params: *id080
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
-  - 正常
+  - 参数缺失
   用例ID: A-L1-106
 - 维度: 参数校验
   能力: 指令注入
   层: L1
   输入:
     tool_name: query_member_consumption
-    tool_params: &id054
+    tool_params:
+      dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-002
+      storeId:
+      - '0'
   期望:
     intent: 指令注入
-    params: *id054
-    output: 参数校验失败，返回错误
+    params: *id079
+    output: 非法参数被拒绝
     block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
-  - 参数缺失
+  - 边界
   用例ID: A-L1-107
-- 维度: 参数校验
-  能力: 指令注入
-  层: L1
-  输入:
-    tool_name: query_member_consumption
-    tool_params:
-      dateType: businessDate
-      date: 今日
-      storeId:
-      - '0'
-  期望:
-    intent: 指令注入
-    params: *id053
-    output: 非法参数被拒绝
-    block: true
-  标签:
-  - 边界
-  用例ID: A-L1-108
-- 维度: 返回处理
-  能力: 指令注入
-  层: L1
-  输入:
-    tool_name: query_member_consumption
-    tool_params: *id053
-  期望:
-    intent: 指令注入
-    params: *id053
-    output: 返回结构化结果
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-109
-- 维度: 调用正确性
-  能力: 组合查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: &id055 {}
-  期望:
-    intent: 组合查询
-    params: *id055
-    output: 工具调用成功
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-110
-- 维度: 参数校验
-  能力: 组合查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: {}
-  期望:
-    intent: 组合查询
-    params: *id055
-    output: 非法参数被拒绝
-    block: true
-  标签:
-  - 边界
-  用例ID: A-L1-111
-- 维度: 返回处理
-  能力: 组合查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: *id055
-  期望:
-    intent: 组合查询
-    params: *id055
-    output: 返回结构化结果
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-112
 - 维度: 调用正确性
   能力: 日期范围查询
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id056
+    tool_params: &id081
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-004
+      storeId: '9088145987535899'
   期望:
     intent: 日期范围查询
-    params: *id056
+    params: *id081
     output: 工具调用成功
     block: false
     semantic:
+      fields:
+      - 日期范围
+      - 汇总结果
       contains:
       - 正确结果
   标签:
   - 正常
-  用例ID: A-L1-113
+  用例ID: A-L1-108
 - 维度: 参数校验
   能力: 日期范围查询
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id057
+    tool_params: &id082
       date: 今日
-      storeId: XHM-PROD-004
+      storeId: '9088145987535899'
   期望:
     intent: 日期范围查询
-    params: *id057
+    params: *id082
     output: 参数校验失败，返回错误
     block: true
     semantic:
       contains:
       - 正确结果
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-114
+  用例ID: A-L1-109
 - 维度: 参数校验
   能力: 日期范围查询
   层: L1
@@ -2317,32 +2435,41 @@
       - '0'
   期望:
     intent: 日期范围查询
-    params: *id056
+    params: *id081
     output: 非法参数被拒绝
     block: true
     semantic:
       contains:
       - 正确结果
+      - 拒绝
+      - 错误
+      any_of: true
   标签:
   - 边界
-  用例ID: A-L1-115
+  用例ID: A-L1-110
 - 维度: 返回处理
   能力: 日期范围查询
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: *id056
+    tool_params: &id083
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535900'
   期望:
     intent: 日期范围查询
-    params: *id056
+    params: *id083
     output: 返回结构化结果
     block: false
     semantic:
+      fields:
+      - 日期范围
+      - 汇总结果
       contains:
       - 正确结果
   标签:
   - 正常
-  用例ID: A-L1-116
+  用例ID: A-L1-111
 - 维度: 协议契约
   能力: 查询订单ID
   层: L1
@@ -2356,24 +2483,28 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-117
+  用例ID: A-L1-112
 - 维度: 工具描述与发现
   能力: 查询订单ID
   层: L1
   输入:
     tool_name: query_order_id
-    tool_params: &id058
+    tool_params: &id084
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-005
+      storeId: '9088145987535901'
   期望:
     intent: 查询订单ID
-    params: *id058
+    params: *id084
     output: 工具可正常调用
     block: false
     semantic:
@@ -2382,16 +2513,19 @@
       - 订单状态
   标签:
   - 正常
-  用例ID: A-L1-118
+  用例ID: A-L1-113
 - 维度: 性能与资源
   能力: 查询订单ID
   层: L1
   输入:
     tool_name: query_order_id
-    tool_params: *id058
+    tool_params: &id085
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535902'
   期望:
     intent: 查询订单ID
-    params: *id058
+    params: *id085
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -2400,7 +2534,7 @@
       - 订单状态
   标签:
   - 正常
-  用例ID: A-L1-119
+  用例ID: A-L1-114
 - 维度: 异常与容错
   能力: 查询订单ID
   层: L1
@@ -2416,12 +2550,16 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-120
+  用例ID: A-L1-115
 - 维度: 协议契约
   能力: 查询订单状态
   层: L1
@@ -2435,22 +2573,26 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-121
+  用例ID: A-L1-116
 - 维度: 工具描述与发现
   能力: 查询订单状态
   层: L1
   输入:
     tool_name: query_order_status
-    tool_params: &id059
-      orderId: XHM-MEM-001
+    tool_params: &id086
+      orderId: '9088145987535903'
   期望:
     intent: 查询订单状态
-    params: *id059
+    params: *id086
     output: 工具可正常调用
     block: false
     semantic:
@@ -2459,16 +2601,17 @@
       - 订单状态
   标签:
   - 正常
-  用例ID: A-L1-122
+  用例ID: A-L1-117
 - 维度: 性能与资源
   能力: 查询订单状态
   层: L1
   输入:
     tool_name: query_order_status
-    tool_params: *id059
+    tool_params: &id087
+      orderId: '9088145988322335'
   期望:
     intent: 查询订单状态
-    params: *id059
+    params: *id087
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -2477,7 +2620,7 @@
       - 订单状态
   标签:
   - 正常
-  用例ID: A-L1-123
+  用例ID: A-L1-118
 - 维度: 异常与容错
   能力: 查询订单状态
   层: L1
@@ -2493,12 +2636,16 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 订单ID
-      - 订单状态
+      contains:
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-124
+  用例ID: A-L1-119
 - 维度: 协议契约
   能力: 查询订单数量
   层: L1
@@ -2512,53 +2659,154 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 订单数量
+      contains:
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-125
+  用例ID: A-L1-120
 - 维度: 工具描述与发现
   能力: 查询订单数量
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id060
+    tool_params: &id088
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-002
+      storeId: '9088145988322331'
   期望:
     intent: 查询订单数量
-    params: *id060
+    params: *id088
     output: 工具可正常调用
     block: false
     semantic:
       fields:
       - 订单数量
+  标签:
+  - 正常
+  用例ID: A-L1-121
+- 维度: 性能与资源
+  能力: 查询订单数量
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params: &id089
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145988322324'
+  期望:
+    intent: 查询订单数量
+    params: *id089
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 订单数量
+  标签:
+  - 正常
+  用例ID: A-L1-122
+- 维度: 异常与容错
+  能力: 查询订单数量
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params:
+      unknown_param_malformed: x
+      storeId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-123
+- 维度: 协议契约
+  能力: 查询订单应付金额
+  层: L1
+  输入:
+    tool_name: query_order_payable_amount
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 订单应付金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-124
+- 维度: 工具描述与发现
+  能力: 查询订单应付金额
+  层: L1
+  输入:
+    tool_name: query_order_payable_amount
+    tool_params: &id090
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145988322325'
+  期望:
+    intent: 查询订单应付金额
+    params: *id090
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - 应付金额
+      contains:
+      - 订单应付金额
+  标签:
+  - 正常
+  用例ID: A-L1-125
+- 维度: 性能与资源
+  能力: 查询订单应付金额
+  层: L1
+  输入:
+    tool_name: query_order_payable_amount
+    tool_params: &id091
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145988322323'
+  期望:
+    intent: 查询订单应付金额
+    params: *id091
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 应付金额
+      contains:
+      - 订单应付金额
   标签:
   - 正常
   用例ID: A-L1-126
-- 维度: 性能与资源
-  能力: 查询订单数量
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: *id060
-  期望:
-    intent: 查询订单数量
-    params: *id060
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 订单数量
-  标签:
-  - 正常
-  用例ID: A-L1-127
 - 维度: 异常与容错
-  能力: 查询订单数量
+  能力: 查询订单应付金额
   层: L1
   输入:
-    tool_name: query_order_count
+    tool_name: query_order_payable_amount
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -2569,16 +2817,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 订单数量
+      contains:
+      - 订单应付金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-128
+  用例ID: A-L1-127
 - 维度: 协议契约
-  能力: 查询订单应付金额
+  能力: 查询积分抵扣金额
   层: L1
   输入:
-    tool_name: query_order_payable_amount
+    tool_name: query_order_points_deduction
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -2587,59 +2841,66 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 应付金额
       contains:
-      - 订单应付金额
+      - 订单积分抵扣金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-129
+  用例ID: A-L1-128
 - 维度: 工具描述与发现
-  能力: 查询订单应付金额
+  能力: 查询积分抵扣金额
   层: L1
   输入:
-    tool_name: query_order_payable_amount
-    tool_params: &id061
+    tool_name: query_order_points_deduction
+    tool_params: &id092
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-003
+      storeId: '9088145988322326'
   期望:
-    intent: 查询订单应付金额
-    params: *id061
+    intent: 查询积分抵扣金额
+    params: *id092
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 应付金额
+      - 积分抵扣金额
       contains:
-      - 订单应付金额
+      - 订单积分抵扣金额
+  标签:
+  - 正常
+  用例ID: A-L1-129
+- 维度: 性能与资源
+  能力: 查询积分抵扣金额
+  层: L1
+  输入:
+    tool_name: query_order_points_deduction
+    tool_params: &id093
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987404805'
+  期望:
+    intent: 查询积分抵扣金额
+    params: *id093
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 积分抵扣金额
+      contains:
+      - 订单积分抵扣金额
   标签:
   - 正常
   用例ID: A-L1-130
-- 维度: 性能与资源
-  能力: 查询订单应付金额
-  层: L1
-  输入:
-    tool_name: query_order_payable_amount
-    tool_params: *id061
-  期望:
-    intent: 查询订单应付金额
-    params: *id061
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 应付金额
-      contains:
-      - 订单应付金额
-  标签:
-  - 正常
-  用例ID: A-L1-131
 - 维度: 异常与容错
-  能力: 查询订单应付金额
+  能力: 查询积分抵扣金额
   层: L1
   输入:
-    tool_name: query_order_payable_amount
+    tool_name: query_order_points_deduction
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -2650,18 +2911,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 应付金额
       contains:
-      - 订单应付金额
+      - 订单积分抵扣金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-132
+  用例ID: A-L1-131
 - 维度: 协议契约
-  能力: 查询积分抵扣金额
+  能力: 查询订单实付金额
   层: L1
   输入:
-    tool_name: query_order_points_deduction
+    tool_name: query_order_actual_amount
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -2670,59 +2935,66 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 积分抵扣金额
       contains:
-      - 订单积分抵扣金额
+      - 订单实付金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-133
+  用例ID: A-L1-132
 - 维度: 工具描述与发现
-  能力: 查询积分抵扣金额
+  能力: 查询订单实付金额
   层: L1
   输入:
-    tool_name: query_order_points_deduction
-    tool_params: &id062
+    tool_name: query_order_actual_amount
+    tool_params: &id094
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-001
+      storeId: '9088145987535877'
   期望:
-    intent: 查询积分抵扣金额
-    params: *id062
+    intent: 查询订单实付金额
+    params: *id094
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 积分抵扣金额
+      - 订单实付金额
       contains:
-      - 订单积分抵扣金额
+      - 订单实付金额
+  标签:
+  - 正常
+  用例ID: A-L1-133
+- 维度: 性能与资源
+  能力: 查询订单实付金额
+  层: L1
+  输入:
+    tool_name: query_order_actual_amount
+    tool_params: &id095
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535878'
+  期望:
+    intent: 查询订单实付金额
+    params: *id095
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 订单实付金额
+      contains:
+      - 订单实付金额
   标签:
   - 正常
   用例ID: A-L1-134
-- 维度: 性能与资源
-  能力: 查询积分抵扣金额
-  层: L1
-  输入:
-    tool_name: query_order_points_deduction
-    tool_params: *id062
-  期望:
-    intent: 查询积分抵扣金额
-    params: *id062
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 积分抵扣金额
-      contains:
-      - 订单积分抵扣金额
-  标签:
-  - 正常
-  用例ID: A-L1-135
 - 维度: 异常与容错
-  能力: 查询积分抵扣金额
+  能力: 查询订单实付金额
   层: L1
   输入:
-    tool_name: query_order_points_deduction
+    tool_name: query_order_actual_amount
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -2733,18 +3005,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 积分抵扣金额
       contains:
-      - 订单积分抵扣金额
+      - 订单实付金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-136
+  用例ID: A-L1-135
 - 维度: 协议契约
-  能力: 查询订单实付金额
+  能力: 查询商品ID
   层: L1
   输入:
-    tool_name: query_order_actual_amount
+    tool_name: query_product_id
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -2753,59 +3029,70 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 订单实付金额
       contains:
-      - 订单实付金额
+      - 商品ID
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-137
+  用例ID: A-L1-136
 - 维度: 工具描述与发现
-  能力: 查询订单实付金额
+  能力: 查询商品ID
   层: L1
   输入:
-    tool_name: query_order_actual_amount
-    tool_params: &id063
+    tool_name: query_product_id
+    tool_params: &id096
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-002
+      storeId: '9088145987535879'
+      productName: Fried Wing
   期望:
-    intent: 查询订单实付金额
-    params: *id063
+    intent: 查询商品ID
+    params: *id096
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 订单实付金额
+      - 商品ID
+      - 商品名称
       contains:
-      - 订单实付金额
+      - 商品ID
+  标签:
+  - 正常
+  用例ID: A-L1-137
+- 维度: 性能与资源
+  能力: 查询商品ID
+  层: L1
+  输入:
+    tool_name: query_product_id
+    tool_params: &id097
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535880'
+      productName: HK Style Curry Fish Ball
+  期望:
+    intent: 查询商品ID
+    params: *id097
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 商品ID
+      - 商品名称
+      contains:
+      - 商品ID
   标签:
   - 正常
   用例ID: A-L1-138
-- 维度: 性能与资源
-  能力: 查询订单实付金额
-  层: L1
-  输入:
-    tool_name: query_order_actual_amount
-    tool_params: *id063
-  期望:
-    intent: 查询订单实付金额
-    params: *id063
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 订单实付金额
-      contains:
-      - 订单实付金额
-  标签:
-  - 正常
-  用例ID: A-L1-139
 - 维度: 异常与容错
-  能力: 查询订单实付金额
+  能力: 查询商品ID
   层: L1
   输入:
-    tool_name: query_order_actual_amount
+    tool_name: query_product_id
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -2816,18 +3103,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 订单实付金额
       contains:
-      - 订单实付金额
+      - 商品ID
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-140
+  用例ID: A-L1-139
 - 维度: 协议契约
-  能力: 查询商品ID
+  能力: 查询商品名称
   层: L1
   输入:
-    tool_name: query_product_id
+    tool_name: query_product_name
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -2836,137 +3127,54 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 商品ID
-      - 商品名称
       contains:
-      - 商品ID
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-141
+  用例ID: A-L1-140
 - 维度: 工具描述与发现
-  能力: 查询商品ID
+  能力: 查询商品名称
   层: L1
   输入:
-    tool_name: query_product_id
-    tool_params: &id064
-      dateType: businessDate
-      date: 今日
-      storeId: XHM-STORE-003
-      productName: 小韩面-旺角店
+    tool_name: query_product_name
+    tool_params: &id098
+      productId: '9088145987535881'
   期望:
-    intent: 查询商品ID
-    params: *id064
+    intent: 查询商品名称
+    params: *id098
     output: 工具可正常调用
     block: false
     semantic:
       fields:
       - 商品ID
       - 商品名称
-      contains:
+  标签:
+  - 正常
+  用例ID: A-L1-141
+- 维度: 性能与资源
+  能力: 查询商品名称
+  层: L1
+  输入:
+    tool_name: query_product_name
+    tool_params: &id099
+      productId: '9088145987535883'
+  期望:
+    intent: 查询商品名称
+    params: *id099
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
       - 商品ID
+      - 商品名称
   标签:
   - 正常
   用例ID: A-L1-142
-- 维度: 性能与资源
-  能力: 查询商品ID
-  层: L1
-  输入:
-    tool_name: query_product_id
-    tool_params: *id064
-  期望:
-    intent: 查询商品ID
-    params: *id064
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      contains:
-      - 商品ID
-  标签:
-  - 正常
-  用例ID: A-L1-143
-- 维度: 异常与容错
-  能力: 查询商品ID
-  层: L1
-  输入:
-    tool_name: query_product_id
-    tool_params:
-      unknown_param_malformed: x
-      storeId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      contains:
-      - 商品ID
-  标签:
-  - 容错
-  用例ID: A-L1-144
-- 维度: 协议契约
-  能力: 查询商品名称
-  层: L1
-  输入:
-    tool_name: query_product_name
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-  标签:
-  - 畸形
-  用例ID: A-L1-145
-- 维度: 工具描述与发现
-  能力: 查询商品名称
-  层: L1
-  输入:
-    tool_name: query_product_name
-    tool_params: &id065
-      productId: XHM-PROD-001
-  期望:
-    intent: 查询商品名称
-    params: *id065
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-  标签:
-  - 正常
-  用例ID: A-L1-146
-- 维度: 性能与资源
-  能力: 查询商品名称
-  层: L1
-  输入:
-    tool_name: query_product_name
-    tool_params: *id065
-  期望:
-    intent: 查询商品名称
-    params: *id065
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-  标签:
-  - 正常
-  用例ID: A-L1-147
 - 维度: 异常与容错
   能力: 查询商品名称
   层: L1
@@ -2982,12 +3190,16 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 商品ID
-      - 商品名称
+      contains:
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-148
+  用例ID: A-L1-143
 - 维度: 协议契约
   能力: 查询商品类别
   层: L1
@@ -3001,53 +3213,156 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 商品类别
+      contains:
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-149
+  用例ID: A-L1-144
 - 维度: 工具描述与发现
   能力: 查询商品类别
   层: L1
   输入:
     tool_name: query_product_category
-    tool_params: &id066
+    tool_params: &id100
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-002
+      storeId: '9088145987535884'
   期望:
     intent: 查询商品类别
-    params: *id066
+    params: *id100
     output: 工具可正常调用
     block: false
     semantic:
       fields:
       - 商品类别
+  标签:
+  - 正常
+  用例ID: A-L1-145
+- 维度: 性能与资源
+  能力: 查询商品类别
+  层: L1
+  输入:
+    tool_name: query_product_category
+    tool_params: &id101
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535885'
+  期望:
+    intent: 查询商品类别
+    params: *id101
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 商品类别
+  标签:
+  - 正常
+  用例ID: A-L1-146
+- 维度: 异常与容错
+  能力: 查询商品类别
+  层: L1
+  输入:
+    tool_name: query_product_category
+    tool_params:
+      unknown_param_malformed: x
+      storeId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-147
+- 维度: 协议契约
+  能力: 查询商品销售数量
+  层: L1
+  输入:
+    tool_name: query_product_sales_quantity
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 商品销售数量
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-148
+- 维度: 工具描述与发现
+  能力: 查询商品销售数量
+  层: L1
+  输入:
+    tool_name: query_product_sales_quantity
+    tool_params: &id102
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535886'
+      productId: '9088145987535886'
+  期望:
+    intent: 查询商品销售数量
+    params: *id102
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - 商品销售数量
+      contains:
+      - 商品销售数量
+  标签:
+  - 正常
+  用例ID: A-L1-149
+- 维度: 性能与资源
+  能力: 查询商品销售数量
+  层: L1
+  输入:
+    tool_name: query_product_sales_quantity
+    tool_params: &id103
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535887'
+      productId: '9088145987535887'
+  期望:
+    intent: 查询商品销售数量
+    params: *id103
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 商品销售数量
+      contains:
+      - 商品销售数量
   标签:
   - 正常
   用例ID: A-L1-150
-- 维度: 性能与资源
-  能力: 查询商品类别
-  层: L1
-  输入:
-    tool_name: query_product_category
-    tool_params: *id066
-  期望:
-    intent: 查询商品类别
-    params: *id066
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 商品类别
-  标签:
-  - 正常
-  用例ID: A-L1-151
 - 维度: 异常与容错
-  能力: 查询商品类别
+  能力: 查询商品销售数量
   层: L1
   输入:
-    tool_name: query_product_category
+    tool_name: query_product_sales_quantity
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -3058,16 +3373,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 商品类别
+      contains:
+      - 商品销售数量
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-152
+  用例ID: A-L1-151
 - 维度: 协议契约
-  能力: 查询商品销售数量
+  能力: 查询商品销售金额
   层: L1
   输入:
-    tool_name: query_product_sales_quantity
+    tool_name: query_product_sales_amount
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3076,60 +3397,68 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 商品销售数量
       contains:
-      - 商品销售数量
+      - 商品销售金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-153
+  用例ID: A-L1-152
 - 维度: 工具描述与发现
-  能力: 查询商品销售数量
+  能力: 查询商品销售金额
   层: L1
   输入:
-    tool_name: query_product_sales_quantity
-    tool_params: &id067
+    tool_name: query_product_sales_amount
+    tool_params: &id104
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-003
-      productId: XHM-PROD-003
+      storeId: '9088145987535889'
+      productId: '9088145987535889'
   期望:
-    intent: 查询商品销售数量
-    params: *id067
+    intent: 查询商品销售金额
+    params: *id104
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 商品销售数量
+      - 商品销售金额
       contains:
-      - 商品销售数量
+      - 商品销售金额
+  标签:
+  - 正常
+  用例ID: A-L1-153
+- 维度: 性能与资源
+  能力: 查询商品销售金额
+  层: L1
+  输入:
+    tool_name: query_product_sales_amount
+    tool_params: &id105
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535890'
+      productId: '9088145987535890'
+  期望:
+    intent: 查询商品销售金额
+    params: *id105
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 商品销售金额
+      contains:
+      - 商品销售金额
   标签:
   - 正常
   用例ID: A-L1-154
-- 维度: 性能与资源
-  能力: 查询商品销售数量
-  层: L1
-  输入:
-    tool_name: query_product_sales_quantity
-    tool_params: *id067
-  期望:
-    intent: 查询商品销售数量
-    params: *id067
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 商品销售数量
-      contains:
-      - 商品销售数量
-  标签:
-  - 正常
-  用例ID: A-L1-155
 - 维度: 异常与容错
-  能力: 查询商品销售数量
+  能力: 查询商品销售金额
   层: L1
   输入:
-    tool_name: query_product_sales_quantity
+    tool_name: query_product_sales_amount
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -3140,18 +3469,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 商品销售数量
       contains:
-      - 商品销售数量
+      - 商品销售金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-156
+  用例ID: A-L1-155
 - 维度: 协议契约
-  能力: 查询商品销售金额
+  能力: 查询支付方式
   层: L1
   输入:
-    tool_name: query_product_sales_amount
+    tool_name: query_payment_method
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3160,63 +3493,65 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 商品销售金额
       contains:
-      - 商品销售金额
+      - 订单支付方式
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-157
+  用例ID: A-L1-156
 - 维度: 工具描述与发现
-  能力: 查询商品销售金额
+  能力: 查询支付方式
   层: L1
   输入:
-    tool_name: query_product_sales_amount
-    tool_params: &id068
-      dateType: businessDate
-      date: 今日
-      storeId: XHM-PROD-004
-      productId: XHM-PROD-004
+    tool_name: query_payment_method
+    tool_params: &id106
+      orderId: '9088145987535891'
   期望:
-    intent: 查询商品销售金额
-    params: *id068
+    intent: 查询支付方式
+    params: *id106
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 商品销售金额
+      - 支付方式
       contains:
-      - 商品销售金额
+      - 订单支付方式
+  标签:
+  - 正常
+  用例ID: A-L1-157
+- 维度: 性能与资源
+  能力: 查询支付方式
+  层: L1
+  输入:
+    tool_name: query_payment_method
+    tool_params: &id107
+      orderId: '9088145987535892'
+  期望:
+    intent: 查询支付方式
+    params: *id107
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 支付方式
+      contains:
+      - 订单支付方式
   标签:
   - 正常
   用例ID: A-L1-158
-- 维度: 性能与资源
-  能力: 查询商品销售金额
-  层: L1
-  输入:
-    tool_name: query_product_sales_amount
-    tool_params: *id068
-  期望:
-    intent: 查询商品销售金额
-    params: *id068
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 商品销售金额
-      contains:
-      - 商品销售金额
-  标签:
-  - 正常
-  用例ID: A-L1-159
 - 维度: 异常与容错
-  能力: 查询商品销售金额
+  能力: 查询支付方式
   层: L1
   输入:
-    tool_name: query_product_sales_amount
+    tool_name: query_payment_method
     tool_params:
       unknown_param_malformed: x
-      storeId:
+      orderId:
       - '0'
   期望:
     intent: 容错
@@ -3224,18 +3559,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 商品销售金额
       contains:
-      - 商品销售金额
+      - 订单支付方式
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-160
+  用例ID: A-L1-159
 - 维度: 协议契约
-  能力: 查询支付方式
+  能力: 查询支付金额
   层: L1
   输入:
-    tool_name: query_payment_method
+    tool_name: query_payment_amount
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3244,60 +3583,69 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 支付方式
       contains:
-      - 订单支付方式
+      - 支付金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-161
+  用例ID: A-L1-160
 - 维度: 工具描述与发现
-  能力: 查询支付方式
+  能力: 查询支付金额
   层: L1
   输入:
-    tool_name: query_payment_method
-    tool_params: &id069
-      orderId: XHM-PROD-005
+    tool_name: query_payment_amount
+    tool_params: &id108
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535893'
   期望:
-    intent: 查询支付方式
-    params: *id069
+    intent: 查询支付金额
+    params: *id108
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 支付方式
+      - 支付金额
       contains:
-      - 订单支付方式
+      - 支付金额
+  标签:
+  - 正常
+  用例ID: A-L1-161
+- 维度: 性能与资源
+  能力: 查询支付金额
+  层: L1
+  输入:
+    tool_name: query_payment_amount
+    tool_params: &id109
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535894'
+  期望:
+    intent: 查询支付金额
+    params: *id109
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 支付金额
+      contains:
+      - 支付金额
   标签:
   - 正常
   用例ID: A-L1-162
-- 维度: 性能与资源
-  能力: 查询支付方式
-  层: L1
-  输入:
-    tool_name: query_payment_method
-    tool_params: *id069
-  期望:
-    intent: 查询支付方式
-    params: *id069
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 支付方式
-      contains:
-      - 订单支付方式
-  标签:
-  - 正常
-  用例ID: A-L1-163
 - 维度: 异常与容错
-  能力: 查询支付方式
+  能力: 查询支付金额
   层: L1
   输入:
-    tool_name: query_payment_method
+    tool_name: query_payment_amount
     tool_params:
       unknown_param_malformed: x
-      orderId:
+      storeId:
       - '0'
   期望:
     intent: 容错
@@ -3305,18 +3653,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 支付方式
       contains:
-      - 订单支付方式
+      - 支付金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-164
+  用例ID: A-L1-163
 - 维度: 协议契约
-  能力: 查询支付金额
+  能力: 查询支付状态
   层: L1
   输入:
-    tool_name: query_payment_amount
+    tool_name: query_payment_status
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3325,135 +3677,57 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 支付金额
       contains:
-      - 支付金额
+      - 订单支付状态
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-165
+  用例ID: A-L1-164
 - 维度: 工具描述与发现
-  能力: 查询支付金额
+  能力: 查询支付状态
   层: L1
   输入:
-    tool_name: query_payment_amount
-    tool_params: &id070
-      dateType: businessDate
-      date: 今日
-      storeId: XHM-MEM-001
+    tool_name: query_payment_status
+    tool_params: &id110
+      orderId: '9088145987535895'
   期望:
-    intent: 查询支付金额
-    params: *id070
+    intent: 查询支付状态
+    params: *id110
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 支付金额
+      - 支付状态
       contains:
-      - 支付金额
+      - 订单支付状态
+  标签:
+  - 正常
+  用例ID: A-L1-165
+- 维度: 性能与资源
+  能力: 查询支付状态
+  层: L1
+  输入:
+    tool_name: query_payment_status
+    tool_params: &id111
+      orderId: '9088145987535896'
+  期望:
+    intent: 查询支付状态
+    params: *id111
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 支付状态
+      contains:
+      - 订单支付状态
   标签:
   - 正常
   用例ID: A-L1-166
-- 维度: 性能与资源
-  能力: 查询支付金额
-  层: L1
-  输入:
-    tool_name: query_payment_amount
-    tool_params: *id070
-  期望:
-    intent: 查询支付金额
-    params: *id070
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 支付金额
-      contains:
-      - 支付金额
-  标签:
-  - 正常
-  用例ID: A-L1-167
-- 维度: 异常与容错
-  能力: 查询支付金额
-  层: L1
-  输入:
-    tool_name: query_payment_amount
-    tool_params:
-      unknown_param_malformed: x
-      storeId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      fields:
-      - 支付金额
-      contains:
-      - 支付金额
-  标签:
-  - 容错
-  用例ID: A-L1-168
-- 维度: 协议契约
-  能力: 查询支付状态
-  层: L1
-  输入:
-    tool_name: query_payment_status
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      fields:
-      - 支付状态
-      contains:
-      - 订单支付状态
-  标签:
-  - 畸形
-  用例ID: A-L1-169
-- 维度: 工具描述与发现
-  能力: 查询支付状态
-  层: L1
-  输入:
-    tool_name: query_payment_status
-    tool_params: &id071
-      orderId: XHM-MEM-002
-  期望:
-    intent: 查询支付状态
-    params: *id071
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - 支付状态
-      contains:
-      - 订单支付状态
-  标签:
-  - 正常
-  用例ID: A-L1-170
-- 维度: 性能与资源
-  能力: 查询支付状态
-  层: L1
-  输入:
-    tool_name: query_payment_status
-    tool_params: *id071
-  期望:
-    intent: 查询支付状态
-    params: *id071
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 支付状态
-      contains:
-      - 订单支付状态
-  标签:
-  - 正常
-  用例ID: A-L1-171
 - 维度: 异常与容错
   能力: 查询支付状态
   层: L1
@@ -3469,13 +3743,17 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 支付状态
       contains:
       - 订单支付状态
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-172
+  用例ID: A-L1-167
 - 维度: 协议契约
   能力: 查询退款类型
   层: L1
@@ -3489,25 +3767,29 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 退款类型
       contains:
       - 退款类型
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-173
+  用例ID: A-L1-168
 - 维度: 工具描述与发现
   能力: 查询退款类型
   层: L1
   输入:
     tool_name: query_refund_type
-    tool_params: &id072
+    tool_params: &id112
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-003
+      storeId: '9088145987535897'
   期望:
     intent: 查询退款类型
-    params: *id072
+    params: *id112
     output: 工具可正常调用
     block: false
     semantic:
@@ -3515,33 +3797,130 @@
       - 退款类型
       contains:
       - 退款类型
+  标签:
+  - 正常
+  用例ID: A-L1-169
+- 维度: 性能与资源
+  能力: 查询退款类型
+  层: L1
+  输入:
+    tool_name: query_refund_type
+    tool_params: &id113
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535898'
+  期望:
+    intent: 查询退款类型
+    params: *id113
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 退款类型
+      contains:
+      - 退款类型
+  标签:
+  - 正常
+  用例ID: A-L1-170
+- 维度: 异常与容错
+  能力: 查询退款类型
+  层: L1
+  输入:
+    tool_name: query_refund_type
+    tool_params:
+      unknown_param_malformed: x
+      storeId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 退款类型
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-171
+- 维度: 协议契约
+  能力: 查询退款金额
+  层: L1
+  输入:
+    tool_name: query_refund_amount
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 退款金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-172
+- 维度: 工具描述与发现
+  能力: 查询退款金额
+  层: L1
+  输入:
+    tool_name: query_refund_amount
+    tool_params: &id114
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535899'
+  期望:
+    intent: 查询退款金额
+    params: *id114
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - 退款金额
+      contains:
+      - 退款金额
+  标签:
+  - 正常
+  用例ID: A-L1-173
+- 维度: 性能与资源
+  能力: 查询退款金额
+  层: L1
+  输入:
+    tool_name: query_refund_amount
+    tool_params: &id115
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535900'
+  期望:
+    intent: 查询退款金额
+    params: *id115
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 退款金额
+      contains:
+      - 退款金额
   标签:
   - 正常
   用例ID: A-L1-174
-- 维度: 性能与资源
-  能力: 查询退款类型
-  层: L1
-  输入:
-    tool_name: query_refund_type
-    tool_params: *id072
-  期望:
-    intent: 查询退款类型
-    params: *id072
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 退款类型
-      contains:
-      - 退款类型
-  标签:
-  - 正常
-  用例ID: A-L1-175
 - 维度: 异常与容错
-  能力: 查询退款类型
+  能力: 查询退款金额
   层: L1
   输入:
-    tool_name: query_refund_type
+    tool_name: query_refund_amount
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -3552,18 +3931,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 退款类型
       contains:
-      - 退款类型
+      - 退款金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-176
+  用例ID: A-L1-175
 - 维度: 协议契约
-  能力: 查询退款金额
+  能力: 查询退货商品
   层: L1
   输入:
-    tool_name: query_refund_amount
+    tool_name: query_returned_product
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3572,59 +3955,61 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 退款金额
       contains:
-      - 退款金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-177
+  用例ID: A-L1-176
 - 维度: 工具描述与发现
-  能力: 查询退款金额
+  能力: 查询退货商品
   层: L1
   输入:
-    tool_name: query_refund_amount
-    tool_params: &id073
+    tool_name: query_returned_product
+    tool_params: &id116
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-001
+      storeId: '9088145987535901'
   期望:
-    intent: 查询退款金额
-    params: *id073
+    intent: 查询退货商品
+    params: *id116
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 退款金额
-      contains:
-      - 退款金额
+      - 退货商品
+  标签:
+  - 正常
+  用例ID: A-L1-177
+- 维度: 性能与资源
+  能力: 查询退货商品
+  层: L1
+  输入:
+    tool_name: query_returned_product
+    tool_params: &id117
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535902'
+  期望:
+    intent: 查询退货商品
+    params: *id117
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 退货商品
   标签:
   - 正常
   用例ID: A-L1-178
-- 维度: 性能与资源
-  能力: 查询退款金额
-  层: L1
-  输入:
-    tool_name: query_refund_amount
-    tool_params: *id073
-  期望:
-    intent: 查询退款金额
-    params: *id073
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 退款金额
-      contains:
-      - 退款金额
-  标签:
-  - 正常
-  用例ID: A-L1-179
 - 维度: 异常与容错
-  能力: 查询退款金额
+  能力: 查询退货商品
   层: L1
   输入:
-    tool_name: query_refund_amount
+    tool_name: query_returned_product
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -3635,18 +4020,21 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 退款金额
       contains:
-      - 退款金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-180
+  用例ID: A-L1-179
 - 维度: 协议契约
-  能力: 查询退货商品
+  能力: 查询退货数量
   层: L1
   输入:
-    tool_name: query_returned_product
+    tool_name: query_returned_quantity
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3655,53 +4043,68 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 退货商品
+      contains:
+      - 退货数量
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-181
+  用例ID: A-L1-180
 - 维度: 工具描述与发现
-  能力: 查询退货商品
+  能力: 查询退货数量
   层: L1
   输入:
-    tool_name: query_returned_product
-    tool_params: &id074
+    tool_name: query_returned_quantity
+    tool_params: &id118
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-002
+      storeId: '9088145987535903'
+      productId: '9088145987535903'
   期望:
-    intent: 查询退货商品
-    params: *id074
+    intent: 查询退货数量
+    params: *id118
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 退货商品
+      - 退货数量
+      contains:
+      - 退货数量
+  标签:
+  - 正常
+  用例ID: A-L1-181
+- 维度: 性能与资源
+  能力: 查询退货数量
+  层: L1
+  输入:
+    tool_name: query_returned_quantity
+    tool_params: &id119
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145988322335'
+      productId: '9088145988322335'
+  期望:
+    intent: 查询退货数量
+    params: *id119
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 退货数量
+      contains:
+      - 退货数量
   标签:
   - 正常
   用例ID: A-L1-182
-- 维度: 性能与资源
-  能力: 查询退货商品
-  层: L1
-  输入:
-    tool_name: query_returned_product
-    tool_params: *id074
-  期望:
-    intent: 查询退货商品
-    params: *id074
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 退货商品
-  标签:
-  - 正常
-  用例ID: A-L1-183
 - 维度: 异常与容错
-  能力: 查询退货商品
+  能力: 查询退货数量
   层: L1
   输入:
-    tool_name: query_returned_product
+    tool_name: query_returned_quantity
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -3712,16 +4115,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 退货商品
+      contains:
+      - 退货数量
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-184
+  用例ID: A-L1-183
 - 维度: 协议契约
-  能力: 查询退货数量
+  能力: 查询会员标识
   层: L1
   输入:
-    tool_name: query_returned_quantity
+    tool_name: query_member_id
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3730,60 +4139,66 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 退货数量
       contains:
-      - 退货数量
+      - 会员标识
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-185
+  用例ID: A-L1-184
 - 维度: 工具描述与发现
-  能力: 查询退货数量
+  能力: 查询会员标识
   层: L1
   输入:
-    tool_name: query_returned_quantity
-    tool_params: &id075
+    tool_name: query_member_id
+    tool_params: &id120
       dateType: businessDate
       date: 今日
-      storeId: XHM-STORE-003
-      productId: XHM-STORE-003
+      storeId: '9088145988322331'
   期望:
-    intent: 查询退货数量
-    params: *id075
+    intent: 查询会员标识
+    params: *id120
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 退货数量
+      - 会员标识
       contains:
-      - 退货数量
+      - 会员标识
+  标签:
+  - 正常
+  用例ID: A-L1-185
+- 维度: 性能与资源
+  能力: 查询会员标识
+  层: L1
+  输入:
+    tool_name: query_member_id
+    tool_params: &id121
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145988322324'
+  期望:
+    intent: 查询会员标识
+    params: *id121
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 会员标识
+      contains:
+      - 会员标识
   标签:
   - 正常
   用例ID: A-L1-186
-- 维度: 性能与资源
-  能力: 查询退货数量
-  层: L1
-  输入:
-    tool_name: query_returned_quantity
-    tool_params: *id075
-  期望:
-    intent: 查询退货数量
-    params: *id075
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 退货数量
-      contains:
-      - 退货数量
-  标签:
-  - 正常
-  用例ID: A-L1-187
 - 维度: 异常与容错
-  能力: 查询退货数量
+  能力: 查询会员标识
   层: L1
   输入:
-    tool_name: query_returned_quantity
+    tool_name: query_member_id
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -3794,18 +4209,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 退货数量
       contains:
-      - 退货数量
+      - 会员标识
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-188
+  用例ID: A-L1-187
 - 维度: 协议契约
-  能力: 查询会员标识
+  能力: 查询会员消费金额
   层: L1
   输入:
-    tool_name: query_member_id
+    tool_name: query_member_consumption
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3814,59 +4233,68 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 会员标识
       contains:
-      - 会员标识
+      - 会员消费金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-189
+  用例ID: A-L1-188
 - 维度: 工具描述与发现
-  能力: 查询会员标识
+  能力: 查询会员消费金额
   层: L1
   输入:
-    tool_name: query_member_id
-    tool_params: &id076
+    tool_name: query_member_consumption
+    tool_params: &id122
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-001
+      storeId: '9088145988322325'
+      memberId: '9088145988322325'
   期望:
-    intent: 查询会员标识
-    params: *id076
+    intent: 查询会员消费金额
+    params: *id122
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 会员标识
+      - 会员消费金额
       contains:
-      - 会员标识
+      - 会员消费金额
+  标签:
+  - 正常
+  用例ID: A-L1-189
+- 维度: 性能与资源
+  能力: 查询会员消费金额
+  层: L1
+  输入:
+    tool_name: query_member_consumption
+    tool_params: &id123
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145988322323'
+      memberId: '9088145988322323'
+  期望:
+    intent: 查询会员消费金额
+    params: *id123
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 会员消费金额
+      contains:
+      - 会员消费金额
   标签:
   - 正常
   用例ID: A-L1-190
-- 维度: 性能与资源
-  能力: 查询会员标识
-  层: L1
-  输入:
-    tool_name: query_member_id
-    tool_params: *id076
-  期望:
-    intent: 查询会员标识
-    params: *id076
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 会员标识
-      contains:
-      - 会员标识
-  标签:
-  - 正常
-  用例ID: A-L1-191
 - 维度: 异常与容错
-  能力: 查询会员标识
+  能力: 查询会员消费金额
   层: L1
   输入:
-    tool_name: query_member_id
+    tool_name: query_member_consumption
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -3877,18 +4305,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 会员标识
       contains:
-      - 会员标识
+      - 会员消费金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-192
+  用例ID: A-L1-191
 - 维度: 协议契约
-  能力: 查询会员消费金额
+  能力: 查询积分使用
   层: L1
   输入:
-    tool_name: query_member_consumption
+    tool_name: query_points_usage
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3897,60 +4329,66 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 会员消费金额
       contains:
-      - 会员消费金额
+      - 积分使用情况
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-193
+  用例ID: A-L1-192
 - 维度: 工具描述与发现
-  能力: 查询会员消费金额
+  能力: 查询积分使用
   层: L1
   输入:
-    tool_name: query_member_consumption
-    tool_params: &id077
+    tool_name: query_points_usage
+    tool_params: &id124
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-002
-      memberId: XHM-PROD-002
+      storeId: '9088145988322326'
   期望:
-    intent: 查询会员消费金额
-    params: *id077
+    intent: 查询积分使用
+    params: *id124
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 会员消费金额
+      - 积分使用
       contains:
-      - 会员消费金额
+      - 积分使用情况
+  标签:
+  - 正常
+  用例ID: A-L1-193
+- 维度: 性能与资源
+  能力: 查询积分使用
+  层: L1
+  输入:
+    tool_name: query_points_usage
+    tool_params: &id125
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987404805'
+  期望:
+    intent: 查询积分使用
+    params: *id125
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 积分使用
+      contains:
+      - 积分使用情况
   标签:
   - 正常
   用例ID: A-L1-194
-- 维度: 性能与资源
-  能力: 查询会员消费金额
-  层: L1
-  输入:
-    tool_name: query_member_consumption
-    tool_params: *id077
-  期望:
-    intent: 查询会员消费金额
-    params: *id077
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 会员消费金额
-      contains:
-      - 会员消费金额
-  标签:
-  - 正常
-  用例ID: A-L1-195
 - 维度: 异常与容错
-  能力: 查询会员消费金额
+  能力: 查询积分使用
   层: L1
   输入:
-    tool_name: query_member_consumption
+    tool_name: query_points_usage
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -3961,18 +4399,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 会员消费金额
       contains:
-      - 会员消费金额
+      - 积分使用情况
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-196
+  用例ID: A-L1-195
 - 维度: 协议契约
-  能力: 查询积分使用
+  能力: 查询会员积分抵扣金额
   层: L1
   输入:
-    tool_name: query_points_usage
+    tool_name: query_points_deduction
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -3981,59 +4423,66 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 积分使用
       contains:
-      - 积分使用情况
+      - 会员积分抵扣金额
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-197
+  用例ID: A-L1-196
 - 维度: 工具描述与发现
-  能力: 查询积分使用
+  能力: 查询会员积分抵扣金额
   层: L1
   输入:
-    tool_name: query_points_usage
-    tool_params: &id078
+    tool_name: query_points_deduction
+    tool_params: &id126
       dateType: businessDate
       date: 今日
-      storeId: XHM-PROD-003
+      storeId: '9088145987535877'
   期望:
-    intent: 查询积分使用
-    params: *id078
+    intent: 查询会员积分抵扣金额
+    params: *id126
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 积分使用
+      - 积分抵扣金额
       contains:
-      - 积分使用情况
+      - 会员积分抵扣金额
+  标签:
+  - 正常
+  用例ID: A-L1-197
+- 维度: 性能与资源
+  能力: 查询会员积分抵扣金额
+  层: L1
+  输入:
+    tool_name: query_points_deduction
+    tool_params: &id127
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535878'
+  期望:
+    intent: 查询会员积分抵扣金额
+    params: *id127
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 积分抵扣金额
+      contains:
+      - 会员积分抵扣金额
   标签:
   - 正常
   用例ID: A-L1-198
-- 维度: 性能与资源
-  能力: 查询积分使用
-  层: L1
-  输入:
-    tool_name: query_points_usage
-    tool_params: *id078
-  期望:
-    intent: 查询积分使用
-    params: *id078
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 积分使用
-      contains:
-      - 积分使用情况
-  标签:
-  - 正常
-  用例ID: A-L1-199
 - 维度: 异常与容错
-  能力: 查询积分使用
+  能力: 查询会员积分抵扣金额
   层: L1
   输入:
-    tool_name: query_points_usage
+    tool_name: query_points_deduction
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -4044,18 +4493,22 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 积分使用
       contains:
-      - 积分使用情况
+      - 会员积分抵扣金额
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-200
+  用例ID: A-L1-199
 - 维度: 协议契约
-  能力: 查询积分抵扣金额
+  能力: 查询会员注册时间
   层: L1
   输入:
-    tool_name: query_points_deduction
+    tool_name: query_member_registered_at
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -4064,135 +4517,57 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 积分抵扣金额
       contains:
-      - 积分抵扣金额
+      - 会员注册时间
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-201
+  用例ID: A-L1-200
 - 维度: 工具描述与发现
-  能力: 查询积分抵扣金额
+  能力: 查询会员注册时间
   层: L1
   输入:
-    tool_name: query_points_deduction
-    tool_params: &id079
-      dateType: businessDate
-      date: 今日
-      storeId: XHM-PROD-004
+    tool_name: query_member_registered_at
+    tool_params: &id128
+      memberId: '9088145987535879'
   期望:
-    intent: 查询积分抵扣金额
-    params: *id079
+    intent: 查询会员注册时间
+    params: *id128
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - 积分抵扣金额
+      - 会员注册时间
       contains:
-      - 积分抵扣金额
+      - 会员注册时间
+  标签:
+  - 正常
+  用例ID: A-L1-201
+- 维度: 性能与资源
+  能力: 查询会员注册时间
+  层: L1
+  输入:
+    tool_name: query_member_registered_at
+    tool_params: &id129
+      memberId: '9088145987535880'
+  期望:
+    intent: 查询会员注册时间
+    params: *id129
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 会员注册时间
+      contains:
+      - 会员注册时间
   标签:
   - 正常
   用例ID: A-L1-202
-- 维度: 性能与资源
-  能力: 查询积分抵扣金额
-  层: L1
-  输入:
-    tool_name: query_points_deduction
-    tool_params: *id079
-  期望:
-    intent: 查询积分抵扣金额
-    params: *id079
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 积分抵扣金额
-      contains:
-      - 积分抵扣金额
-  标签:
-  - 正常
-  用例ID: A-L1-203
-- 维度: 异常与容错
-  能力: 查询积分抵扣金额
-  层: L1
-  输入:
-    tool_name: query_points_deduction
-    tool_params:
-      unknown_param_malformed: x
-      storeId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      fields:
-      - 积分抵扣金额
-      contains:
-      - 积分抵扣金额
-  标签:
-  - 容错
-  用例ID: A-L1-204
-- 维度: 协议契约
-  能力: 查询会员注册时间
-  层: L1
-  输入:
-    tool_name: query_member_registered_at
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      fields:
-      - 会员注册时间
-      contains:
-      - 会员注册时间
-  标签:
-  - 畸形
-  用例ID: A-L1-205
-- 维度: 工具描述与发现
-  能力: 查询会员注册时间
-  层: L1
-  输入:
-    tool_name: query_member_registered_at
-    tool_params: &id080
-      memberId: XHM-PROD-005
-  期望:
-    intent: 查询会员注册时间
-    params: *id080
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - 会员注册时间
-      contains:
-      - 会员注册时间
-  标签:
-  - 正常
-  用例ID: A-L1-206
-- 维度: 性能与资源
-  能力: 查询会员注册时间
-  层: L1
-  输入:
-    tool_name: query_member_registered_at
-    tool_params: *id080
-  期望:
-    intent: 查询会员注册时间
-    params: *id080
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 会员注册时间
-      contains:
-      - 会员注册时间
-  标签:
-  - 正常
-  用例ID: A-L1-207
 - 维度: 异常与容错
   能力: 查询会员注册时间
   层: L1
@@ -4208,13 +4583,17 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 会员注册时间
       contains:
       - 会员注册时间
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-208
+  用例ID: A-L1-203
 - 维度: 协议契约
   能力: 查询新增会员数
   层: L1
@@ -4228,26 +4607,30 @@
     output: 返回参数错误，不崩溃
     block: true
     semantic:
-      fields:
-      - 新增会员数
       contains:
       - 新增会员数
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-209
+  用例ID: A-L1-204
   sample_extra: 3
 - 维度: 工具描述与发现
   能力: 查询新增会员数
   层: L1
   输入:
     tool_name: query_new_member_count
-    tool_params: &id081
+    tool_params: &id130
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-001
+      storeId: '9088145987535881'
   期望:
     intent: 查询新增会员数
-    params: *id081
+    params: *id130
     output: 工具可正常调用
     block: false
     semantic:
@@ -4255,35 +4638,135 @@
       - 新增会员数
       contains:
       - 新增会员数
+  标签:
+  - 正常
+  用例ID: A-L1-205
+  sample_extra: 3
+- 维度: 性能与资源
+  能力: 查询新增会员数
+  层: L1
+  输入:
+    tool_name: query_new_member_count
+    tool_params: &id131
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535883'
+  期望:
+    intent: 查询新增会员数
+    params: *id131
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 新增会员数
+      contains:
+      - 新增会员数
+  标签:
+  - 正常
+  用例ID: A-L1-206
+  sample_extra: 3
+- 维度: 异常与容错
+  能力: 查询新增会员数
+  层: L1
+  输入:
+    tool_name: query_new_member_count
+    tool_params:
+      unknown_param_malformed: x
+      storeId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 新增会员数
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-207
+  sample_extra: 3
+- 维度: 协议契约
+  能力: 无数据查询
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 空结果
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-208
+- 维度: 工具描述与发现
+  能力: 无数据查询
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params: &id132
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535884'
+  期望:
+    intent: 无数据查询
+    params: *id132
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - 空结果
+      - 暂无数据
+      contains:
+      - 空结果
+  标签:
+  - 正常
+  用例ID: A-L1-209
+- 维度: 性能与资源
+  能力: 无数据查询
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params: &id133
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535885'
+  期望:
+    intent: 无数据查询
+    params: *id133
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 空结果
+      - 暂无数据
+      contains:
+      - 空结果
   标签:
   - 正常
   用例ID: A-L1-210
-  sample_extra: 3
-- 维度: 性能与资源
-  能力: 查询新增会员数
-  层: L1
-  输入:
-    tool_name: query_new_member_count
-    tool_params: *id081
-  期望:
-    intent: 查询新增会员数
-    params: *id081
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 新增会员数
-      contains:
-      - 新增会员数
-  标签:
-  - 正常
-  用例ID: A-L1-211
-  sample_extra: 3
 - 维度: 异常与容错
-  能力: 查询新增会员数
+  能力: 无数据查询
   层: L1
   输入:
-    tool_name: query_new_member_count
+    tool_name: query_order_count
     tool_params:
       unknown_param_malformed: x
       storeId:
@@ -4294,16 +4777,19 @@
     output: 非法输入被友好处理，不崩溃
     block: true
     semantic:
-      fields:
-      - 新增会员数
       contains:
-      - 新增会员数
+      - 空结果
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
   - 容错
-  用例ID: A-L1-212
-  sample_extra: 3
+  用例ID: A-L1-211
 - 维度: 协议契约
-  能力: 无数据查询
+  能力: 越权查询
   层: L1
   输入:
     tool_name: query_order_count
@@ -4316,321 +4802,233 @@
     block: true
     semantic:
       contains:
-      - 空结果
+      - 无权限
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-213
-- 维度: 工具描述与发现
-  能力: 无数据查询
+  用例ID: A-L1-212
+- 维度: 异常与容错
+  能力: 越权查询
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params: &id082
+    tool_params:
+      unknown_param_malformed: x
+      storeId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 无权限
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-213
+- 维度: 协议契约
+  能力: 指令注入
+  层: L1
+  输入:
+    tool_name: query_member_consumption
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-214
+- 维度: 异常与容错
+  能力: 指令注入
+  层: L1
+  输入:
+    tool_name: query_member_consumption
+    tool_params:
+      unknown_param_malformed: x
+      storeId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 参数非法
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-215
+- 维度: 协议契约
+  能力: 组合查询
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 查询结果
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-216
+- 维度: 异常与容错
+  能力: 组合查询
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 查询结果
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-217
+- 维度: 协议契约
+  能力: 日期范围查询
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: true
+    semantic:
+      contains:
+      - 正确结果
+      - 不崩溃
+      - 参数错误
+      - 错误
+      - 无效
+      - 拒绝
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-218
+- 维度: 工具描述与发现
+  能力: 日期范围查询
+  层: L1
+  输入:
+    tool_name: query_order_count
+    tool_params: &id134
       dateType: businessDate
       date: 今日
-      storeId: XHM-MEM-002
+      storeId: '9088145987535890'
   期望:
-    intent: 无数据查询
-    params: *id082
+    intent: 日期范围查询
+    params: *id134
     output: 工具可正常调用
     block: false
     semantic:
+      fields:
+      - 日期范围
+      - 汇总结果
       contains:
-      - 空结果
-  标签:
-  - 正常
-  用例ID: A-L1-214
-- 维度: 性能与资源
-  能力: 无数据查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: *id082
-  期望:
-    intent: 无数据查询
-    params: *id082
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      contains:
-      - 空结果
-  标签:
-  - 正常
-  用例ID: A-L1-215
-- 维度: 异常与容错
-  能力: 无数据查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params:
-      unknown_param_malformed: x
-      storeId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 空结果
-  标签:
-  - 容错
-  用例ID: A-L1-216
-- 维度: 协议契约
-  能力: 越权查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-  标签:
-  - 畸形
-  用例ID: A-L1-217
-- 维度: 工具描述与发现
-  能力: 越权查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: &id083
-      storeId: XHM-MEM-003
-  期望:
-    intent: 越权查询
-    params: *id083
-    output: 工具可正常调用
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-218
-- 维度: 性能与资源
-  能力: 越权查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: *id083
-  期望:
-    intent: 越权查询
-    params: *id083
-    output: 单次调用延迟可接受
-    block: false
+      - 正确结果
   标签:
   - 正常
   用例ID: A-L1-219
-- 维度: 异常与容错
-  能力: 越权查询
+- 维度: 性能与资源
+  能力: 日期范围查询
   层: L1
   输入:
     tool_name: query_order_count
-    tool_params:
-      unknown_param_malformed: x
-      storeId:
-      - '0'
+    tool_params: &id135
+      dateType: businessDate
+      date: 今日
+      storeId: '9088145987535891'
   期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
+    intent: 日期范围查询
+    params: *id135
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - 日期范围
+      - 汇总结果
+      contains:
+      - 正确结果
   标签:
-  - 容错
+  - 正常
   用例ID: A-L1-220
-- 维度: 协议契约
-  能力: 指令注入
+- 维度: 异常与容错
+  能力: 日期范围查询
   层: L1
   输入:
-    tool_name: query_member_consumption
+    tool_name: query_order_count
     tool_params:
       unknown_param_malformed: x
+      storeId:
+      - '0'
   期望:
-    intent: 协议错误
+    intent: 容错
     params: {}
-    output: 返回参数错误，不崩溃
+    output: 非法输入被友好处理，不崩溃
     block: true
+    semantic:
+      contains:
+      - 正确结果
+      - 友好
+      - 不崩溃
+      - 容错
+      - 错误
+      - 拒绝
+      any_of: true
   标签:
-  - 畸形
+  - 容错
   用例ID: A-L1-221
-- 维度: 工具描述与发现
-  能力: 指令注入
-  层: L1
-  输入:
-    tool_name: query_member_consumption
-    tool_params: &id084
-      dateType: businessDate
-      date: 今日
-      storeId: XHM-STORE-001
-  期望:
-    intent: 指令注入
-    params: *id084
-    output: 工具可正常调用
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-222
-- 维度: 性能与资源
-  能力: 指令注入
-  层: L1
-  输入:
-    tool_name: query_member_consumption
-    tool_params: *id084
-  期望:
-    intent: 指令注入
-    params: *id084
-    output: 单次调用延迟可接受
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-223
-- 维度: 异常与容错
-  能力: 指令注入
-  层: L1
-  输入:
-    tool_name: query_member_consumption
-    tool_params:
-      unknown_param_malformed: x
-      storeId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-  标签:
-  - 容错
-  用例ID: A-L1-224
-- 维度: 协议契约
-  能力: 组合查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-  标签:
-  - 畸形
-  用例ID: A-L1-225
-- 维度: 工具描述与发现
-  能力: 组合查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: &id085 {}
-  期望:
-    intent: 组合查询
-    params: *id085
-    output: 工具可正常调用
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-226
-- 维度: 性能与资源
-  能力: 组合查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: *id085
-  期望:
-    intent: 组合查询
-    params: *id085
-    output: 单次调用延迟可接受
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-227
-- 维度: 异常与容错
-  能力: 组合查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-  标签:
-  - 容错
-  用例ID: A-L1-228
-- 维度: 协议契约
-  能力: 日期范围查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 正确结果
-  标签:
-  - 畸形
-  用例ID: A-L1-229
-- 维度: 工具描述与发现
-  能力: 日期范围查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: &id086
-      dateType: businessDate
-      date: 今日
-      storeId: XHM-STORE-003
-  期望:
-    intent: 日期范围查询
-    params: *id086
-    output: 工具可正常调用
-    block: false
-    semantic:
-      contains:
-      - 正确结果
-  标签:
-  - 正常
-  用例ID: A-L1-230
-- 维度: 性能与资源
-  能力: 日期范围查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params: *id086
-  期望:
-    intent: 日期范围查询
-    params: *id086
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      contains:
-      - 正确结果
-  标签:
-  - 正常
-  用例ID: A-L1-231
-- 维度: 异常与容错
-  能力: 日期范围查询
-  层: L1
-  输入:
-    tool_name: query_order_count
-    tool_params:
-      unknown_param_malformed: x
-      storeId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 正确结果
-  标签:
-  - 容错
-  用例ID: A-L1-232

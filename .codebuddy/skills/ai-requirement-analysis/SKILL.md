@@ -131,6 +131,34 @@ python generate_dataset.py --req-type <A|B|C|D|E> --system <系统名> --out ../
 > **校验机制**：评分时优先用「确定性语义校验器」(`rubric/semantic_verify.py`) 自动评分
 > （文本包含/字段齐全/值相等，不依赖 LLM，via=rule）；规则判不了的主观维度才下沉到 LLM-as-Judge。
 
+## 生成后检查（内容 review + Excel 导出）
+
+生成/校验完成后做两步人工可读检查：`review_dataset.py` 出**内容体检报告**（暴露覆盖/期望/重复问题），`export_to_excel.py` 出**逐条明细 Excel**（人眼浏览核对）。两者都是纯规则、不依赖 LLM：
+
+```powershell
+cd ai-test-framework/scripts
+
+# 1) 内容体检：层/维度/能力分布、期望健康度、真重复、能力目录对照
+python review_dataset.py                               # 全部数据集
+python review_dataset.py -a ../ability/<能力目录.yaml> ../datasets/<数据集>.yaml
+
+# 2) 导出 Excel：每条用例一行 + 覆盖矩阵 + 汇总
+python export_to_excel.py                              # 导出 datasets/ 下全部 yaml
+python export_to_excel.py ../datasets/<数据集>.yaml    # 只导出指定数据集
+```
+
+`review_dataset.py` 检查项：头部「用例数」一致性 / 层分布 / 维度分布 / 能力覆盖均衡（max > min×3 告警）/ 期望健康度（缺 intent/output/semantic、block 却无 semantic）/ 标签分布 / 真重复（同能力+维度+输入）/ 能力目录覆盖对照。
+
+`export_to_excel.py` 输出到 `datasets/excel/<数据集名>.xlsx`，每个文件含 3 个 sheet：
+
+| Sheet | 用途 |
+|---|---|
+| **用例明细** | 每条用例一行（用例ID/层/能力/维度/输入/意图/期望输出/Block/语义/标签）；冻结首行+自动筛选，L2 浅黄 / L3 浅蓝，拒绝(Block)用例红字标出 |
+| **覆盖矩阵** | 能力 × 维度 用例数矩阵，缺口(0)红底高亮，右侧合计 |
+| **汇总** | 用例总数 / L1/L2/L3 分布 / Block 占比（COUNTIF 公式动态统计） |
+
+依赖 `openpyxl`（`pip install openpyxl`）。两个脚本都通用、不绑定具体系统；典型用法：review 确认质量门槛通过 → 打开 Excel 抽查覆盖均衡、核对边界能力用例是否补足。
+
 ## 真实业务实体清单
 
 生成用例时的"对象名"必须来自真实系统实体，**不虚构**：
