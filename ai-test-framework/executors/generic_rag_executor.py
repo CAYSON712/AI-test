@@ -197,7 +197,7 @@ class GenericRagExecutor(BaseExecutor):
             except Exception:
                 pass  # 真实接口失败，退回 LLM
         # 用 LLM 生成
-        from llm_client import LLMClient
+        from _11_llm_client import LLMClient
         content = "\n".join(f"- {d['content']}" for d in docs)
         prompt = f"""
 你是{self.sys.system}的智能助手。请基于以下知识库文档回答用户问题，只依据文档内容，不要编造。

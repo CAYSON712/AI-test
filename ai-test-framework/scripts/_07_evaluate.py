@@ -4,7 +4,7 @@
 =================================================
 用法：
   cd ai-test-framework/scripts
-  python evaluate.py --req-type C --dataset ../datasets/xxx.yaml
+  python _07_evaluate.py --req-type C --dataset ../datasets/xxx.yaml
 """
 import argparse
 import os

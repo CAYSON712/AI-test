@@ -1,0 +1,93 @@
+# =====================================================================
+# 系统配置：小韩面 RetailPOS 数据查询（AutoMart MCP 纯查询系统）
+# =====================================================================
+# 用途：给 generic_mcp_executor 提供"连接 + 工具 schema"。
+# 能力→工具映射、成功标准从 ability/能力目录_RetailPOS数据查询.yaml 读取。
+# 真实 MCP：https://test-auto-mart-mcp.somyeon.com/mcp（18 工具，本系统用 11 个纯查询工具）
+# 探针事实（2026-09-02）：
+#   - ID 类参数（productId/productIds）只接受 string；数字会报服务端错
+#   - 公司 测试公司(26377677164869) / 店铺 Test Store(26377732552517)
+#   - DataX 报表需 merchantId + ISO8601(+08:00) 时间窗；order_sales 需 orderSourceType=0 才有数据
+#   - search_products_by_name 当前环境命中恒为 0（如实返回即可）
+# =====================================================================
+
+# ---- 连接配置（从 .env 读，AUTO_MART_* 前缀区分于旧 POS）----
+连接:
+  需求类型: "C"                  # C=Agent+MCP 对话式直连
+  base_url_env: "AUTO_MART_MCP_URL"
+  token_env: "AUTO_MART_MCP_TOKEN"
+  company_id_env: "AUTO_MART_COMPANY_ID"      # 请求头 CompanyId = 26377677164869
+  merchant_id_env: "AUTO_MART_MERCHANT_ID"    # 默认店铺 = Test Store
+  llm_base_url_env: "LLM_API_BASE"            # 复用通用 LLM 决策层
+  llm_api_key_env: "LLM_API_KEY"
+  llm_model_env: "LLM_MODEL"
+  请求头: {CompanyId: "{{company_id}}"}
+  auth_header: "Authorization: Bearer {{token}}"
+
+# ---- 通用命名（覆盖 executor 业务命名）----
+公司ID请求头: "CompanyId"                     # 请求头携带公司ID的字段名
+默认上下文参数名: "merchantIds"               # 店铺参数（复数）
+实体ID参数名: "productIds"                    # 商品ID参数（复数）
+实体名参数名: "productName"                   # 按名搜索参数
+按名搜索工具: [search_products_by_name]       # 「商品名→ID」解析白名单
+需ID解析的工具: [query_products_by_ids, query_product_detail_by_id]
+连接演示工具: "query_merchants"               # _demo_connect 验证连接用
+
+# ---- MCP 工具 schema（name 必须与能力目录「工具」字段一致；params/required 对齐真实 schema）----
+mcp_tools:
+  - name: query_companies
+    description: 查询当前账号授权范围内的所有公司，返回公司ID、名称和下属店铺列表；支持按公司名称模糊搜索或指定公司ID列表筛选。
+    params: [companyName, companyIds]
+    required: []
+  - name: query_merchants
+    description: 获取当前账号授权范围内的所有店铺列表及每店无人值守状态。业务前置步骤：先用它拿店铺ID(MerchantId)，再查菜单/商品/报表。
+    params: [merchantName]
+    required: []
+  - name: query_menus
+    description: 查询菜单列表，支持按店铺、状态、销售渠道、菜单名称筛选；不指定店铺时返回所有授权店铺的菜单。
+    params: [merchantIds, statuses, saleChannel, menuName]
+    required: []
+  - name: query_categories
+    description: 查询分类列表，支持按店铺、分类名称筛选；不指定店铺时自动返回所有授权店铺的分类。
+    params: [merchantIds, categoryName, menuIds, categoryIds]
+    required: []
+  - name: query_products_by_filter
+    description: 按分类ID、商品类型、商品状态等条件组合查询商品列表；所有参数可选，不指定时返回全部商品。结果按商品名称分组。type 合法值如 Normal。
+    params: [categoryIds, type, status]
+    required: []
+  - name: query_products_by_ids
+    description: 根据商品ID列表批量查询商品信息，结果按商品名称分组返回；ID 传字符串，如 productIds=["26723267156165"]。
+    params: [productIds]
+    required: [productIds]
+  - name: query_product_detail_by_id
+    description: 根据商品ID查询商品详细信息，包括商品基本信息、所属分类、规格组和菜单等关联数据；productId 传字符串。
+    params: [productId, includeCategory, includeSpecificationGroup, includeMenu]
+    required: [productId]
+  - name: search_products_by_name
+    description: 按商品名称模糊搜索商品，支持按上架/下架状态筛选；返回商品ID、名称、价格，结果按名称分组。
+    params: [merchantIds, productName, status]
+    required: [productName]
+  - name: query_datax_total_reports
+    description: 查询 DataX 店铺经营汇总报表（FlatTotalReport）。时间范围必填 ISO8601 带时区，如 startAt=2026-09-01T00:00:00+08:00 endAt=2026-09-02T00:00:00+08:00；结束时间不包含在范围内。返回 orderCount/totalSales/totalGuests/newMembers 等。
+    params: [merchantId, startAt, endAt, limit, sortField, sortDirection]
+    required: [merchantId, startAt, endAt]
+  - name: query_datax_order_sales_reports
+    description: 查询 DataX 订单销售报表（FlatOrderSalesReport），可按订单/状态/支付/来源筛选。必填 merchantId+时间窗；业务上必须传 orderSourceType（来源类型，0=当前测试环境有数据的值）否则 50001。
+    params: [orderId, orderType, orderStatus, paymentStatus, paymentType, sourceName, orderSourceType, merchantId, startAt, endAt, limit]
+    required: [merchantId, startAt, endAt]
+  - name: query_datax_menu_product_category_reports
+    description: 查询 DataX 菜单商品分类报表（FlatMenuProductCategoryReport），可按对象ID/名称/类型筛选。必填 merchantId+ISO8601 时间窗。
+    params: [refId, name, type, merchantId, startAt, endAt, limit]
+    required: [merchantId, startAt, endAt]
+
+# ---- 需要自动补默认店铺的工具（缺 merchantIds 时填默认店铺 Test Store）----
+# 注意：DataX 工具用单数 merchantId 且能力参数已带，不列入，避免补错字段。
+需要默认上下文参数的工具:
+  - query_menus
+  - query_categories
+  - query_products_by_filter
+  - search_products_by_name
+  - query_products_by_ids
+  - query_product_detail_by_id
+
+# ---- 纯查询系统：无写操作，无需 verify/需要校验的工具 ----

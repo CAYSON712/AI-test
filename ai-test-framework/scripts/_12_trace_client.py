@@ -12,7 +12,7 @@ Trace 上报客户端（通用）
   - 上报后返回 trace_id；离线时返回 None 并提醒
 
 用法：
-  from trace_client import report_case_trace
+  from _12_trace_client import report_case_trace
   trace_id = report_case_trace(base_url, case, result, scores, system)
 """
 import json

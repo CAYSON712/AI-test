@@ -16,7 +16,7 @@
 
 用法：
   cd ai-test-framework/scripts
-  python generate_dataset.py --req-type C --system 某系统 \
+  python _02_generate_dataset.py --req-type C --system 某系统 \
       --ability ../ability/能力目录_某系统.yaml \
       --products ../ability/实体清单_某系统参考.yaml \
       --out ../datasets/C_某系统.yaml
@@ -339,10 +339,14 @@ def _param_value(param, e):
       2) 语义别名兜底（id/name/price/status/category/merchant/qty...）
     """
     pl = str(param).lower()
-    # 1) 实体字段精确/包含匹配
+    # 1) 实体字段匹配：先精确匹配（防止 "id" 等短 key 抢先命中 merchantId/terminalIds
+    #    等长参数名，取错实体自身 id），无精确命中再做包含匹配
+    for k, v in e.items():
+        if pl == str(k).lower():
+            return _as_param_value(v, pl)
     for k, v in e.items():
         kl = str(k).lower()
-        if pl == kl or (len(pl) >= 3 and (pl in kl or kl in pl)):
+        if len(pl) >= 3 and (pl in kl or kl in pl):
             return _as_param_value(v, pl)
     # 2) 语义别名兜底
     if "id" in pl:
@@ -1850,25 +1854,50 @@ def build_l2(products, l1_cases, target_share=0.30):
     return mutated[:n_target]
 
 
-def build_d_l2(abilities, l1_cases, target_share=0.30):
-    """D 类 L2：Skill 工具调用格式的参数级变异。
+def build_d_l2(abilities, l1_cases, target_share=0.30,
+               base_dim="触发条件正确性", dim_map=None):
+    """工具调用格式的参数级变异（A/D 类通用）。
 
-    build_l2 面向对话文本（B/C 类）的实体替换/句式改写，不适用 D 类
-    （输入是 dict: {tool_name, tool_params}）。D 类 L2 变异策略：
+    build_l2 面向对话文本（B/C 类）的实体替换/句式改写，不适用 A/D 类
+    （输入是 dict: {tool_name, tool_params}）。变异策略：
       A 参数缺失     删掉一个必填参数 → 契约拒绝
       B 数值变异     数值参数改边界值（0/-1/超大）→ 能力边界拒绝
       C 未知参数     注入未知参数 → 契约拒绝
       D 类型错配     数值参数改成字符串 → 契约拒绝
       E 工具名错配   相似但错误工具名 → 不应触发
     全部走 build_expect(block=True) 重建期望，保证拒绝语义一致。
+
+    base_dim: 取哪一维的 L1 正常调用做变异。D 类表=「触发条件正确性」，
+              A 类表=「调用正确性」。
+    dim_map: 变异类型 -> 目标维度。默认映射到 D 类 6 维表；A 类需传
+             其 8 维表内的维度（如 参数校验/调用正确性）。
     """
     if not l1_cases:
         return []
     rng = random.Random(20260813)
     cap_by_name = {c.get("能力"): c for c in abilities if c.get("能力")}
-    # 只对「触发条件正确性」（正常参数调用）做变异，避免对已是负向的
+    dm = dim_map or {
+        "缺失": "输入输出契约",
+        "数值": "能力边界",
+        "注入": "输入输出契约",
+        "类型": "错误处理",
+        "错配": "触发条件正确性",
+    }
+    # 只对 base_dim（正常参数调用）做变异，避免对已是负向的
     # 契约/边界/错误用例再叠加变异（无意义且产生噪声）。
-    base = [c for c in l1_cases if c.get("维度") == "触发条件正确性"]
+    base = [c for c in l1_cases if c.get("维度") == base_dim]
+
+    # L1 输入指纹：变异产出的 (能力, 维度, 输入) 若与 L1 已有契约用例撞输入，
+    # 会形成「同能力+同维度+同输入」真重复（如参数缺失变异 == L1 参数校验缺失
+    # 用例）。变异前先剔除，避免生成器产出 review 判重的用例。
+    def _key(c):
+        inp = c.get("输入")
+        if isinstance(inp, dict):
+            inp = json.dumps(inp, ensure_ascii=False, sort_keys=True)
+        return (c.get("能力"), c.get("维度"), inp)
+
+    l1_keys = {_key(c) for c in l1_cases}
+
     mutated = []
     for c in base:
         inp = c.get("输入") or {}
@@ -1880,19 +1909,23 @@ def build_d_l2(abilities, l1_cases, target_share=0.30):
         name = c.get("能力")
         num_keys = [k for k, v in tp.items() if isinstance(v, (int, float))]
 
-        # A 参数缺失：删掉第一个参数 → 输入输出契约
+        def _push(nc):
+            if _key(nc) not in l1_keys:
+                mutated.append(nc)
+
+        # A 参数缺失：删掉第一个参数
         if tp:
             drop = next(iter(tp))
             mtp = {k: v for k, v in tp.items() if k != drop}
             nc = copy.deepcopy(c)
             nc["输入"] = {"tool_name": tool, "tool_params": mtp}
             nc["层"] = "L2"
-            nc["维度"] = "输入输出契约"
+            nc["维度"] = dm["缺失"]
             nc["标签"] = ["参数缺失"]
             nc["期望"] = build_expect(cap, intent=name, params=mtp,
                                       output="缺失参数被拒绝/提示", block=True)
-            mutated.append(nc)
-        # B 数值变异：第一个数值参数改边界值 → 能力边界
+            _push(nc)
+        # B 数值变异：第一个数值参数改边界值
         for edge in (0, -1, 9999999999999999):
             if not num_keys:
                 break
@@ -1901,42 +1934,42 @@ def build_d_l2(abilities, l1_cases, target_share=0.30):
             nc = copy.deepcopy(c)
             nc["输入"] = {"tool_name": tool, "tool_params": mtp}
             nc["层"] = "L2"
-            nc["维度"] = "能力边界"
+            nc["维度"] = dm["数值"]
             nc["标签"] = ["数值变异"]
             nc["期望"] = build_expect(cap, intent=name, params=mtp,
                                       output="越界参数被拒绝/提示", block=True)
-            mutated.append(nc)
-        # C 未知参数注入 → 输入输出契约
+            _push(nc)
+        # C 未知参数注入
         mtp = {**tp, "unknown_param": "x"}
         nc = copy.deepcopy(c)
         nc["输入"] = {"tool_name": tool, "tool_params": mtp}
         nc["层"] = "L2"
-        nc["维度"] = "输入输出契约"
+        nc["维度"] = dm["注入"]
         nc["标签"] = ["参数注入"]
         nc["期望"] = build_expect(cap, intent=name, params=mtp,
                                   output="未知参数被拒绝/提示", block=True)
-        mutated.append(nc)
-        # D 类型错配：数值参数改成字符串 → 错误处理
+        _push(nc)
+        # D 类型错配：数值参数改成字符串
         if num_keys:
             k0 = num_keys[0]
             mtp = {**tp, k0: "abc"}
             nc = copy.deepcopy(c)
             nc["输入"] = {"tool_name": tool, "tool_params": mtp}
             nc["层"] = "L2"
-            nc["维度"] = "错误处理"
+            nc["维度"] = dm["类型"]
             nc["标签"] = ["类型错配"]
             nc["期望"] = build_expect(cap, intent=name, params=mtp,
                                       output="参数类型错误被拒绝/提示", block=True)
-            mutated.append(nc)
-        # E 工具名错配：相似但错误的工具名 → 不应触发（触发条件正确性）
+            _push(nc)
+        # E 工具名错配：相似但错误的工具名 → 不应触发
         nc = copy.deepcopy(c)
         nc["输入"] = {"tool_name": tool + "_typo", "tool_params": dict(tp)}
         nc["层"] = "L2"
-        nc["维度"] = "触发条件正确性"
+        nc["维度"] = dm["错配"]
         nc["标签"] = ["工具错配"]
         nc["期望"] = build_expect(cap, intent=name, params=tp,
                                   output="工具无效，拒绝触发", block=True)
-        mutated.append(nc)
+        _push(nc)
 
     n_l1 = len(l1_cases)
     n_target = int(n_l1 * target_share / (1 - target_share)) if n_l1 else 0
@@ -2180,7 +2213,15 @@ def main():
     if args.req_type == "A":
         # A 类：纯 MCP 工具测试（8 维全覆盖），「工具调用」格式，直连执行器消费
         l1 = build_a(products, abilities, args.req_type)
-        l2 = []
+        # A 类 L2：工具调用格式的参数级变异（复用 build_d_l2，变异维度映射
+        # 到 A 类 8 维表内的「参数校验/调用正确性」）。
+        l2 = build_d_l2(
+            abilities, l1,
+            target_share=TARGET_SHARE["L2"],
+            base_dim="调用正确性",
+            dim_map={"缺失": "参数校验", "数值": "参数校验",
+                     "注入": "参数校验", "类型": "参数校验",
+                     "错配": "调用正确性"})
     elif args.req_type == "D":
         # D 类：Skill 原子能力（独立 6 维表），「工具调用」格式
         l1 = build_d(products, abilities, args.req_type)

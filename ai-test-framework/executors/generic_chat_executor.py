@@ -48,7 +48,7 @@ class GenericChatExecutor(BaseExecutor):
         self.system = system
         # 能力来源：调用方显式传入（B 类能力目录拍平），否则读能力目录
         self.capabilities = capabilities or self._load_capabilities(system)
-        from llm_client import LLMClient
+        from _11_llm_client import LLMClient
         from rubric.semantic_verify import verify_case
         self.llm = LLMClient()
         self._verify_case = verify_case

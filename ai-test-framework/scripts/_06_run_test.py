@@ -6,8 +6,8 @@
 
 用法：
   cd ai-test-framework/scripts
-  python run_test.py --req-type C --dataset ../datasets/C_某系统.yaml --executor mock
-  python run_test.py --req-type C --dataset ../datasets/C_某系统.yaml --executor real --runs 5
+  python _06_run_test.py --req-type C --dataset ../datasets/C_某系统.yaml --executor mock
+  python _06_run_test.py --req-type C --dataset ../datasets/C_某系统.yaml --executor real --runs 5
 """
 import argparse
 import os
@@ -24,8 +24,8 @@ sys.path.insert(0, os.path.join(_ROOT, "executors"))
 
 from executors.registry import get_registry
 from rubric.rubric import RubricJudger, score_to_label
-from scripts.evaluate import load_dimension_tables
-from scripts.trace_client import report_case_trace
+from scripts._07_evaluate import load_dimension_tables
+from scripts._12_trace_client import report_case_trace
 
 
 def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=None,
@@ -258,13 +258,13 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     # 可选：跑完自动生成评估报告（--report）
     if auto_report:
         try:
-            from scripts.report import generate_report
+            from scripts._08_report import generate_report
             report_path = os.path.join(_ROOT, "report",
                                        f"评估报告_{req_type}.md")
             generate_report(out_path, report_path)
             print(f"报告已自动生成: {report_path}")
         except Exception as e:
-            print(f"⚠ 自动生成报告失败（{e}），可稍后手动运行 report.py")
+            print(f"⚠ 自动生成报告失败（{e}），可稍后手动运行 _08_report.py")
 
 
 def main():

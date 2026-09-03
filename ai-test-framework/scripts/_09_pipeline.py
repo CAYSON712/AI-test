@@ -6,16 +6,16 @@ AI 测试一键流水线入口（端到端）
 
 用法：
   # 全流程：生成数据集 → 执行 → 报告 → trace（推荐，落地一键跑）
-  python scripts/pipeline.py --req-type C --system 某系统 --executor auto --runs 3 --trace
+  python scripts/_09_pipeline.py --req-type C --system 某系统 --executor auto --runs 3 --trace
 
   # 只执行已有数据集（跳过生成）
-  python scripts/pipeline.py --req-type B --dataset "datasets/B_某系统.yaml" --executor auto
+  python scripts/_09_pipeline.py --req-type B --dataset "datasets/B_某系统.yaml" --executor auto
 
   # 快速 mock 验证（不连真实系统）
-  python scripts/pipeline.py --req-type C --system 某系统 --executor mock
+  python scripts/_09_pipeline.py --req-type C --system 某系统 --executor mock
 
   # LLM-as-Judge 主观维度打分
-  python scripts/pipeline.py --req-type C --system 某系统 --executor auto --llm-judge
+  python scripts/_09_pipeline.py --req-type C --system 某系统 --executor auto --llm-judge
 
 参数说明：
   --req-type   A/B/C/D/E（需求类型，决定执行器）
@@ -44,18 +44,18 @@ sys.path.insert(0, _ROOT)
 sys.path.insert(0, os.path.join(_ROOT, "scripts"))
 sys.path.insert(0, os.path.join(_ROOT, "executors"))
 
-from scripts.generate_dataset import main as _gen_main
-from scripts.run_test import run_dataset
+from scripts._02_generate_dataset import main as _gen_main
+from scripts._06_run_test import run_dataset
 
 
 def _gen_dataset(req_type, system, ability, products):
     """生成数据集，返回实际写入的路径。
 
-    关键：不传 --system 给 generate_dataset，让它从能力目录自动读系统名
+    关键：不传 --system 给 _02_generate_dataset，让它从能力目录自动读系统名
     （避免 Windows 命令行传中文被终端编码破坏）；文件名为 {req_type}_{实际系统名}.yaml。
     生成后通过 glob 定位最新生成的文件作为 dataset_path。
     """
-    argv = ["generate_dataset", "--req-type", req_type]
+    argv = ["_02_generate_dataset", "--req-type", req_type]
     if ability:
         argv += ["--ability", ability]
     if products:

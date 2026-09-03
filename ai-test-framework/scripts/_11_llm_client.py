@@ -11,7 +11,7 @@ LLM 客户端封装
   - 简洁接口：chat() 返回文本，chat_json() 返回结构化 JSON
 
 用法：
-  from llm_client import LLMClient
+  from _11_llm_client import LLMClient
   client = LLMClient()
   text = client.chat("请分析...")          # 返回文本
   data = client.chat_json("输出JSON...")    # 返回 dict

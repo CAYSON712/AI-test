@@ -20,7 +20,7 @@ class LLMJudge:
     """LLM-as-Judge：用 LLM 按 Rubric 打分"""
 
     def __init__(self):
-        from llm_client import LLMClient
+        from _11_llm_client import LLMClient
         self.llm = LLMClient()
 
     def judge(self, rubric_map, user_input, expected, actual, with_reason=False):

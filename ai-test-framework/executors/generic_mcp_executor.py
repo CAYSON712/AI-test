@@ -273,7 +273,7 @@ class GenericMcpExecutor(BaseExecutor):
         self.sys = _SysConfig(system)
         self.capabilities = self.sys.capabilities
         import os as _os
-        from llm_client import LLMClient
+        from _11_llm_client import LLMClient
         # 支持用被测系统的 LLM 做决策：
         #   优先读 configs/<系统>.yaml「连接」声明的 llm_*_env 环境变量，
         #   回退通用 LLM_* 环境变量，再回退 LLMClient 内置默认。
@@ -302,7 +302,7 @@ class GenericMcpExecutor(BaseExecutor):
     async def _session_context(self):
         stack = AsyncExitStack()
         http = await stack.enter_async_context(
-            httpx.AsyncClient(headers=self._client_headers())
+            httpx.AsyncClient(headers=self._client_headers(), timeout=120.0)
         )
         read, write = await stack.enter_async_context(
             streamable_http_client(self.sys.base_url, http_client=http)
@@ -748,9 +748,11 @@ async def _demo_connect(system):
         async with stack:
             print(f"✅ 已连接 {ex.sys.system}\n")
             demo_tool = ex.sys.demo_connect_tool
-            is_error, text = await ex._call_tool(session, demo_tool, {})
+            is_error, text, _latency = await ex._call_tool(session, demo_tool, {})
             print(f"{demo_tool}: is_error={is_error}\n  {text[:800]}")
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"连接失败: {e}")
 
 

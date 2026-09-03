@@ -35,5 +35,6 @@ temp/
 ai-test-framework/results/
 ai-test-framework/report/
 ai-test-framework/datasets/*_verify.yaml
+ai-test-framework/datasets/*.bak_*.yaml
 *.tmp
 *_tmp_*.py

@@ -1,8 +1,8 @@
 """把 AI 测试数据集(yaml)导出为 Excel，便于人工快速检查。
 
 用法:
-    python export_to_excel.py                 # 导出 datasets/ 下全部 yaml
-    python export_to_excel.py <a.yaml> <b.yaml> ...   # 只导出指定文件
+    python _05_export_to_excel.py                 # 导出 datasets/ 下全部 yaml
+    python _05_export_to_excel.py <a.yaml> <b.yaml> ...   # 只导出指定文件
 
 输出:
     datasets/excel/<数据集名>.xlsx

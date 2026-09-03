@@ -2,9 +2,9 @@
 """快速数据集内容 review：统计概览 + 质量检查，辅助人工评审。
 
 用法：
-  python review_dataset.py                                # review 全部数据集
-  python review_dataset.py <dataset.yaml> [更多...]       # review 指定数据集
-  python review_dataset.py -a <能力目录.yaml> <dataset.yaml>  # 附带能力覆盖对照
+  python _04_review_dataset.py                                # review 全部数据集
+  python _04_review_dataset.py <dataset.yaml> [更多...]       # review 指定数据集
+  python _04_review_dataset.py -a <能力目录.yaml> <dataset.yaml>  # 附带能力覆盖对照
 
 检查项：
   1. 层分布（L1/L2）

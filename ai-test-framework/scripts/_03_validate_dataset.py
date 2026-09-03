@@ -2,8 +2,8 @@
 """数据集自检脚本：对生成的数据集做结构化校验 + 覆盖率总览。
 
 用法（PowerShell）:
-    python scripts/validate_dataset.py --dataset datasets/A_RetailPOS数据查询.yaml --ability ability/能力目录_RetailPOS数据查询.yaml
-    python scripts/validate_dataset.py --dataset datasets/C_RetailPOS数据查询.yaml --ability ability/能力目录_RetailPOS数据查询.yaml
+    python scripts/_03_validate_dataset.py --dataset datasets/A_RetailPOS数据查询.yaml --ability ability/能力目录_RetailPOS数据查询.yaml
+    python scripts/_03_validate_dataset.py --dataset datasets/C_RetailPOS数据查询.yaml --ability ability/能力目录_RetailPOS数据查询.yaml
 
 检查项:
   [F] 致命：文件无法解析 / 结构缺失 / 用例数不一致
@@ -214,8 +214,9 @@ class Checker:
                 inp = c.get("输入") or {}
                 if not isinstance(inp, dict) or "tool_name" not in inp:
                     self.error(f"{uid}: A 类输入必须含 tool_name")
+                # 「工具错配」负向用例故意把 tool_name 写错（期望拒绝触发），跳过存在性比对
                 if isinstance(inp, dict) and inp.get("tool_name") and tool_of.get(cap) \
-                        and inp["tool_name"] != tool_of[cap]:
+                        and inp["tool_name"] != tool_of[cap] and "工具错配" not in tags:
                     self.error(f"{uid}: 工具不匹配 输入 {inp['tool_name']} != 能力目录 {tool_of[cap]}")
                 if "tool_params" not in (inp or {}):
                     self.error(f"{uid}: A 类输入必须含 tool_params")

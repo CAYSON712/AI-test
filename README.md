@@ -23,6 +23,7 @@
 │   ├── rubric/                     #   Rubric 评分体系
 │   │   ├── rubric.py               #     5 分制评分 + 阈值 + 统计 + 错误归因(数据集/AI系统/环境)
 │   │   ├── llm_judge.py            #     LLM-as-Judge 评分器
+│   │   ├── semantic_verify.py      #     确定性语义校验器（原语规则打分，不调 LLM）
 │   │   └── templates/              #     Rubric 模板（rubric_template.json 含新增维度步骤）
 │   ├── executors/                  #   执行器（通用，不绑系统，按需求类型路由）
 │   │   ├── base.py                 #     执行器基类 + ExecResult
@@ -33,18 +34,43 @@
 │   │   ├── generic_rag_executor.py #     E 类：RAG 知识库检索
 │   │   └── registry.py             #     执行器注册表（按需求类型+系统路由）
 │   ├── configs/                    #   系统配置（连接+工具schema，驱动真实执行器）
-│   │   └── POS_商品管理.yaml       #     POS 系统配置样板
-│   ├── scripts/                    #   工具脚本
-│   │   ├── generate_dataset.py     #     按手册维度驱动生成数据集（五类各按维度表，不用LLM）
-│   │   ├── run_test.py             #     测试执行 + Rubric 评分 + 统计 + 归因透传
-│   │   ├── evaluate.py             #     评估入口
-│   │   ├── report.py               #     评估报告生成（含错误归因分组）
-│   │   └── llm_client.py           #     LLM 封装（绕代理/JSON容错）
-│   ├── ability/                    #   能力目录 + 真实实体清单（按系统）
+│   │   ├── RetailPOS数据查询.yaml   #   真实：retailpos（A/C）
+│   │   ├── POS_商品管理.yaml        #   接入样板（新增系统复制改）
+│   │   └── 客服知识库.yaml          #   虚构演示（E 链路）
+│   ├── scripts/                    #   工具脚本（12个，按流水线阶段排序）
+│   │   ├── _01_mcp_setup.py        #   ① 接入 接新MCP：拉schema→写.env→生成configs/<系统>.yaml
+│   │   ├── _02_generate_dataset.py #   ② 生成 能力目录+实体清单→数据集 yaml（不用LLM可复现）
+│   │   ├── _03_validate_dataset.py #   ③ 检查 硬校验：数据集 vs 能力目录（PASS/FAIL）
+│   │   ├── _04_review_dataset.py   #   ③ 检查 软 review：层/维度/覆盖/重复统计概览
+│   │   ├── _05_export_to_excel.py  #   ③ 检查 导出 datasets/excel/*.xlsx
+│   │   ├── _06_run_test.py         #   ④ 执行 mock/real 执行 + Rubric 评分 + 统计 + 归因透传
+│   │   ├── _07_evaluate.py         #   ④ 执行 评分底层：维度表+Rubric+LLM-as-Judge
+│   │   ├── _08_report.py           #   ⑤ 报告 评估报告生成（含错误归因分组）
+│   │   ├── _09_pipeline.py         #   ⑤ 报告 端到端一键：生成→执行→报告→trace
+│   │   ├── _10_maintain.py         #   ☆ 维护 五合一：status/regen/validate/install/export
+│   │   ├── _11_llm_client.py       #   · 公共 LLM 封装（绕代理/JSON容错）
+│   │   └── _12_trace_client.py     #   · 公共 执行结果上报 trace 平台（离线自动跳过）
+│   ├── ability/                    #   能力目录 + 实体清单（生成源头）
+│   │   ├── 能力目录_RetailPOS数据查询.yaml
+│   │   ├── 能力目录_小韩面无人值守.yaml
 │   │   ├── 能力目录_POS商品管理.yaml
-│   │   ├── 能力目录_POS数据查询.yaml
+│   │   ├── 能力目录_客服知识库.yaml
+│   │   ├── 实体清单_RetailPOS数据查询.yaml
+│   │   ├── 实体清单_小韩面无人值守.yaml
+│   │   ├── 实体清单_小韩面参考.yaml
 │   │   └── 商品清单_Test01参考.yaml
-│   ├── datasets/                   #   数据集（结构化生成）
+│   ├── datasets/                   #   数据集（结构化生成；install 前自动备份 *.bak_*）
+│   │   ├── A_RetailPOS数据查询.yaml #   retailpos A（L1 黄金集）
+│   │   ├── A_POS 商品管理.yaml      #   早期样例 A
+│   │   ├── B_POS 商品管理.yaml      #   早期样例 B
+│   │   ├── C_RetailPOS数据查询.yaml #   retailpos C
+│   │   ├── C_小韩面无人值守门禁.yaml #   unattended C
+│   │   ├── C_POS 商品管理.yaml      #   早期样例 C
+│   │   ├── D_小韩面无人值守门禁.yaml #   unattended D
+│   │   ├── D_POS 商品管理.yaml      #   早期样例 D
+│   │   ├── E_客服知识库.yaml        #   虚构演示（E 链路）
+│   │   ├── *.bak_20260902.yaml     #   替换前自动备份（5 份）
+│   │   └── excel/                  #   _05_export_to_excel.py 导出的 xlsx
 │   ├── results/                    #   执行结果
 │   ├── report/                     #   评估报告
 │   ├── docs/手册方法论落地.md       #   手册落地说明
@@ -64,7 +90,7 @@
 4. **需求类型驱动**：先判断 A/B/C/D/E，再用对应维度表（A=8/B=11/C=20/D=6/E=5）
 5. **能力×类型覆盖**：每个能力覆盖正常/边界/异常/对抗/模糊
 6. **测试集分层**：L1 黄金集 60% + L2 场景演化 30%（L3 生产回放 10% 暂不接入）
-7. **按维度驱动生成**：`generate_dataset.py` 遍历维度表，每个维度按手册「核心测试方法」生成针对性用例（**不用 LLM**，可复现可回溯）。五类各按独立维度表：A→build_a、D→build_d、E→build_e、B/C→build_l1
+7. **按维度驱动生成**：`_02_generate_dataset.py` 遍历维度表，每个维度按手册「核心测试方法」生成针对性用例（**不用 LLM**，可复现可回溯）。五类各按独立维度表：A→build_a、D→build_d、E→build_e、B/C→build_l1
 8. **错误归因升级**：每条失分标注 `attribution`（数据集问题/ AI 系统问题/ 环境问题/ 测试通过），报告分组展示，让开发只看真系统问题、测试修数据缺陷
 9. **通用化**：能力目录 + 真实实体清单通过参数注入，真实执行器由系统配置驱动，可复用到任意系统
 
@@ -80,37 +106,71 @@
 
 ---
 
+## 脚本速查（按流水线排序）
+
+整体一条链：**①接入 → ②生成 → ③检查 → ④执行 → ⑤报告**；`_10_maintain.py` 是横切维护入口（覆盖②③+安装+导出），公共库被调用、不直接运行。
+
+| 序号 | 阶段 | 脚本 | 作用 | 什么时候用 |
+|---|---|---|---|---|
+| ① | 接入 | `_01_mcp_setup.py` | 拉真实 schema → 写 `.env` → 生成 `configs/<系统>.yaml` 骨架 | 新增被测 MCP 系统，一条命令接入 |
+| ② | 生成 | `_02_generate_dataset.py` | 能力目录+实体清单 → 生成数据集 yaml | 改能力目录/实体清单后重建（种子固定可复现） |
+| ③ | 检查 | `_03_validate_dataset.py` | 数据集 vs 能力目录 硬校验（PASS/FAIL） | 生成后、提交前必跑 |
+| ③ | 检查 | `_04_review_dataset.py` | 层/维度/覆盖/重复 统计概览 | 人工评审数据集质量 |
+| ③ | 检查 | `_05_export_to_excel.py` | 导出 `datasets/excel/*.xlsx` | 人工快速过一遍用例 |
+| ④ | 执行 | `_06_run_test.py` | mock/real 执行器跑用例 + Rubric 5 分制评分 + 统计 | 跑测试出评分 |
+| ④ | 执行 | `_07_evaluate.py` | 评分底层：维度表 + Rubric + LLM-as-Judge | 被 _06_run_test/_09_pipeline 间接调用 |
+| ⑤ | 报告 | `_08_report.py` | 结构化报告：得分/通过率/置信区间/问题定位/反哺建议 | 出单次评估报告 |
+| ⑤ | 报告 | `_09_pipeline.py` | 端到端一键：生成 → 执行 → 报告 → trace | 完整流水线落地跑 |
+| ☆ | 维护 | `_10_maintain.py` | `status/regen/validate/install/export` 五合一 | **日常首选**：看状态、重建、校验、装正式版、刷 excel |
+| · | 公共 | `_11_llm_client.py` | 公司大模型封装（绕代理/JSON 容错） | 被生成/评分调用 |
+| · | 公共 | `_12_trace_client.py` | 上报执行 trace 到 trace_platform（离线自动跳过） | 被执行链调用 |
+
+**日常维护示例**（`_10_maintain.py` 命令全 ASCII、中文内容内置，规避 Windows 命令行中文乱码）：
+
+```powershell
+cd ai-test-framework
+python scripts/_10_maintain.py status                   # 数据集/备份/待安装/excel 过期一览
+python scripts/_10_maintain.py regen    unattended C D  # 重建无人值守 C/D -> *.new.yaml
+python scripts/_10_maintain.py validate unattended      # 校验 + 报告 results/maintain_report.txt
+python scripts/_10_maintain.py install                  # 备份旧版 -> 安装所有 *.new.yaml
+python scripts/_10_maintain.py export   retailpos       # 刷新 excel
+```
+
+系统别名：`retailpos`（A/C）、`unattended`（C/D）；新增系统只需在 `scripts/_10_maintain.py` 顶部 `SYSTEMS` 表加一行，无需新建脚本。
+
+---
+
 ## 快速开始（3 个 Skill 流程）
 
 ### Skill① 需求分析：判断类型 + 生成数据集（L1/L2 分层）
 ```powershell
 cd ai-test-framework/scripts
 # 完整版：指定 需求类型 + 能力目录 + 实体清单
-python generate_dataset.py ^
+python _02_generate_dataset.py ^
   --req-type <A|B|C|D|E> ^
   --ability ../ability/能力目录_<系统>.yaml ^
   --products ../ability/<实体清单>.yaml ^
   --out ../datasets/<类型>_<系统>.yaml
 
 # 降级版：只传 req-type + system（自动发现能力目录）
-python generate_dataset.py --req-type C --system <系统名> --out ../datasets/<类型>_<系统>.yaml
+python _02_generate_dataset.py --req-type C --system <系统名> --out ../datasets/<类型>_<系统>.yaml
 ```
 
 ### Skill② 测试执行：执行 + Rubric 评分
 ```powershell
 cd ai-test-framework/scripts
 # Mock（测 Agent/Skill 层，零配置）
-python run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor mock
+python _06_run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor mock
 # 真实 MCP（测 E2E，需 configs/ 系统配置 + .env 配 token）
-python run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor real --runs 5
+python _06_run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor real --runs 5
 # 系统名自动从数据集识别，也可手动指定
-python run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor real --system <系统名>
+python _06_run_test.py --req-type C --dataset ../datasets/<数据集>.yaml --executor real --system <系统名>
 ```
 
 ### Skill③ 报告复盘：生成评估报告
 ```powershell
 cd ai-test-framework/scripts
-python report.py --result ../results/result_<类型>.yaml --out ../report/<报告名>.md
+python _08_report.py --result ../results/result_<类型>.yaml --out ../report/<报告名>.md
 ```
 
 ---

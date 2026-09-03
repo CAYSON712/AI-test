@@ -63,7 +63,7 @@
     "1. 复制『维度模板』到对应 dimensions/<需求类型>.yaml",
     "2. 填写维度名、类型、含义、测试方法、例子",
     "3. 按『rubric_map_5分制』填写 1-5 分判定标准",
-    "4. 在 generate_dataset.py 的 DIM_GENERATORS 注册对应维度生成器（或用基础覆盖）",
+    "4. 在 scripts/_02_generate_dataset.py 的 DIM_GENERATORS 注册对应维度生成器（或用基础覆盖）",
     "5. 重新生成数据集 + 执行测试，评分会自动按新维度展开"
   ]
 }
