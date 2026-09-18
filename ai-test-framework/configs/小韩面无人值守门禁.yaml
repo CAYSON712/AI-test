@@ -1,0 +1,72 @@
+# =====================================================================
+# 系统配置：小韩面 无人值守门禁（AutoMart MCP 设备类系统）
+# =====================================================================
+# 用途：给 generic_mcp_executor / direct_mcp_executor 提供"连接 + 工具 schema"。
+# 能力→工具映射、成功标准从 ability/能力目录_小韩面无人值守.yaml 读取。
+# 真实 MCP：https://test-auto-mart-mcp.somyeon.com/mcp（serverInfo
+#           AutoMart AIM MCP Server 1.0.0；共用 AUTO_MART_* 连接）
+#
+# !! 2026-09-17 全量 schema 重拉（对 MCP 端点直连拉取 list_tools）!!
+#   - 全端点 list_tools 返回 17 个工具；本系统的写入类工具
+#     set_device_terminal_port_state 已从工具列表移除（配置里同步删除该条目，
+#     直呼报 -32602 Tool 工具不存在）
+#   - query_device_terminals 真实 schema 只有 merchantId 一个参数，
+#     不再支持 terminalIds 筛选（能力「查询设备终端详情」已移除）
+#   - 端口记录工具的时间参数为 startAt/endAt + relativePeriod（互斥），
+#     无 startTime/endTime（旧配置字段名有误，已修正）；size 范围 1~100
+#     默认 15（能力目录探针旧记录「size 必须 10~50」仅适用于 ≤50 分页，
+#     新 schema 允许到 100）
+#
+# 探针事实（2026-09-02，2026-09-17 复核）：
+#   - 店铺参数是【单数 merchantId】(string)，传数组会报 invoking error；
+#     因此「默认上下文参数名」覆盖为 merchantId（区别于 RetailPOS 的复数 merchantIds）
+#   - 公司 测试公司(26377677164869) / 店铺 Test Store(26377732552517)
+#   - query_device_terminals 传 merchantId 即返回 Test Store 真实设备终端（含前/后门端口绑定）
+#   - set_device_terminal_unattended_mode 为安全敏感写操作：未明确店铺/参数缺失 → 服务端业务拒绝(40000)，
+#     schema 明确要求「用户未指定店铺时禁止调用，必须先 query_merchants 展示候选并等待确认」
+# =====================================================================
+
+# ---- 连接配置（从 .env 读，与 RetailPOS 同一套 AUTO_MART_* 连接）----
+连接:
+  需求类型: "C"                  # C=Agent+MCP 对话式直连（D 由 direct_mcp_executor 直呼，共用本连接）
+  base_url_env: "AUTO_MART_MCP_URL"
+  token_env: "AUTO_MART_MCP_TOKEN"
+  company_id_env: "AUTO_MART_COMPANY_ID"      # 请求头 CompanyId = 26377677164869
+  merchant_id_env: "AUTO_MART_MERCHANT_ID"    # 默认店铺 = Test Store
+  llm_base_url_env: "LLM_API_BASE"            # 复用通用 LLM 决策层
+  llm_api_key_env: "LLM_API_KEY"
+  llm_model_env: "LLM_MODEL"
+  请求头: {Authorization: "Bearer {{token}}", CompanyId: "{{company_id}}"}
+  参数包装: "toolParams"          # 服务端升级：所有工具参数必须包在 toolParams 里
+
+# ---- 通用命名（覆盖 executor 业务命名）----
+公司ID请求头: "CompanyId"                     # 请求头携带公司ID的字段名
+默认上下文参数名: "merchantId"                # 店铺参数：无人值守门禁为单数字段名（标量 string）
+实体ID参数名: "portIds"                       # 端口绑定记录 ID 参数（复数）
+实体名参数名: "deviceName"                    # 端口接入设备名（如 前门）
+按名搜索工具: []                              # 本系统无按名搜端口/终端的工具，不做 name→id 解析
+需ID解析的工具: []                            # 参数均由用户/意图直接给出，无需自动解析
+连接演示工具: "query_merchants"               # _demo_connect 验证连接用
+
+# ---- MCP 工具 schema（name 必须与能力目录「工具」字段一致；params/required 对齐真实 schema）----
+mcp_tools:
+  - name: query_device_terminals
+    description: 查询指定店铺已启用的设备终端及其端口绑定资料，包括端口序号、接入设备、端口绑定记录 ID；结果不含端口实时开关状态。merchantId 必填且为单数字符串，如 "26377732552517"。业务前置：先调本工具确认终端后再做变更类操作。
+    params: [merchantId]
+    required: [merchantId]
+  - name: query_device_terminal_port_state_records
+    description: 分页查询指定店铺的设备终端端口历史开关操作记录。必须提供 relativePeriod 或成对 startAt/endAt（互斥，最多 366 天），时间为店铺本地时间（无 Z 无偏移），按 OperatedAt 含起点排终点。IsOpen 是当次操作请求的目标状态，ReportedIsOpen 是操作后终端回报的硬件状态（null 须说明为未知状态）；本工具不提供查询时刻的实时端口状态。可选筛选：terminalCodes(终端SN码)/portIds/operatorIds/operationSources(UnattendedModeEnabled|UnattendedModeDisabled|SystemAccount|Member|SystemAutoClose|CompanyAccount)；page 默认1、size 默认15(1~100)。
+    params: [merchantId, relativePeriod, startAt, endAt, terminalCodes, portIds, operatorIds, operationSources, page, size]
+    required: [merchantId]
+  - name: set_device_terminal_unattended_mode
+    description: 开启或关闭指定店铺的无人值守模式，isEnabled=true 表示开启、false 表示关闭。属安全敏感写操作：MerchantId 必须来自用户在当前对话中的明确指定或确认；若用户未指定店铺，禁止调用本工具，必须先调 query_merchants 展示候选店铺（名称/ID/无人值守状态）等待用户选择，即使只有一家店铺也必须先确认，不得猜测或默认选第一家。开启时全部已绑定门通电上锁，关闭时全部断电常开；返回逐端口硬件执行结果。
+    params: [merchantId, isEnabled]
+    required: [merchantId, isEnabled]
+
+# ---- 需要自动补默认店铺的工具（缺 merchantId 时补 Test Store 标量）----
+# 注意：只补只读查询工具；set_* 写操作绝不自动补店铺（应由服务端/LLM 拒绝）。
+需要默认上下文参数的工具:
+  - query_device_terminals
+  - query_device_terminal_port_state_records
+
+# ---- 无 db 校验（纯 MCP 语义校验），无需 verify/需要校验的工具 ----

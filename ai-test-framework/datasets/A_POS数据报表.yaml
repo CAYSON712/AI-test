@@ -1,0 +1,2265 @@
+系统: POS 数据报表
+需求类型: A
+被测系统: POS(proton) MCP — https://pos-test-mcp.proton-system.com/mcp
+CompanyId: '12599656434959365'  # cayson自动化公司
+merchantId: '12600071176193029' # 自动化店铺7 (Auto test store7, 洛杉矶时区)
+分层说明:
+  L1: 黄金集(60%) 手工精选，覆盖 3 个 DataX 报表工具 × 28 业务场景，每场景 L1 主用例
+  L2: 场景演化(30%) 每场景配套 L2 变体(实体替换/时间窗变异/排序边界/维度下钻/异常容错)
+  L3: 生产回放(10%) 待接入
+数据口径:
+  时区: 店铺为洛杉矶时区，夏令时 PDT=UTC-7，冬令时 PST=UTC-8
+  归属日: '报表 date 按门店本地自然日切分(带 05:00:00+00:00 标记 = PDT 00:00)'
+  分段: '服务端按来源分多段(segments)返回，SEGMENTS_MUST_NOT_BE_SUMMED(各段不能直接相加)'
+  工具入参: '统一为 {toolParams: {...}}'
+真值快照(2026-09-09 实测):
+  9/8: orderCount=21(明细) sources={EasyPos:19,ScanCodeToOrder:1,Yesmeal:1} status={Completed:20,Cancelled:1}
+  9/9: orderCount=13 totalSales=868.26 netSales=954.84 preTaxRevenue=878.92 actualRevenue=2384.11
+       dueAmount=2613.40 unpaidAmount=106.32 refundAmount=-32.00 totalTipsAmount=44.91
+       totalDiscountAmount=-135.82 totalSurchargeAmount=158.48 totalTaxAmount=88.07
+       totalGuests=16 cancelledOrders=3 cancelledOrderAmount=195.40
+       totalPayCashAmount=394.10 totalPayCreditCardAmount=1783.94 totalPayOtherAmount=79.51
+       totalPayMemberBalanceAmount=138.76 totalPayOnlineOrderAmount=110.77
+       online=Yesmeal 20.90+31.35, Deliverect 29.59+60.28
+  备注: 9/9 为进行中数据(RECENT_WINDOW_IN_PROGRESS)，数值会随时间变化；断言以字段存在/口径关系为主
+用例数: 119
+用例列表:
+# =====================================================================
+# 一、28 业务场景 — 每场景 L1(主) + L2(变体)
+# =====================================================================
+
+# ---------- 场景01: 查询指定日期销售额 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S1
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S1
+    output: 返回 2026/09/09 销售额，需给出 totalSales(商品销售总额)，不得编造
+    block: false
+    semantic:
+      fields: [totalSales, netSales, actualRevenue]
+  标签: [正常, 场景01, 销售额]
+  用例ID: A-L1-001
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S1b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-08'
+      endAt: '2026-09-08'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S1b
+    output: 返回 2026/09/08 销售额，日期是前一日，数值与 9/9 不同
+    block: false
+    semantic:
+      fields: [totalSales, actualRevenue]
+      not_contains: ["编造"]
+  标签: [变体, 场景01, 时间变异]
+  用例ID: A-L2-001
+
+# ---------- 场景02: 查询指定日期订单数 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S2
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S2
+    output: 返回 2026/09/09 订单数 orderCount=15
+    block: false
+    semantic:
+      contains: ["15"]
+      fields: [orderCount]
+  标签: [正常, 场景02, 订单数]
+  用例ID: A-L1-002
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S2b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-30'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S2b
+    output: 返回 9 月整月订单数 orderCount=35(月度汇总大于单日)
+    block: false
+    semantic:
+      contains: ["35"]
+      fields: [orderCount]
+  标签: [变体, 场景02, 时间窗变异]
+  用例ID: A-L2-002
+
+# ---------- 场景03: 查询指定日期客流量 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S3
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S3
+    output: 返回 2026/09/09 客流量 totalGuests=16
+    block: false
+    semantic:
+      contains: ["16"]
+      fields: [totalGuests]
+  标签: [正常, 场景03, 客流量]
+  用例ID: A-L1-003
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S3b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-10'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S3b
+    output: 返回 9/10 客流量(跨自然日边界)；若当日无数据应返回空而非崩溃
+    block: false
+    semantic:
+      any_of: true
+      fields: [totalGuests]
+  标签: [变体, 场景03, 日边界]
+  用例ID: A-L2-003
+
+# ---------- 场景04: 查询指定日期实收金额 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S4
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S4
+    output: 返回 2026/09/09 实收金额(actualRevenue)，并说明含充值(礼品卡/会员充值与纯销售的区别)
+    block: false
+    semantic:
+      fields: [actualRevenue, totalByPaymentTypeAmount]
+  标签: [正常, 场景04, 实收金额]
+  用例ID: A-L1-004
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S4b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S4b
+    output: 校验恒等式 dueAmount - unpaidAmount == actualRevenue
+    block: false
+    semantic:
+      fields: [dueAmount, unpaidAmount, actualRevenue]
+  标签: [变体, 场景04, 勾稽校验]
+  用例ID: A-L2-004
+
+# ---------- 场景05: 查询退款金额 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S5
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S5
+    output: 返回 2026/09/09 退款总额 refundAmount=-32.00
+    block: false
+    semantic:
+      contains: ["32"]
+      fields: [refundAmount]
+  标签: [正常, 场景05, 退款]
+  用例ID: A-L1-005
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S5b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-08'
+      endAt: '2026-09-08'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S5b
+    output: 返回 9/8 退款金额(9/8 退款 -90.00，与 9/9 不同)
+    block: false
+    semantic:
+      fields: [refundAmount]
+  标签: [变体, 场景05, 时间变异]
+  用例ID: A-L2-005
+
+# ---------- 场景06: 查询取消订单情况 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S6
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S6
+    output: 返回 2026/09/09 取消订单情况 cancelledOrders=3、cancelledOrderAmount=195.40
+    block: false
+    semantic:
+      contains: ["3", "195"]
+      fields: [cancelledOrders, cancelledOrderAmount]
+  标签: [正常, 场景06, 取消]
+  用例ID: A-L1-006
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S6b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderStatus: Cancelled
+  期望:
+    intent: 查询订单销售明细
+    params: *S6b
+    output: 返回 9/9 全部取消单明细，笔数与汇总 cancelledOrders 口径可对照
+    block: false
+    semantic:
+      fields: [orderStatus, totalAmount, orderId]
+  标签: [变体, 场景06, 状态筛选]
+  用例ID: A-L2-006
+
+# ---------- 场景07: 查询指定订单详情 ----------
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S7
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderId: '13551217880797189'
+  期望:
+    intent: 查询订单销售明细
+    params: *S7
+    output: 返回订单 13551217880797189 详情：金额 56.98、堂食(DineIn)、信用卡(CreditCard)、状态已完成
+    block: false
+    semantic:
+      contains: ["56.98", "DineIn", "CreditCard"]
+      fields: [orderId, orderType, paymentType, orderStatus, totalAmount]
+  标签: [正常, 场景07, 订单详情]
+  用例ID: A-L1-007
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S7b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderSerial: '5'
+  期望:
+    intent: 查询订单销售明细
+    params: *S7b
+    output: 按订单编号(orderSerial=5)查询，返回该单详情(编号 5 = orderId 13555140533800965, 金额 143.19)
+    block: false
+    semantic:
+      fields: [orderSerial, orderId, totalAmount]
+  标签: [变体, 场景07, 编号查询]
+  用例ID: A-L2-007
+
+# ---------- 场景08: 查询订单支付状态 ----------
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S8
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderId: '13551217880797189'
+  期望:
+    intent: 查询订单销售明细
+    params: *S8
+    output: 返回该订单支付状态 paymentStatus=Captured(已支付)
+    block: false
+    semantic:
+      contains: ["Captured"]
+      fields: [paymentStatus]
+  标签: [正常, 场景08, 支付状态]
+  用例ID: A-L1-008
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S8b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      paymentStatus: Captured
+  期望:
+    intent: 查询订单销售明细
+    params: *S8b
+    output: 按支付状态筛选(Captured)返回已支付订单列表
+    block: false
+    semantic:
+      fields: [paymentStatus]
+  标签: [变体, 场景08, 状态筛选]
+  用例ID: A-L2-008
+
+# ---------- 场景09: 支付方式分析 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S9
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S9
+    output: 返回 9/9 支付方式分布：现金 394.10、信用卡 1783.94、其他 79.51、会员余额 138.76、线上 110.77
+    block: false
+    semantic:
+      fields: [totalPayCashAmount, totalPayCreditCardAmount, totalPayOtherAmount, totalPayMemberBalanceAmount, totalPayOnlineOrderAmount]
+  标签: [正常, 场景09, 支付方式分析]
+  用例ID: A-L1-009
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S9b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      paymentType: Cash
+  期望:
+    intent: 查询订单销售明细
+    params: *S9b
+    output: 按支付方式(现金)筛选订单明细，返回现金支付单
+    block: false
+    semantic:
+      fields: [paymentType, totalAmount]
+  标签: [变体, 场景09, 支付筛选]
+  用例ID: A-L2-009
+
+# ---------- 场景10: 订单类型分析 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S10
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S10
+    output: 返回 9/9 订单类型分布：堂食 363.76、外带 169.58、自提 308.74、外送 271.32、线上 110.77
+    block: false
+    semantic:
+      fields: [totalDineInAmount, totalToGoAmount, totalPickupAmount, totalDeliveryAmount, totalOnlineOrderAmount]
+  标签: [正常, 场景10, 类型分析]
+  用例ID: A-L1-010
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S10b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderType: DineIn
+  期望:
+    intent: 查询订单销售明细
+    params: *S10b
+    output: 按订单类型(堂食)筛选明细，返回堂食单
+    block: false
+    semantic:
+      fields: [orderType, totalAmount]
+  标签: [变体, 场景10, 类型筛选]
+  用例ID: A-L2-010
+
+# ---------- 场景11: 查询商品销量 ----------
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S11
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      name: Curry Fish Fillet
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S11
+    output: 返回 Curry Fish Fillet 销量(quantity)，Top 商品为 Curry Fish Fillet 28 份
+    block: false
+    semantic:
+      fields: [name, quantity, amount]
+  标签: [正常, 场景11, 商品销量]
+  用例ID: A-L1-011
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S11b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      sortField: Quantity
+      sortDirection: Descending
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S11b
+    output: 按销量降序返回商品排行，首位应为 Curry Fish Fillet
+    block: false
+    semantic:
+      fields: [name, quantity]
+  标签: [变体, 场景11, 销量排序]
+  用例ID: A-L2-011
+
+# ---------- 场景12: 查询商品销售额 ----------
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S12
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      name: Curry Fish Fillet
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S12
+    output: 返回 Curry Fish Fillet 销售额(amount=$385.91)
+    block: false
+    semantic:
+      contains: ["385"]
+      fields: [name, amount]
+  标签: [正常, 场景12, 商品销售额]
+  用例ID: A-L1-012
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S12b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      sortField: Amount
+      sortDirection: Descending
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S12b
+    output: 按销售额降序返回商品排行，首位 Curry Fish Fillet($385.91)
+    block: false
+    semantic:
+      fields: [name, amount]
+  标签: [变体, 场景12, 金额排序]
+  用例ID: A-L2-012
+
+# ---------- 场景13: 商品销售额排行 TopN ----------
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S13
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      sortField: Amount
+      sortDirection: Descending
+      limit: 10
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S13
+    output: 返回销售额 Top10 商品(Curry Fish Fillet #1 $385.91, Curry Beef Brisket Flank #2 $313.30, Baked Pork Chop #3 $235.20)
+    block: false
+    semantic:
+      contains: ["Curry Fish Fillet"]
+      fields: [name, amount]
+  标签: [正常, 场景13, 销售额TopN]
+  用例ID: A-L1-013
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S13b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      sortField: Amount
+      sortDirection: Ascending
+      limit: 5
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S13b
+    output: 升序返回销售额最低 5 个商品(低销商品)
+    block: false
+    semantic:
+      fields: [name, amount]
+  标签: [变体, 场景13, 升序边界]
+  用例ID: A-L2-013
+
+# ---------- 场景14: 商品销量排行 TopN ----------
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S14
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      sortField: Quantity
+      sortDirection: Descending
+      limit: 10
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S14
+    output: 返回销量 Top10(Curry Fish Fillet 28 #1, Curry Beef Brisket Flank 22 #2, Baked Pork Chop 16 #3)
+    block: false
+    semantic:
+      contains: ["28"]
+      fields: [name, quantity]
+  标签: [正常, 场景14, 销量TopN]
+  用例ID: A-L1-014
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S14b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      sortField: Quantity
+      sortDirection: Descending
+      limit: 3
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S14b
+    output: 销量 Top3，验证 limit 生效返回 3 条
+    block: false
+    semantic:
+      fields: [name, quantity]
+  标签: [变体, 场景14, limit边界]
+  用例ID: A-L2-014
+
+# ---------- 场景15: 低销量商品分析 ----------
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S15
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      sortField: Quantity
+      sortDirection: Ascending
+      limit: 10
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S15
+    output: 返回低销商品(升序)，如 Baked Bolognese 6、HK Style Bo-Law Bun 7
+    block: false
+    semantic:
+      fields: [name, quantity]
+  标签: [正常, 场景15, 低销商品]
+  用例ID: A-L1-015
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S15b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+      type: Product
+      sortField: Quantity
+      sortDirection: Ascending
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S15b
+    output: 近 1 天低销商品(时间窗缩小到单日)
+    block: false
+    semantic:
+      fields: [name, quantity]
+  标签: [变体, 场景15, 时间窗变异]
+  用例ID: A-L2-015
+
+# ---------- 场景16: 指定商品销售情况 ----------
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S16
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      name: Curry Fish Fillet
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S16
+    output: 返回 Curry Fish Fillet 销量 28 份、销售额 $385.91
+    block: false
+    semantic:
+      contains: ["28", "385"]
+      fields: [name, quantity, amount]
+  标签: [正常, 场景16, 商品详情]
+  用例ID: A-L1-016
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S16b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Product
+      refId: '13527517003138069'
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S16b
+    output: 按 refId 精确查询单个商品(Curry Fish Fillet)，返回单条记录
+    block: false
+    semantic:
+      fields: [refId, name, quantity, amount]
+  标签: [变体, 场景16, ID精确查询]
+  用例ID: A-L2-016
+
+# ---------- 场景17: 日期销售比较 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S17
+      merchantId: '12600071176193029'
+      startAt: '2026-09-08'
+      endAt: '2026-09-08'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S17
+    output: 返回 9/8 销售额；与 9/9 对比时需分别调用(2 次)，不得跨段相加
+    block: false
+    semantic:
+      fields: [totalSales, actualRevenue]
+  标签: [正常, 场景17, 日期比较]
+  用例ID: A-L1-017
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S17b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-07'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S17b
+    output: 返回上周窗口(9/1~9/7)销售额；注意跨段警告 SEGMENTS_MUST_NOT_BE_SUMMED
+    block: false
+    semantic:
+      fields: [totalSales]
+      warnings_any: true
+  标签: [变体, 场景17, 对比窗口]
+  用例ID: A-L2-017
+
+# ---------- 场景18: 商品销量趋势 ----------
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S18
+      merchantId: '12600071176193029'
+      startAt: '2026-09-08'
+      endAt: '2026-09-08'
+      type: Product
+      name: Curry Fish Fillet
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S18
+    output: 返回 9/8 该商品销量；比较趋势需两次查询分别取数
+    block: false
+    semantic:
+      fields: [name, quantity]
+  标签: [正常, 场景18, 销量趋势]
+  用例ID: A-L1-018
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &S18b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+      type: Product
+      name: Curry Fish Fillet
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *S18b
+    output: 返回 9/9 该商品销量，供与 9/8 对比趋势
+    block: false
+    semantic:
+      fields: [name, quantity]
+  标签: [变体, 场景18, 对比窗口]
+  用例ID: A-L2-018
+
+# ---------- 场景19: 加收金额 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S19
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S19
+    output: 返回 9/9 加收金额 totalSurchargeAmount=158.48
+    block: false
+    semantic:
+      contains: ["158"]
+      fields: [totalSurchargeAmount]
+  标签: [正常, 场景19, 加收]
+  用例ID: A-L1-019
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S19b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S19b
+    output: 返回 9 月累计加收；可按需下钻到订单商品明细(query_order_details_by_ids)看 itemChargeAmount/chargeAmount
+    block: false
+    semantic:
+      fields: [totalSurchargeAmount]
+  标签: [变体, 场景19, 月度累计]
+  用例ID: A-L2-019
+
+# ---------- 场景20: 小费金额 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S20
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S20
+    output: 返回 9/9 小费金额 totalTipsAmount=44.91
+    block: false
+    semantic:
+      contains: ["44.91"]
+      fields: [totalTipsAmount]
+  标签: [正常, 场景20, 小费]
+  用例ID: A-L1-020
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S20b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询订单销售明细
+    params: *S20b
+    output: 明细每笔含 totalTipsAmount；按订单支付方式可近似拆分(现金/信用卡)；如需精确拆分需 tender 级数据(MCP 未提供)
+    block: false
+    semantic:
+      fields: [totalTipsAmount, paymentType]
+  标签: [变体, 场景20, 小费拆分限制]
+  用例ID: A-L2-020
+
+# ---------- 场景21: 折扣金额 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S21
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S21
+    output: 返回 9/9 折扣金额 totalDiscountAmount=-135.82
+    block: false
+    semantic:
+      contains: ["135"]
+      fields: [totalDiscountAmount]
+  标签: [正常, 场景21, 折扣]
+  用例ID: A-L1-021
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S21b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S21b
+    output: 折扣可按商品明细字段下钻：itemDiscountAmount(-53.82)+couponDiscountAmount(-18.27)+rechargeDiscountAmount(-47.73)+discountAmount(-16.00) 应等于总折扣
+    block: false
+    semantic:
+      fields: [totalDiscountAmount]
+  标签: [变体, 场景21, 折扣下钻]
+  用例ID: A-L2-021
+
+# ---------- 场景22: 支付占比分析 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S22
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S22
+    output: 给出支付占比(基于各支付金额/合计)，如信用卡占比最高，需给百分比且分母为 totalByPaymentTypeAmount
+    block: false
+    semantic:
+      fields: [totalPayCashAmount, totalPayCreditCardAmount, totalByPaymentTypeAmount]
+  标签: [正常, 场景22, 支付占比]
+  用例ID: A-L1-022
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S22b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-08'
+      endAt: '2026-09-08'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S22b
+    output: 返回 9/8 支付占比(与 9/9 分布不同，含礼品卡支付 giftCardPaymentTotalAmount)
+    block: false
+    semantic:
+      fields: [totalPayCashAmount, giftCardPaymentTotalAmount]
+  标签: [变体, 场景22, 时间变异]
+  用例ID: A-L2-022
+
+# ---------- 场景23: 订单类型占比分析 ----------
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S23
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S23
+    output: 给出订单类型占比(基于 totalDineInAmount/totalToGoAmount/totalPickupAmount/totalDeliveryAmount/totalOnlineOrderAmount ÷ totalByOrderTypeAmount)
+    block: false
+    semantic:
+      fields: [totalDineInAmount, totalToGoAmount, totalPickupAmount, totalDeliveryAmount, totalByOrderTypeAmount]
+  标签: [正常, 场景23, 类型占比]
+  用例ID: A-L1-023
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S23b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-08'
+      endAt: '2026-09-08'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S23b
+    output: 返回 9/8 订单类型分布(堂食 599.98 最高，与 9/9 结构不同)
+    block: false
+    semantic:
+      fields: [totalDineInAmount, totalByOrderTypeAmount]
+  标签: [变体, 场景23, 时间变异]
+  用例ID: A-L2-023
+
+# ---------- 场景24: 外卖平台订单分析 ----------
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S24
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      orderSourceType: Deliverect
+  期望:
+    intent: 查询订单销售明细
+    params: *S24
+    output: '返回 Deliverect 平台外卖单(9月 2 笔 OnlineDelivery: 29.59 + 60.28)'
+    block: false
+    semantic:
+      contains: ["Deliverect"]
+      fields: [orderSourceType, sourceName, orderType, totalAmount]
+  标签: [正常, 场景24, 外卖平台]
+  用例ID: A-L1-024
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S24b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      orderSourceType: Yesmeal
+  期望:
+    intent: 查询订单销售明细
+    params: *S24b
+    output: '返回 Yesmeal(Pocket Store) 网络单(9月 2 笔 OnlinePickup: 20.90 + 31.35)'
+    block: false
+    semantic:
+      contains: ["Yesmeal"]
+      fields: [orderSourceType, sourceName, totalAmount]
+  标签: [变体, 场景24, 换平台]
+  用例ID: A-L2-024
+
+# ---------- 场景25: 渠道销售额分析 ----------
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S25
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询订单销售明细
+    params: *S25
+    output: 按渠道/来源统计销售额：EasyPos(POS)、Yesmeal(Pocket Store)、Deliverect、ScanCodeToOrder、AiPhoneOrder 分渠道给出
+    block: false
+    semantic:
+      fields: [orderSourceType, sourceName, totalAmount]
+  标签: [正常, 场景25, 渠道分析]
+  用例ID: A-L1-025
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S25b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S25b
+    output: 线上渠道汇总 totalOnlineOrderAmount/totalPayOnlineOrderAmount=110.77(Yesmeal+Deliverect)
+    block: false
+    semantic:
+      contains: ["110.77"]
+      fields: [totalOnlineOrderAmount, totalPayOnlineOrderAmount]
+  标签: [变体, 场景25, 线上渠道汇总]
+  用例ID: A-L2-025
+
+# ---------- 场景26: 刷卡机交易查询 ----------
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S26
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      paymentTerminalType: Stripe
+  期望:
+    intent: 查询订单销售明细
+    params: *S26
+    output: 返回 Stripe 终端(信用卡)交易订单，含 paymentTerminalType=Stripe
+    block: false
+    semantic:
+      fields: [paymentTerminalType, paymentTerminalName, totalAmount]
+  标签: [正常, 场景26, 刷卡机]
+  用例ID: A-L1-026
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S26b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      paymentTerminalName: ''
+  期望:
+    intent: 查询订单销售明细
+    params: *S26b
+    output: 当前数据 paymentTerminalName 为空；应返回空或全部(不崩溃)，并说明该店未配置刷卡机名
+    block: false
+    semantic:
+      any_of: true
+      fields: [paymentTerminalName]
+  标签: [变体, 场景26, 空终端名]
+  用例ID: A-L2-026
+
+# ---------- 场景27: 指定刷卡机分析 ----------
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S27
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      paymentTerminalType: Stripe
+  期望:
+    intent: 查询订单销售明细
+    params: *S27
+    output: 按指定终端类型(Stripe)分析交易笔数与金额
+    block: false
+    semantic:
+      fields: [paymentTerminalType, totalAmount]
+  标签: [正常, 场景27, 指定终端]
+  用例ID: A-L1-027
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S27b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      customizedPaymentName: 自定义
+  期望:
+    intent: 查询订单销售明细
+    params: *S27b
+    output: 按自定义支付名称筛选(customizedPaymentName=自定义)，返回命中单
+    block: false
+    semantic:
+      fields: [customizedPaymentName, totalAmount]
+  标签: [变体, 场景27, 自定义支付]
+  用例ID: A-L2-027
+
+# ---------- 场景28: 刷卡机比较分析 ----------
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &S28
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询订单销售明细
+    params: *S28
+    output: 比较不同终端/支付方式交易：按 paymentTerminalType、paymentType 分别汇总
+    block: false
+    semantic:
+      fields: [paymentTerminalType, paymentType, totalAmount]
+  标签: [正常, 场景28, 终端比较]
+  用例ID: A-L1-028
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &S28b
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *S28b
+    output: 按支付方式比较：现金 394.10 / 信用卡 1783.94 / 会员余额 138.76 / 线上 110.77
+    block: false
+    semantic:
+      fields: [totalPayCashAmount, totalPayCreditCardAmount, totalPayMemberBalanceAmount, totalPayOnlineOrderAmount]
+  标签: [变体, 场景28, 支付比较]
+  用例ID: A-L2-028
+
+# =====================================================================
+# 二、参数校验 / 边界 / 协议契约（L1）
+# =====================================================================
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: {}
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: merchantId/startAt/endAt 必填，缺失应被拒绝
+    block: true
+  标签: [参数缺失]
+  用例ID: A-L1-029
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-10'
+      endAt: '2026-09-01'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 开始日期晚于结束日期应被拒绝
+    block: true
+  标签: [边界]
+  用例ID: A-L1-030
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2025-01-01'
+      endAt: '2026-08-31'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 时间跨度超过上限应被拒绝或截断
+    block: true
+  标签: [边界, 跨度]
+  用例ID: A-L1-031
+- 维度: 参数枚举
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: InvalidType
+  期望:
+    intent: 查询菜单商品分类报表
+    params: {}
+    output: type 必须为 Menu/Product/Category 枚举之一，非法值应被拒绝
+    block: true
+  标签: [参数枚举]
+  用例ID: A-L1-032
+- 维度: 参数枚举
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      sortDirection: asc
+  期望:
+    intent: 查询菜单商品分类报表
+    params: {}
+    output: sortDirection 仅接受 Ascending/Descending(小写 asc 应被拒绝)
+    block: true
+  标签: [参数枚举, 大小写]
+  用例ID: A-L1-033
+- 维度: 参数边界
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      limit: 1001
+  期望:
+    intent: 查询菜单商品分类报表
+    params: {}
+    output: limit 越界(1001) 应被拒绝；实测上限为 1000
+    block: true
+  标签: [参数边界, limit]
+  用例ID: A-L1-034
+- 维度: 参数类型
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: 12600071176193029
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: merchantId 必须传 string(数字类型应被拒绝或转义)
+    block: true
+  标签: [参数类型]
+  用例ID: A-L1-035
+- 维度: 参数格式
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询订单销售明细
+    params: {}
+    output: startAt/endAt 必须 ISO8601 完整带时区，缺时区应被拒绝
+    block: true
+  标签: [参数格式, 时区]
+  用例ID: A-L1-036
+
+# =====================================================================
+# 三、协议契约（L1）
+# =====================================================================
+- 维度: 协议契约
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 返回体应能被 JSON 解析且含 code/msg/data/success 顶层字段
+    block: false
+    semantic:
+      fields: [code, msg, data, success]
+  标签: [协议]
+  用例ID: A-L1-037
+- 维度: 协议契约
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询订单销售明细
+    params: {}
+    output: 返回体应能被 JSON 解析，records/segments 结构完整
+    block: false
+    semantic:
+      fields: [records, segments]
+  标签: [协议]
+  用例ID: A-L1-038
+- 维度: 协议契约
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询菜单商品分类报表
+    params: {}
+    output: 返回结构含 code/msg/data/success 顶层字段；data 含 segments
+    block: false
+    semantic:
+      fields: [code, msg, data, success, segments]
+  标签: [协议]
+  用例ID: A-L1-039
+- 维度: 协议契约
+  能力: 列出可用工具
+  层: L1
+  输入:
+    tool_name: tools/list
+    tool_params: {}
+  期望:
+    intent: 列出可用工具
+    params: {}
+    output: 返回全部工具(含 3 个 DataX 报表工具)且 schema 完整
+    block: false
+    semantic:
+      contains: ["query_datax_total_reports", "query_datax_order_sales_reports", "query_datax_menu_product_category_reports"]
+  标签: [协议, schema]
+  用例ID: A-L1-040
+- 维度: 工具描述
+  能力: 工具描述
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: {}
+  期望:
+    intent: 工具描述检查
+    params: {}
+    output: 描述包含'菜单商品分类'或'Menu Product Category'关键词
+    block: false
+    semantic:
+      contains: ["菜单", "商品", "分类"]
+  标签: [描述]
+  用例ID: A-L1-041
+
+# =====================================================================
+# 四、异常与容错（L1）
+# =====================================================================
+- 维度: 异常与容错
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderId: '99999999999999999'
+  期望:
+    intent: 查询订单销售明细
+    params: {}
+    output: 订单不存在时返回空记录(records=[])而非崩溃
+    block: false
+    semantic:
+      fields: [records]
+  标签: [异常, 空结果]
+  用例ID: A-L1-042
+- 维度: 异常与容错
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      name: NotExistProductXYZ
+  期望:
+    intent: 查询菜单商品分类报表
+    params: {}
+    output: 无命中商品时返回空且不编造
+    block: false
+    semantic:
+      fields: [records]
+  标签: [异常, 空结果]
+  用例ID: A-L1-043
+- 维度: 异常与容错
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2027-01-01'
+      endAt: '2027-01-01'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 纯未来无数据应被拒绝或返回空不崩溃
+    block: true
+  标签: [异常, 未来]
+  用例ID: A-L1-044
+- 维度: 安全与权限
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '99999999999999999'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 越权查询
+    params: {}
+    output: 非授权店铺 ID 应被拒绝(权限错误)
+    block: true
+  标签: [越权]
+  用例ID: A-L1-045
+- 维度: 安全与权限
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      merchantId: "12600071176193029' OR '1'='1"
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询订单销售明细
+    params: {}
+    output: SQL 注入应被转义或拒绝
+    block: true
+  标签: [注入]
+  用例ID: A-L1-046
+- 维度: 性能与资源
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &P1
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      limit: 1000
+  期望:
+    intent: 查询订单销售明细
+    params: *P1
+    output: 单次调用延迟可接受(P95 <= 2s)
+    block: false
+  标签: [性能]
+  用例ID: A-L1-047
+- 维度: 性能与资源
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &P2
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      limit: 1000
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *P2
+    output: limit=1000 上限情况下不超时/不 OOM
+    block: false
+  标签: [性能, 边界]
+  用例ID: A-L1-048
+- 维度: 异常与容错
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 网络超时应返回友好错误而非崩溃
+    block: false
+  标签: [异常, 超时]
+  用例ID: A-L1-049
+
+# =====================================================================
+# 五、L2 场景演化 — 时间变异 / 排序 / 筛选 / 协议 / 安全
+# =====================================================================
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &L50
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *L50
+    output: 跨月查询应正常返回(多段 segments)
+    block: false
+    semantic:
+      fields: [orderCount, totalSales]
+  标签: [时间变异, 跨月]
+  用例ID: A-L2-050
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &L51
+      merchantId: '12600071176193029'
+      startAt: '2026-09-03'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *L51
+    output: 7 天窗口查询应正常返回
+    block: false
+    semantic:
+      fields: [orderCount, totalSales]
+  标签: [时间变异, 7天]
+  用例ID: A-L2-051
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &L52
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Menu
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *L52
+    output: type=Menu 应返回按菜单聚合的销量/销售额(如 All Day Menu)
+    block: false
+    semantic:
+      fields: [name, type, quantity, amount]
+  标签: [枚举变体, Menu]
+  用例ID: A-L2-052
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &L53
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      type: Category
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *L53
+    output: type=Category 应返回按分类聚合的销量/销售额
+    block: false
+    semantic:
+      fields: [name, type, quantity, amount]
+  标签: [枚举变体, Category]
+  用例ID: A-L2-053
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L54
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      paymentType: CreditCard
+  期望:
+    intent: 查询订单销售明细
+    params: *L54
+    output: paymentType=CreditCard 应返回信用卡订单
+    block: false
+    semantic:
+      fields: [paymentType, totalAmount]
+  标签: [支付变体]
+  用例ID: A-L2-054
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L55
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderStatus: Completed
+      sortField: Amount
+      sortDirection: Descending
+      limit: 10
+  期望:
+    intent: 查询订单销售明细
+    params: *L55
+    output: 已完成订单按金额降序前 10 应正常返回
+    block: false
+    semantic:
+      fields: [orderStatus, totalAmount]
+  标签: [排序变体, 金额降序]
+  用例ID: A-L2-055
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L56
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderStatus: Cancelled
+  期望:
+    intent: 查询订单销售明细
+    params: *L56
+    output: orderStatus=Cancelled 应返回取消单列表
+    block: false
+    semantic:
+      fields: [orderStatus]
+  标签: [状态变体]
+  用例ID: A-L2-056
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L57
+      merchantId: '12600071176193029'
+      startAt: '2026-09-08'
+      endAt: '2026-09-09'
+      operatorName: Boss
+  期望:
+    intent: 查询订单销售明细
+    params: *L57
+    output: operatorName=Boss 应返回该员工下的订单(9/8 有 20 笔)
+    block: false
+    semantic:
+      fields: [operatorName, totalAmount]
+  标签: [员工变体, 场景29类]
+  用例ID: A-L2-057
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L58
+      merchantId: '12600071176193029'
+      startAt: '2026-09-08'
+      endAt: '2026-09-09'
+      sourceName: POS
+  期望:
+    intent: 查询订单销售明细
+    params: *L58
+    output: 按渠道来源名称(sourceName=POS)筛选
+    block: false
+    semantic:
+      fields: [sourceName, orderSourceType]
+  标签: [渠道筛选, 场景25类]
+  用例ID: A-L2-058
+- 维度: 安全与权限
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderId: '../../etc/passwd'
+  期望:
+    intent: 查询订单销售明细
+    params: {}
+    output: orderId 含路径穿越应被拒绝或转义
+    block: true
+  标签: [路径穿越]
+  用例ID: A-L2-062
+- 维度: 稳定性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &L63
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *L63
+    output: 幂等性：重复调用结果应一致
+    block: false
+  标签: [幂等]
+  用例ID: A-L2-064
+- 维度: 工具描述
+  能力: 工具描述
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: {}
+  期望:
+    intent: 工具描述检查
+    params: {}
+    output: 描述包含'经营汇总'或'FlatTotalReport'
+    block: false
+    semantic:
+      contains: ["经营汇总"]
+  标签: [描述]
+  用例ID: A-L2-065
+- 维度: 工具描述
+  能力: 工具描述
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: {}
+  期望:
+    intent: 工具描述检查
+    params: {}
+    output: 描述包含'订单销售'或'FlatOrderSalesReport'
+    block: false
+    semantic:
+      contains: ["订单"]
+  标签: [描述]
+  用例ID: A-L2-066
+- 维度: 性能与资源
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &L67
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      limit: 1000
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *L67
+    output: limit=1000 上限应正常返回
+    block: false
+  标签: [性能边界]
+  用例ID: A-L2-067
+- 维度: 参数校验
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      limit: 0
+  期望:
+    intent: 查询菜单商品分类报表
+    params: {}
+    output: limit=0 应被拒绝(必须 1-1000)
+    block: true
+  标签: [参数边界]
+  用例ID: A-L2-068
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026/09/09'
+      endAt: '2026/09/10'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 时间格式非法应被拒绝
+    block: true
+  标签: [格式变异]
+  用例ID: A-L2-069
+- 维度: 异常与容错
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询菜单商品分类报表
+    params: {}
+    output: 后端 500 时应返回友好错误而非崩溃
+    block: false
+  标签: [异常]
+  用例ID: A-L2-070
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L71
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      customizedPaymentName: 自定义
+  期望:
+    intent: 查询订单销售明细
+    params: *L71
+    output: customizedPaymentName 筛选应正常返回
+    block: false
+    semantic:
+      fields: [customizedPaymentName]
+  标签: [支付变体, 自定义支付]
+  用例ID: A-L2-071
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L72
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      paymentTerminalType: Stripe
+  期望:
+    intent: 查询订单销售明细
+    params: *L72
+    output: paymentTerminalType=Stripe 筛选应正常返回
+    block: false
+    semantic:
+      fields: [paymentTerminalType]
+  标签: [终端变体]
+  用例ID: A-L2-072
+- 维度: 调用正确性
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &L73
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      refId: '13527517003138069'
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *L73
+    output: refId 精确查询应返回单条商品记录
+    block: false
+    semantic:
+      fields: [refId, name]
+  标签: [ID变体]
+  用例ID: A-L2-073
+- 维度: 协议契约
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &L74
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *L74
+    output: 响应可被 trace_platform 追踪
+    block: false
+  标签: [协议]
+  用例ID: A-L2-074
+- 维度: 异常与容错
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L75
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询订单销售明细
+    params: *L75
+    output: 客户端重连后应能正常调用
+    block: false
+  标签: [容错]
+  用例ID: A-L2-075
+- 维度: 参数校验
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      name: ''
+  期望:
+    intent: 查询菜单商品分类报表
+    params: {}
+    output: name 为空应被忽略或拒绝
+    block: true
+  标签: [空值边界]
+  用例ID: A-L2-076
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: ''
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: merchantId 为空字符串应被拒绝
+    block: true
+  标签: [空值边界]
+  用例ID: A-L2-077
+- 维度: 性能与资源
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &L78
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+      limit: 1000
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *L78
+    output: 返回大量 records 时不 OOM、不超时
+    block: false
+  标签: [压力]
+  用例ID: A-L2-078
+- 维度: 工具描述
+  能力: 工具描述
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: {}
+  期望:
+    intent: 工具描述检查
+    params: {}
+    output: 描述包含'merchantId'或'必填'
+    block: false
+    semantic:
+      contains: ["merchantId"]
+  标签: [描述]
+  用例ID: A-L2-079
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L80
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      orderSourceType: Deliverect
+  期望:
+    intent: 查询订单销售明细
+    params: *L80
+    output: 切换 orderSourceType 应正常返回对应渠道订单
+    block: false
+    semantic:
+      fields: [orderSourceType, sourceName]
+  标签: [枚举变体, 渠道]
+  用例ID: A-L2-080
+- 维度: 调用正确性
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &L81
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+      paymentStatus: Captured
+  期望:
+    intent: 查询订单销售明细
+    params: *L81
+    output: paymentStatus=Captured 应返回已支付订单
+    block: false
+    semantic:
+      fields: [paymentStatus]
+  标签: [支付变体]
+  用例ID: A-L2-081
+- 维度: 稳定与可追溯
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &L86
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *L86
+    output: 同参调用应结果一致(排除进行中窗口的实时变化)且带 warnings 提示新鲜度
+    block: false
+    semantic:
+      fields: [orderCount, totalSales]
+      warnings_any: true
+  标签: [稳定性, 新鲜度]
+  用例ID: A-L2-086
+
+# =====================================================================
+# 六、相对时间查询 relativePeriod（新版接口特性）
+# =====================================================================
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &R1
+      merchantId: '12600071176193029'
+      relativePeriod: Today
+  期望:
+    intent: 查询店铺经营汇总
+    params: *R1
+    output: 用 relativePeriod=Today 查询今日(服务端按店铺时区解析)，省略 startAt/endAt
+    block: false
+    semantic:
+      fields: [records]
+  标签: [相对时间, Today]
+  用例ID: A-L1-050
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &R2
+      merchantId: '12600071176193029'
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询店铺经营汇总
+    params: *R2
+    output: 用 relativePeriod=Yesterday 查询昨日，返回单日汇总
+    block: false
+    semantic:
+      contains: ["2026-09-09"]
+      fields: [records]
+  标签: [相对时间, Yesterday]
+  用例ID: A-L1-051
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &R3
+      merchantId: '12600071176193029'
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询店铺经营汇总
+    params: *R3
+    output: 用 relativePeriod=ThisWeek 查询本周(周一为首日)，返回多天/多段
+    block: false
+    semantic:
+      fields: [records, segments]
+  标签: [相对时间, ThisWeek]
+  用例ID: A-L1-052
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &R4
+      merchantId: '12600071176193029'
+      relativePeriod: LastWeek
+  期望:
+    intent: 查询店铺经营汇总
+    params: *R4
+    output: 用 relativePeriod=LastWeek 查询上周，返回 7 天记录
+    block: false
+    semantic:
+      fields: [records]
+  标签: [相对时间, LastWeek]
+  用例ID: A-L1-053
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &R5
+      merchantId: '12600071176193029'
+      relativePeriod: ThisMonth
+  期望:
+    intent: 查询店铺经营汇总
+    params: *R5
+    output: 用 relativePeriod=ThisMonth 查询本月(9/1~9/30)
+    block: false
+    semantic:
+      fields: [records, segments]
+  标签: [相对时间, ThisMonth]
+  用例ID: A-L1-054
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &R6
+      merchantId: '12600071176193029'
+      relativePeriod: LastMonth
+  期望:
+    intent: 查询店铺经营汇总
+    params: *R6
+    output: 用 relativePeriod=LastMonth 查询上月(8 月)，返回 30 天记录
+    block: false
+    semantic:
+      fields: [records]
+  标签: [相对时间, LastMonth]
+  用例ID: A-L1-055
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      relativePeriod: Last7Days
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 非法 relativePeriod(Last7Days) 应被拒绝，仅接受 Today/Yesterday/ThisWeek/LastWeek/ThisMonth/LastMonth
+    block: true
+  标签: [相对时间, 非法枚举]
+  用例ID: A-L2-087
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      relativePeriod: Today
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: relativePeriod 与 startAt/endAt 互斥，同时传应被拒绝或明确取其一
+    block: true
+  标签: [相对时间, 互斥]
+  用例ID: A-L2-088
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 既无 relativePeriod 也无 startAt/endAt 时应提示需提供其一(40000)
+    block: true
+  标签: [相对时间, 缺参数]
+  用例ID: A-L2-089
+- 维度: 参数格式
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09T00:00:00-07:00'
+      endAt: '2026-09-09T23:59:59-07:00'
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: 新版不支持带时区偏移的时间(应被拒绝)，须用纯日期或不带偏移的本地时间
+    block: true
+  标签: [相对时间, 时区格式]
+  用例ID: A-L2-090
+- 维度: 参数格式
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+  期望:
+    intent: 查询订单销售明细
+    params: {}
+    output: 订单工具 endAt 为不含语义，同日窗口范围非正应报错(range must be positive)
+    block: true
+  标签: [相对时间, 订单同日]
+  用例ID: A-L2-091
+- 维度: 参数格式
+  能力: 查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &R12
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+  期望:
+    intent: 查询订单销售明细
+    params: *R12
+    output: 订单工具用 [9/9, 9/10) 半开区间可正确返回 9/9 当天订单(endInclusive=false)
+    block: false
+    semantic:
+      fields: [records, segments]
+  标签: [相对时间, 订单半开区间]
+  用例ID: A-L2-092
+- 维度: 协议契约
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &R13
+      merchantId: '12600071176193029'
+      relativePeriod: Today
+  期望:
+    intent: 查询店铺经营汇总
+    params: *R13
+    output: 返回体含 timeZoneId(店铺时区 America/Los_Angeles) 与 requestedDateRange
+    block: false
+    semantic:
+      contains: ["America/Los_Angeles"]
+      fields: [timeZoneId, requestedDateRange]
+  标签: [相对时间, 时区元数据]
+  用例ID: A-L1-056

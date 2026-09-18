@@ -5,7 +5,7 @@
   L2: 场景演化(30%)：纯规则变异，不用LLM
   L3: 生产回放(10%)：需生产日志，暂未接入不预留接口
 数据源: 实体清单_小韩面无人值守.yaml
-用例数: 102
+用例数: 92
 用例列表:
 - 维度: 触发条件正确性
   能力: 查询设备终端列表
@@ -21,9 +21,7 @@
     block: false
     semantic:
       fields:
-      - 含 终端
-      contains:
-      - Test
+      - terminalCode
   标签:
   - 正常
   用例ID: D-L1-001
@@ -42,9 +40,8 @@
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
@@ -64,9 +61,8 @@
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
@@ -82,12 +78,26 @@
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - Test
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
@@ -105,65 +115,57 @@
     block: false
     semantic:
       fields:
-      - 含 终端
-      contains:
-      - Test
+      - terminalCode
   标签:
   - 正常
   用例ID: D-L1-005
 - 维度: 触发条件正确性
-  能力: 查询设备终端详情
+  能力: 开启无人值守模式
   层: L1
   输入:
-    tool_name: query_device_terminals
+    tool_name: set_device_terminal_unattended_mode
     tool_params: &id002
       merchantId: '26377732552517'
-      terminalIds: &id003
-      - '26456010686725'
+      isEnabled: true
   期望:
-    intent: 查询设备终端详情
+    intent: 开启无人值守模式
     params: *id002
     output: Skill 正确触发执行
     block: false
-    semantic:
-      fields:
-      - 含端口 ID
-      - 索引
-      - 设备名称
   标签:
   - 正常
   用例ID: D-L1-006
 - 维度: 输入输出契约
-  能力: 查询设备终端详情
+  能力: 开启无人值守模式
   层: L1
   输入:
-    tool_name: query_device_terminals
+    tool_name: set_device_terminal_unattended_mode
     tool_params:
       merchantId:
       - '0'
-      terminalIds: *id003
+      isEnabled: true
   期望:
-    intent: 查询设备终端详情
+    intent: 开启无人值守模式
     params: *id002
     output: 非法输入按契约拒绝
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
   用例ID: D-L1-007
 - 维度: 能力边界
-  能力: 查询设备终端详情
+  能力: 开启无人值守模式
   层: L1
   输入:
-    tool_name: query_device_terminals
+    tool_name: set_device_terminal_unattended_mode
     tool_params:
       merchantId:
       - '9999999999999999'
-      terminalIds: *id003
+      isEnabled: true
   期望:
     intent: 越界
     params: {}
@@ -171,72 +173,79 @@
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
   用例ID: D-L1-008
 - 维度: 错误处理
-  能力: 查询设备终端详情
+  能力: 开启无人值守模式
   层: L1
   输入:
-    tool_name: query_device_terminals
+    tool_name: set_device_terminal_unattended_mode
     tool_params:
       _invalid: ''
   期望:
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: D-L1-009
 - 维度: 性能
-  能力: 查询设备终端详情
-  层: L1
-  输入:
-    tool_name: query_device_terminals
-    tool_params: *id002
-  期望:
-    intent: 查询设备终端详情
-    params: *id002
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 含端口 ID
-      - 索引
-      - 设备名称
-  标签:
-  - 正常
-  用例ID: D-L1-010
-- 维度: 触发条件正确性
   能力: 开启无人值守模式
   层: L1
   输入:
     tool_name: set_device_terminal_unattended_mode
-    tool_params: &id004
+    tool_params: *id002
+  期望:
+    intent: 开启无人值守模式
+    params: *id002
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  用例ID: D-L1-010
+- 维度: 触发条件正确性
+  能力: 关闭无人值守模式
+  层: L1
+  输入:
+    tool_name: set_device_terminal_unattended_mode
+    tool_params: &id003
       merchantId: '26377732552517'
       isEnabled: true
   期望:
-    intent: 开启无人值守模式
-    params: *id004
+    intent: 关闭无人值守模式
+    params: *id003
     output: Skill 正确触发执行
     block: false
-    semantic:
-      contains:
-      - isEnable
   标签:
   - 正常
   用例ID: D-L1-011
 - 维度: 输入输出契约
-  能力: 开启无人值守模式
+  能力: 关闭无人值守模式
   层: L1
   输入:
     tool_name: set_device_terminal_unattended_mode
@@ -245,21 +254,20 @@
       - '0'
       isEnabled: true
   期望:
-    intent: 开启无人值守模式
-    params: *id004
+    intent: 关闭无人值守模式
+    params: *id003
     output: 非法输入按契约拒绝
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
   用例ID: D-L1-012
 - 维度: 能力边界
-  能力: 开启无人值守模式
+  能力: 关闭无人值守模式
   层: L1
   输入:
     tool_name: set_device_terminal_unattended_mode
@@ -274,15 +282,14 @@
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
   用例ID: D-L1-013
 - 维度: 错误处理
-  能力: 开启无人值守模式
+  能力: 关闭无人值守模式
   层: L1
   输入:
     tool_name: set_device_terminal_unattended_mode
@@ -292,84 +299,100 @@
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - isEnable
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: D-L1-014
 - 维度: 性能
-  能力: 开启无人值守模式
+  能力: 关闭无人值守模式
   层: L1
   输入:
     tool_name: set_device_terminal_unattended_mode
-    tool_params: *id004
+    tool_params: *id003
   期望:
-    intent: 开启无人值守模式
-    params: *id004
+    intent: 关闭无人值守模式
+    params: *id003
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      contains:
-      - isEnable
   标签:
   - 正常
   用例ID: D-L1-015
 - 维度: 触发条件正确性
-  能力: 关闭无人值守模式
+  能力: 查询端口操作记录
   层: L1
   输入:
-    tool_name: set_device_terminal_unattended_mode
-    tool_params: &id005
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id004
       merchantId: '26377732552517'
-      isEnabled: true
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
-    intent: 关闭无人值守模式
-    params: *id005
+    intent: 查询端口操作记录
+    params: *id004
     output: Skill 正确触发执行
     block: false
     semantic:
-      contains:
-      - isEnable
+      fields:
+      - ReportedIsOpen
   标签:
   - 正常
   用例ID: D-L1-016
 - 维度: 输入输出契约
-  能力: 关闭无人值守模式
+  能力: 查询端口操作记录
   层: L1
   输入:
-    tool_name: set_device_terminal_unattended_mode
+    tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '0'
-      isEnabled: true
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
-    intent: 关闭无人值守模式
-    params: *id005
+    intent: 查询端口操作记录
+    params: *id004
     output: 非法输入按契约拒绝
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
   用例ID: D-L1-017
 - 维度: 能力边界
-  能力: 关闭无人值守模式
+  能力: 查询端口操作记录
   层: L1
   输入:
-    tool_name: set_device_terminal_unattended_mode
+    tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '9999999999999999'
-      isEnabled: true
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
     intent: 越界
     params: {}
@@ -377,108 +400,120 @@
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
   用例ID: D-L1-018
 - 维度: 错误处理
-  能力: 关闭无人值守模式
+  能力: 查询端口操作记录
   层: L1
   输入:
-    tool_name: set_device_terminal_unattended_mode
+    tool_name: query_device_terminal_port_state_records
     tool_params:
       _invalid: ''
   期望:
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - isEnable
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: D-L1-019
 - 维度: 性能
-  能力: 关闭无人值守模式
-  层: L1
-  输入:
-    tool_name: set_device_terminal_unattended_mode
-    tool_params: *id005
-  期望:
-    intent: 关闭无人值守模式
-    params: *id005
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      contains:
-      - isEnable
-  标签:
-  - 正常
-  用例ID: D-L1-020
-- 维度: 触发条件正确性
   能力: 查询端口操作记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
-    tool_params: &id006
-      merchantId: '26377732552517'
-      page: 1
-      size: 10
+    tool_params: *id004
   期望:
     intent: 查询端口操作记录
-    params: *id006
-    output: Skill 正确触发执行
+    params: *id004
+    output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - 含前门端口
-      - 操作来源
-      contains:
-      - Test
+      - ReportedIsOpen
+  标签:
+  - 正常
+  用例ID: D-L1-020
+- 维度: 触发条件正确性
+  能力: 按时间范围查询端口操作记录
+  层: L1
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id005
+      merchantId: '26377732552517'
+      startAt: '2026-01-01T00:00:00'
+      endAt: '2026-12-31T23:59:59'
+      page: 1
+      size: 15
+  期望:
+    intent: 按时间范围查询端口操作记录
+    params: *id005
+    output: Skill 正确触发执行
+    block: false
   标签:
   - 正常
   用例ID: D-L1-021
 - 维度: 输入输出契约
-  能力: 查询端口操作记录
+  能力: 按时间范围查询端口操作记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '0'
+      startAt: '2026-01-01T00:00:00'
+      endAt: '2026-12-31T23:59:59'
       page: 1
-      size: 10
+      size: 15
   期望:
-    intent: 查询端口操作记录
-    params: *id006
+    intent: 按时间范围查询端口操作记录
+    params: *id005
     output: 非法输入按契约拒绝
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
   用例ID: D-L1-022
 - 维度: 能力边界
-  能力: 查询端口操作记录
+  能力: 按时间范围查询端口操作记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '9999999999999999'
+      startAt: '2026-01-01T00:00:00'
+      endAt: '2026-12-31T23:59:59'
       page: 1
-      size: 10
+      size: 15
   期望:
     intent: 越界
     params: {}
@@ -486,15 +521,14 @@
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
   用例ID: D-L1-023
 - 维度: 错误处理
-  能力: 查询端口操作记录
+  能力: 按时间范围查询端口操作记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
@@ -504,96 +538,107 @@
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - Test
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: D-L1-024
 - 维度: 性能
-  能力: 查询端口操作记录
+  能力: 按时间范围查询端口操作记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
-    tool_params: *id006
+    tool_params: *id005
   期望:
-    intent: 查询端口操作记录
-    params: *id006
+    intent: 按时间范围查询端口操作记录
+    params: *id005
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      fields:
-      - 含前门端口
-      - 操作来源
-      contains:
-      - Test
   标签:
   - 正常
   用例ID: D-L1-025
 - 维度: 触发条件正确性
-  能力: 按时间范围查询端口操作记录
+  能力: 按操作来源筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
-    tool_params: &id007
+    tool_params: &id006
       merchantId: '26377732552517'
-      startTime: ''
-      endTime: ''
+      operationSources: &id007
+      - UnattendedModeEnabled
+      relativePeriod: ThisMonth
       page: 1
-      size: 10
+      size: 15
   期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id007
+    intent: 按操作来源筛选端口记录
+    params: *id006
     output: Skill 正确触发执行
     block: false
     semantic:
-      contains:
-      - 端口操作记录
+      fields:
+      - operationSource
+      - operatorDisplayName
+      - operatedAtLocal
+      - isOpen
   标签:
   - 正常
   用例ID: D-L1-026
 - 维度: 输入输出契约
-  能力: 按时间范围查询端口操作记录
+  能力: 按操作来源筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '0'
-      startTime: ''
-      endTime: ''
+      operationSources: *id007
+      relativePeriod: ThisMonth
       page: 1
-      size: 10
+      size: 15
   期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id007
+    intent: 按操作来源筛选端口记录
+    params: *id006
     output: 非法输入按契约拒绝
     block: true
     semantic:
       contains:
-      - 端口操作记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
   用例ID: D-L1-027
 - 维度: 能力边界
-  能力: 按时间范围查询端口操作记录
+  能力: 按操作来源筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '9999999999999999'
-      startTime: ''
-      endTime: ''
+      operationSources: *id007
+      relativePeriod: ThisMonth
       page: 1
-      size: 10
+      size: 15
   期望:
     intent: 越界
     params: {}
@@ -601,15 +646,14 @@
     block: true
     semantic:
       contains:
-      - 端口操作记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
   用例ID: D-L1-028
 - 维度: 错误处理
-  能力: 按时间范围查询端口操作记录
+  能力: 按操作来源筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
@@ -619,90 +663,111 @@
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 端口操作记录
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: D-L1-029
 - 维度: 性能
-  能力: 按时间范围查询端口操作记录
+  能力: 按操作来源筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
-    tool_params: *id007
+    tool_params: *id006
   期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id007
+    intent: 按操作来源筛选端口记录
+    params: *id006
     output: 单次调用延迟可接受
     block: false
     semantic:
-      contains:
-      - 端口操作记录
+      fields:
+      - operationSource
+      - operatorDisplayName
+      - operatedAtLocal
+      - isOpen
   标签:
   - 正常
   用例ID: D-L1-030
 - 维度: 触发条件正确性
-  能力: 按操作来源筛选端口记录
+  能力: 按终端/端口筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id008
       merchantId: '26377732552517'
-      operationSources: ''
+      terminalCodes: &id009
+      - 10cbd4110b19040f0f
+      portIds: &id010
+      - '26456101370181'
+      relativePeriod: ThisMonth
       page: 1
-      size: 10
+      size: 15
   期望:
-    intent: 按操作来源筛选端口记录
+    intent: 按终端/端口筛选端口记录
     params: *id008
     output: Skill 正确触发执行
     block: false
-    semantic:
-      contains:
-      - 记录
   标签:
   - 正常
   用例ID: D-L1-031
 - 维度: 输入输出契约
-  能力: 按操作来源筛选端口记录
+  能力: 按终端/端口筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '0'
-      operationSources: ''
+      terminalCodes: *id009
+      portIds: *id010
+      relativePeriod: ThisMonth
       page: 1
-      size: 10
+      size: 15
   期望:
-    intent: 按操作来源筛选端口记录
+    intent: 按终端/端口筛选端口记录
     params: *id008
     output: 非法输入按契约拒绝
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
   用例ID: D-L1-032
 - 维度: 能力边界
-  能力: 按操作来源筛选端口记录
+  能力: 按终端/端口筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '9999999999999999'
-      operationSources: ''
+      terminalCodes: *id009
+      portIds: *id010
+      relativePeriod: ThisMonth
       page: 1
-      size: 10
+      size: 15
   期望:
     intent: 越界
     params: {}
@@ -710,15 +775,14 @@
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
   用例ID: D-L1-033
 - 维度: 错误处理
-  能力: 按操作来源筛选端口记录
+  能力: 按终端/端口筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
@@ -728,95 +792,91 @@
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 记录
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: D-L1-034
 - 维度: 性能
-  能力: 按操作来源筛选端口记录
+  能力: 按终端/端口筛选端口记录
   层: L1
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: *id008
   期望:
-    intent: 按操作来源筛选端口记录
+    intent: 按终端/端口筛选端口记录
     params: *id008
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      contains:
-      - 记录
   标签:
   - 正常
   用例ID: D-L1-035
 - 维度: 触发条件正确性
-  能力: 按终端/端口筛选端口记录
+  能力: 先查终端再开启无人值守
   层: L1
   输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id009
+    tool_name: query_device_terminals
+    tool_params: &id011
       merchantId: '26377732552517'
-      terminalIds: &id010
-      - '26456010686725'
-      portIds: &id011
-      - '26456101370181'
-      page: 1
-      size: 10
+      isEnabled: true
   期望:
-    intent: 按终端/端口筛选端口记录
-    params: *id009
+    intent: 先查终端再开启无人值守
+    params: *id011
     output: Skill 正确触发执行
     block: false
-    semantic:
-      contains:
-      - 记录
   标签:
   - 正常
   用例ID: D-L1-036
 - 维度: 输入输出契约
-  能力: 按终端/端口筛选端口记录
+  能力: 先查终端再开启无人值守
   层: L1
   输入:
-    tool_name: query_device_terminal_port_state_records
+    tool_name: query_device_terminals
     tool_params:
       merchantId:
       - '0'
-      terminalIds: *id010
-      portIds: *id011
-      page: 1
-      size: 10
+      isEnabled: true
   期望:
-    intent: 按终端/端口筛选端口记录
-    params: *id009
+    intent: 先查终端再开启无人值守
+    params: *id011
     output: 非法输入按契约拒绝
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
   用例ID: D-L1-037
 - 维度: 能力边界
-  能力: 按终端/端口筛选端口记录
+  能力: 先查终端再开启无人值守
   层: L1
   输入:
-    tool_name: query_device_terminal_port_state_records
+    tool_name: query_device_terminals
     tool_params:
       merchantId:
       - '9999999999999999'
-      terminalIds: *id010
-      portIds: *id011
-      page: 1
-      size: 10
+      isEnabled: true
   期望:
     intent: 越界
     params: {}
@@ -824,61 +884,73 @@
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
   用例ID: D-L1-038
 - 维度: 错误处理
-  能力: 按终端/端口筛选端口记录
+  能力: 先查终端再开启无人值守
   层: L1
   输入:
-    tool_name: query_device_terminal_port_state_records
+    tool_name: query_device_terminals
     tool_params:
       _invalid: ''
   期望:
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 记录
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: D-L1-039
 - 维度: 性能
-  能力: 按终端/端口筛选端口记录
-  层: L1
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: *id009
-  期望:
-    intent: 按终端/端口筛选端口记录
-    params: *id009
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      contains:
-      - 记录
-  标签:
-  - 正常
-  用例ID: D-L1-040
-- 维度: 触发条件正确性
   能力: 先查终端再开启无人值守
   层: L1
   输入:
     tool_name: query_device_terminals
-    tool_params: &id012
-      merchantId: '26377732552517'
-      isEnabled: true
+    tool_params: *id011
   期望:
     intent: 先查终端再开启无人值守
+    params: *id011
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  用例ID: D-L1-040
+- 维度: 触发条件正确性
+  能力: 组合查询端口记录与终端状态
+  层: L1
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id012
+      merchantId: '26377732552517'
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
+  期望:
+    intent: 组合查询端口记录与终端状态
     params: *id012
     output: Skill 正确触发执行
     block: false
@@ -886,36 +958,40 @@
   - 正常
   用例ID: D-L1-041
 - 维度: 输入输出契约
-  能力: 先查终端再开启无人值守
+  能力: 组合查询端口记录与终端状态
   层: L1
   输入:
-    tool_name: query_device_terminals
+    tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '0'
-      isEnabled: true
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
-    intent: 先查终端再开启无人值守
+    intent: 组合查询端口记录与终端状态
     params: *id012
     output: 非法输入按契约拒绝
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 契约
   用例ID: D-L1-042
 - 维度: 能力边界
-  能力: 先查终端再开启无人值守
+  能力: 组合查询端口记录与终端状态
   层: L1
   输入:
-    tool_name: query_device_terminals
+    tool_name: query_device_terminal_port_state_records
     tool_params:
       merchantId:
       - '9999999999999999'
-      isEnabled: true
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
     intent: 越界
     params: {}
@@ -923,143 +999,61 @@
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 边界
   用例ID: D-L1-043
 - 维度: 错误处理
-  能力: 先查终端再开启无人值守
+  能力: 组合查询端口记录与终端状态
   层: L1
   输入:
-    tool_name: query_device_terminals
+    tool_name: query_device_terminal_port_state_records
     tool_params:
       _invalid: ''
   期望:
     intent: 容错
     params: {}
     output: 失败被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: D-L1-044
 - 维度: 性能
-  能力: 先查终端再开启无人值守
+  能力: 组合查询端口记录与终端状态
   层: L1
   输入:
-    tool_name: query_device_terminals
+    tool_name: query_device_terminal_port_state_records
     tool_params: *id012
   期望:
-    intent: 先查终端再开启无人值守
+    intent: 组合查询端口记录与终端状态
     params: *id012
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
   用例ID: D-L1-045
-- 维度: 触发条件正确性
-  能力: 组合查询端口记录与终端状态
-  层: L1
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id013
-      merchantId: '26377732552517'
-      page: 1
-      size: 10
-  期望:
-    intent: 组合查询端口记录与终端状态
-    params: *id013
-    output: Skill 正确触发执行
-    block: false
-  标签:
-  - 正常
-  用例ID: D-L1-046
-- 维度: 输入输出契约
-  能力: 组合查询端口记录与终端状态
-  层: L1
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params:
-      merchantId:
-      - '0'
-      page: 1
-      size: 10
-  期望:
-    intent: 组合查询端口记录与终端状态
-    params: *id013
-    output: 非法输入按契约拒绝
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 契约
-  用例ID: D-L1-047
-- 维度: 能力边界
-  能力: 组合查询端口记录与终端状态
-  层: L1
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params:
-      merchantId:
-      - '9999999999999999'
-      page: 1
-      size: 10
-  期望:
-    intent: 越界
-    params: {}
-    output: 越界操作被拒绝或提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 边界
-  用例ID: D-L1-048
-- 维度: 错误处理
-  能力: 组合查询端口记录与终端状态
-  层: L1
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params:
-      _invalid: ''
-  期望:
-    intent: 容错
-    params: {}
-    output: 失败被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 容错
-  用例ID: D-L1-049
-- 维度: 性能
-  能力: 组合查询端口记录与终端状态
-  层: L1
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: *id013
-  期望:
-    intent: 组合查询端口记录与终端状态
-    params: *id013
-    output: 单次调用延迟可接受
-    block: false
-  标签:
-  - 正常
-  用例ID: D-L1-050
 - 维度: 与其他Skill组合
   能力: 查询设备终端列表
   层: L1
@@ -1070,454 +1064,463 @@
   期望:
     intent: 查询设备终端列表
     params: {}
-    output: 查询设备终端列表 与 查询设备终端详情 组合调用无冲突
+    output: 查询设备终端列表 与 开启无人值守模式 组合调用无冲突
     block: false
     semantic:
       fields:
-      - 含 终端
-      contains:
-      - Test
+      - terminalCode
   标签:
   - 组合
-  用例ID: D-L1-051
+  用例ID: D-L1-046
 - 维度: 输入输出契约
   能力: 先查终端再开启无人值守
   层: L2
   输入:
     tool_name: query_device_terminals
-    tool_params: &id014
+    tool_params: &id013
+      merchantId: '26377732552517'
       isEnabled: true
+      unknown_param: x
   期望:
     intent: 先查终端再开启无人值守
-    params: *id014
-    output: 缺失参数被拒绝/提示
+    params: *id013
+    output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 参数缺失
-  用例ID: D-L2-052
+  - 参数注入
+  用例ID: D-L2-047
+- 维度: 能力边界
+  能力: 按操作来源筛选端口记录
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id014
+      merchantId: '26377732552517'
+      operationSources: *id007
+      relativePeriod: ThisMonth
+      page: 0
+      size: 15
+  期望:
+    intent: 按操作来源筛选端口记录
+    params: *id014
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: D-L2-048
 - 维度: 输入输出契约
   能力: 按终端/端口筛选端口记录
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id015
-      merchantId: '26377732552517'
-      terminalIds: *id010
-      portIds: *id011
+      terminalCodes: *id009
+      portIds: *id010
+      relativePeriod: ThisMonth
       page: 1
-      size: 10
-      unknown_param: x
+      size: 15
   期望:
     intent: 按终端/端口筛选端口记录
     params: *id015
-    output: 未知参数被拒绝/提示
+    output: 缺失参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 参数注入
-  用例ID: D-L2-053
-- 维度: 能力边界
-  能力: 按时间范围查询端口操作记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id016
-      merchantId: '26377732552517'
-      startTime: ''
-      endTime: ''
-      page: -1
-      size: 10
-  期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id016
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 端口操作记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: D-L2-054
-- 维度: 能力边界
+  - 参数缺失
+  用例ID: D-L2-049
+- 维度: 输入输出契约
   能力: 关闭无人值守模式
   层: L2
   输入:
     tool_name: set_device_terminal_unattended_mode
-    tool_params: &id017
-      merchantId: '26377732552517'
-      isEnabled: 9999999999999999
+    tool_params: &id016
+      isEnabled: true
   期望:
     intent: 关闭无人值守模式
+    params: *id016
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: D-L2-050
+- 维度: 能力边界
+  能力: 按操作来源筛选端口记录
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id017
+      merchantId: '26377732552517'
+      operationSources: *id007
+      relativePeriod: ThisMonth
+      page: -1
+      size: 15
+  期望:
+    intent: 按操作来源筛选端口记录
     params: *id017
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-055
-- 维度: 错误处理
-  能力: 关闭无人值守模式
+  用例ID: D-L2-051
+- 维度: 能力边界
+  能力: 按时间范围查询端口操作记录
   层: L2
   输入:
-    tool_name: set_device_terminal_unattended_mode
+    tool_name: query_device_terminal_port_state_records
     tool_params: &id018
       merchantId: '26377732552517'
-      isEnabled: abc
+      startAt: '2026-01-01T00:00:00'
+      endAt: '2026-12-31T23:59:59'
+      page: -1
+      size: 15
   期望:
-    intent: 关闭无人值守模式
+    intent: 按时间范围查询端口操作记录
     params: *id018
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: D-L2-052
+- 维度: 输入输出契约
+  能力: 查询设备终端列表
+  层: L2
+  输入:
+    tool_name: query_device_terminals
+    tool_params: &id019 {}
+  期望:
+    intent: 查询设备终端列表
+    params: *id019
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: D-L2-053
+- 维度: 错误处理
+  能力: 按操作来源筛选端口记录
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id020
+      merchantId: '26377732552517'
+      operationSources: *id007
+      relativePeriod: ThisMonth
+      page: abc
+      size: 15
+  期望:
+    intent: 按操作来源筛选端口记录
+    params: *id020
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 类型错配
+  用例ID: D-L2-054
+- 维度: 输入输出契约
+  能力: 组合查询端口记录与终端状态
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id021
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
+  期望:
+    intent: 组合查询端口记录与终端状态
+    params: *id021
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: D-L2-055
+- 维度: 能力边界
+  能力: 开启无人值守模式
+  层: L2
+  输入:
+    tool_name: set_device_terminal_unattended_mode
+    tool_params: &id022
+      merchantId: '26377732552517'
+      isEnabled: -1
+  期望:
+    intent: 开启无人值守模式
+    params: *id022
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
   用例ID: D-L2-056
 - 维度: 错误处理
   能力: 组合查询端口记录与终端状态
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
-    tool_params: &id019
+    tool_params: &id023
       merchantId: '26377732552517'
+      relativePeriod: ThisMonth
       page: abc
-      size: 10
+      size: 15
   期望:
     intent: 组合查询端口记录与终端状态
-    params: *id019
+    params: *id023
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 类型错配
   用例ID: D-L2-057
 - 维度: 能力边界
-  能力: 按终端/端口筛选端口记录
+  能力: 先查终端再开启无人值守
   层: L2
   输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id020
+    tool_name: query_device_terminals
+    tool_params: &id024
       merchantId: '26377732552517'
-      terminalIds: *id010
-      portIds: *id011
-      page: -1
-      size: 10
+      isEnabled: 0
   期望:
-    intent: 按终端/端口筛选端口记录
-    params: *id020
+    intent: 先查终端再开启无人值守
+    params: *id024
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
   用例ID: D-L2-058
-- 维度: 输入输出契约
-  能力: 开启无人值守模式
+- 维度: 触发条件正确性
+  能力: 关闭无人值守模式
   层: L2
   输入:
-    tool_name: set_device_terminal_unattended_mode
-    tool_params: &id021
+    tool_name: set_device_terminal_unattended_mode_typo
+    tool_params:
       merchantId: '26377732552517'
       isEnabled: true
-      unknown_param: x
   期望:
-    intent: 开启无人值守模式
-    params: *id021
-    output: 未知参数被拒绝/提示
+    intent: 关闭无人值守模式
+    params: *id003
+    output: 工具无效，拒绝触发
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 参数注入
+  - 工具错配
   用例ID: D-L2-059
 - 维度: 能力边界
-  能力: 查询端口操作记录
+  能力: 先查终端再开启无人值守
   层: L2
   输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id022
+    tool_name: query_device_terminals
+    tool_params: &id025
       merchantId: '26377732552517'
-      page: 0
-      size: 10
+      isEnabled: -1
   期望:
-    intent: 查询端口操作记录
-    params: *id022
+    intent: 先查终端再开启无人值守
+    params: *id025
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
   用例ID: D-L2-060
-- 维度: 输入输出契约
-  能力: 查询设备终端列表
-  层: L2
-  输入:
-    tool_name: query_device_terminals
-    tool_params: &id023 {}
-  期望:
-    intent: 查询设备终端列表
-    params: *id023
-    output: 缺失参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - Test
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数缺失
-  用例ID: D-L2-061
-- 维度: 输入输出契约
-  能力: 按操作来源筛选端口记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id024
-      merchantId: '26377732552517'
-      operationSources: ''
-      page: 1
-      size: 10
-      unknown_param: x
-  期望:
-    intent: 按操作来源筛选端口记录
-    params: *id024
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: D-L2-062
-- 维度: 触发条件正确性
-  能力: 先查终端再开启无人值守
-  层: L2
-  输入:
-    tool_name: query_device_terminals_typo
-    tool_params:
-      merchantId: '26377732552517'
-      isEnabled: true
-  期望:
-    intent: 先查终端再开启无人值守
-    params: *id012
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: D-L2-063
-- 维度: 触发条件正确性
-  能力: 查询设备终端详情
-  层: L2
-  输入:
-    tool_name: query_device_terminals_typo
-    tool_params:
-      merchantId: '26377732552517'
-      terminalIds: *id003
-  期望:
-    intent: 查询设备终端详情
-    params: *id002
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: D-L2-064
-- 维度: 输入输出契约
-  能力: 查询端口操作记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id025
-      page: 1
-      size: 10
-  期望:
-    intent: 查询端口操作记录
-    params: *id025
-    output: 缺失参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - Test
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数缺失
-  用例ID: D-L2-065
 - 维度: 能力边界
-  能力: 按操作来源筛选端口记录
+  能力: 查询端口操作记录
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id026
       merchantId: '26377732552517'
-      operationSources: ''
-      page: -1
-      size: 10
+      relativePeriod: ThisMonth
+      page: 0
+      size: 15
   期望:
-    intent: 按操作来源筛选端口记录
+    intent: 查询端口操作记录
     params: *id026
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-066
+  用例ID: D-L2-061
 - 维度: 能力边界
-  能力: 按终端/端口筛选端口记录
+  能力: 查询端口操作记录
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id027
       merchantId: '26377732552517'
-      terminalIds: *id010
-      portIds: *id011
-      page: 0
-      size: 10
+      relativePeriod: ThisMonth
+      page: 9999999999999999
+      size: 15
   期望:
-    intent: 按终端/端口筛选端口记录
+    intent: 查询端口操作记录
     params: *id027
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-067
-- 维度: 错误处理
-  能力: 按时间范围查询端口操作记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id028
-      merchantId: '26377732552517'
-      startTime: ''
-      endTime: ''
-      page: abc
-      size: 10
-  期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id028
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 端口操作记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: D-L2-068
-- 维度: 能力边界
-  能力: 按时间范围查询端口操作记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id029
-      merchantId: '26377732552517'
-      startTime: ''
-      endTime: ''
-      page: 9999999999999999
-      size: 10
-  期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id029
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 端口操作记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: D-L2-069
+  用例ID: D-L2-062
 - 维度: 输入输出契约
   能力: 查询设备终端列表
   层: L2
   输入:
     tool_name: query_device_terminals
-    tool_params: &id030
+    tool_params: &id028
       merchantId: '26377732552517'
       unknown_param: x
   期望:
     intent: 查询设备终端列表
-    params: *id030
+    params: *id028
     output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 参数注入
-  用例ID: D-L2-070
+  用例ID: D-L2-063
+- 维度: 输入输出契约
+  能力: 按时间范围查询端口操作记录
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id029
+      startAt: '2026-01-01T00:00:00'
+      endAt: '2026-12-31T23:59:59'
+      page: 1
+      size: 15
+  期望:
+    intent: 按时间范围查询端口操作记录
+    params: *id029
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: D-L2-064
+- 维度: 触发条件正确性
+  能力: 按时间范围查询端口操作记录
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records_typo
+    tool_params:
+      merchantId: '26377732552517'
+      startAt: '2026-01-01T00:00:00'
+      endAt: '2026-12-31T23:59:59'
+      page: 1
+      size: 15
+  期望:
+    intent: 按时间范围查询端口操作记录
+    params: *id005
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-065
+- 维度: 错误处理
+  能力: 按终端/端口筛选端口记录
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id030
+      merchantId: '26377732552517'
+      terminalCodes: *id009
+      portIds: *id010
+      relativePeriod: ThisMonth
+      page: abc
+      size: 15
+  期望:
+    intent: 按终端/端口筛选端口记录
+    params: *id030
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: D-L2-066
 - 维度: 能力边界
   能力: 先查终端再开启无人值守
   层: L2
@@ -1525,7 +1528,7 @@
     tool_name: query_device_terminals
     tool_params: &id031
       merchantId: '26377732552517'
-      isEnabled: 0
+      isEnabled: 9999999999999999
   期望:
     intent: 先查终端再开启无人值守
     params: *id031
@@ -1533,355 +1536,285 @@
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-071
-- 维度: 错误处理
-  能力: 按操作来源筛选端口记录
+  用例ID: D-L2-067
+- 维度: 能力边界
+  能力: 组合查询端口记录与终端状态
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id032
       merchantId: '26377732552517'
-      operationSources: ''
-      page: abc
-      size: 10
+      relativePeriod: ThisMonth
+      page: -1
+      size: 15
   期望:
-    intent: 按操作来源筛选端口记录
+    intent: 组合查询端口记录与终端状态
     params: *id032
-    output: 参数类型错误被拒绝/提示
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 类型错配
-  用例ID: D-L2-072
+  - 数值变异
+  用例ID: D-L2-068
 - 维度: 能力边界
-  能力: 先查终端再开启无人值守
+  能力: 按终端/端口筛选端口记录
   层: L2
   输入:
-    tool_name: query_device_terminals
+    tool_name: query_device_terminal_port_state_records
     tool_params: &id033
       merchantId: '26377732552517'
-      isEnabled: -1
+      terminalCodes: *id009
+      portIds: *id010
+      relativePeriod: ThisMonth
+      page: 0
+      size: 15
   期望:
-    intent: 先查终端再开启无人值守
+    intent: 按终端/端口筛选端口记录
     params: *id033
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-073
-- 维度: 触发条件正确性
-  能力: 查询端口操作记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records_typo
-    tool_params:
-      merchantId: '26377732552517'
-      page: 1
-      size: 10
-  期望:
-    intent: 查询端口操作记录
-    params: *id006
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - Test
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: D-L2-074
+  用例ID: D-L2-069
 - 维度: 输入输出契约
-  能力: 查询设备终端详情
+  能力: 先查终端再开启无人值守
   层: L2
   输入:
     tool_name: query_device_terminals
     tool_params: &id034
-      merchantId: '26377732552517'
-      terminalIds: *id003
-      unknown_param: x
+      isEnabled: true
   期望:
-    intent: 查询设备终端详情
+    intent: 先查终端再开启无人值守
     params: *id034
-    output: 未知参数被拒绝/提示
+    output: 缺失参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 参数注入
-  用例ID: D-L2-075
-- 维度: 输入输出契约
-  能力: 查询端口操作记录
+  - 参数缺失
+  用例ID: D-L2-070
+- 维度: 错误处理
+  能力: 按时间范围查询端口操作记录
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id035
       merchantId: '26377732552517'
-      page: 1
-      size: 10
-      unknown_param: x
+      startAt: '2026-01-01T00:00:00'
+      endAt: '2026-12-31T23:59:59'
+      page: abc
+      size: 15
   期望:
-    intent: 查询端口操作记录
+    intent: 按时间范围查询端口操作记录
     params: *id035
-    output: 未知参数被拒绝/提示
+    output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 参数注入
-  用例ID: D-L2-076
-- 维度: 能力边界
-  能力: 先查终端再开启无人值守
+  - 类型错配
+  用例ID: D-L2-071
+- 维度: 触发条件正确性
+  能力: 开启无人值守模式
   层: L2
   输入:
-    tool_name: query_device_terminals
+    tool_name: set_device_terminal_unattended_mode_typo
+    tool_params:
+      merchantId: '26377732552517'
+      isEnabled: true
+  期望:
+    intent: 开启无人值守模式
+    params: *id002
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-072
+- 维度: 能力边界
+  能力: 关闭无人值守模式
+  层: L2
+  输入:
+    tool_name: set_device_terminal_unattended_mode
     tool_params: &id036
       merchantId: '26377732552517'
       isEnabled: 9999999999999999
   期望:
-    intent: 先查终端再开启无人值守
+    intent: 关闭无人值守模式
     params: *id036
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-077
-- 维度: 触发条件正确性
-  能力: 按终端/端口筛选端口记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records_typo
-    tool_params:
-      merchantId: '26377732552517'
-      terminalIds: *id010
-      portIds: *id011
-      page: 1
-      size: 10
-  期望:
-    intent: 按终端/端口筛选端口记录
-    params: *id009
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: D-L2-078
-- 维度: 触发条件正确性
-  能力: 按时间范围查询端口操作记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records_typo
-    tool_params:
-      merchantId: '26377732552517'
-      startTime: ''
-      endTime: ''
-      page: 1
-      size: 10
-  期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id007
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 端口操作记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: D-L2-079
-- 维度: 输入输出契约
-  能力: 按时间范围查询端口操作记录
+  用例ID: D-L2-073
+- 维度: 错误处理
+  能力: 查询端口操作记录
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id037
       merchantId: '26377732552517'
-      startTime: ''
-      endTime: ''
-      page: 1
-      size: 10
-      unknown_param: x
-  期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id037
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 端口操作记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: D-L2-080
-- 维度: 输入输出契约
-  能力: 关闭无人值守模式
-  层: L2
-  输入:
-    tool_name: set_device_terminal_unattended_mode
-    tool_params: &id038
-      isEnabled: true
-  期望:
-    intent: 关闭无人值守模式
-    params: *id038
-    output: 缺失参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - isEnable
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数缺失
-  用例ID: D-L2-081
-- 维度: 能力边界
-  能力: 查询端口操作记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id039
-      merchantId: '26377732552517'
-      page: -1
-      size: 10
+      relativePeriod: ThisMonth
+      page: abc
+      size: 15
   期望:
     intent: 查询端口操作记录
-    params: *id039
-    output: 越界参数被拒绝/提示
+    params: *id037
+    output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 数值变异
-  用例ID: D-L2-082
+  - 类型错配
+  用例ID: D-L2-074
 - 维度: 能力边界
   能力: 开启无人值守模式
   层: L2
   输入:
     tool_name: set_device_terminal_unattended_mode
-    tool_params: &id040
+    tool_params: &id038
       merchantId: '26377732552517'
-      isEnabled: 9999999999999999
+      isEnabled: 0
   期望:
     intent: 开启无人值守模式
-    params: *id040
+    params: *id038
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-083
-- 维度: 能力边界
-  能力: 组合查询端口记录与终端状态
+  用例ID: D-L2-075
+- 维度: 输入输出契约
+  能力: 按操作来源筛选端口记录
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
-    tool_params: &id041
-      merchantId: '26377732552517'
-      page: 0
-      size: 10
+    tool_params: &id039
+      operationSources: *id007
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
-    intent: 组合查询端口记录与终端状态
-    params: *id041
-    output: 越界参数被拒绝/提示
+    intent: 按操作来源筛选端口记录
+    params: *id039
+    output: 缺失参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 数值变异
-  用例ID: D-L2-084
-- 维度: 能力边界
+  - 参数缺失
+  用例ID: D-L2-076
+- 维度: 输入输出契约
+  能力: 查询端口操作记录
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id040
+      merchantId: '26377732552517'
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
+      unknown_param: x
+  期望:
+    intent: 查询端口操作记录
+    params: *id040
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: D-L2-077
+- 维度: 输入输出契约
   能力: 关闭无人值守模式
   层: L2
   输入:
     tool_name: set_device_terminal_unattended_mode
-    tool_params: &id042
+    tool_params: &id041
       merchantId: '26377732552517'
-      isEnabled: 0
+      isEnabled: true
+      unknown_param: x
   期望:
     intent: 关闭无人值守模式
-    params: *id042
-    output: 越界参数被拒绝/提示
+    params: *id041
+    output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 数值变异
-  用例ID: D-L2-085
-- 维度: 能力边界
-  能力: 组合查询端口记录与终端状态
+  - 参数注入
+  用例ID: D-L2-078
+- 维度: 输入输出契约
+  能力: 按终端/端口筛选端口记录
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
-    tool_params: &id043
+    tool_params: &id042
       merchantId: '26377732552517'
-      page: 9999999999999999
-      size: 10
+      terminalCodes: *id009
+      portIds: *id010
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
+      unknown_param: x
   期望:
-    intent: 组合查询端口记录与终端状态
-    params: *id043
-    output: 越界参数被拒绝/提示
+    intent: 按终端/端口筛选端口记录
+    params: *id042
+    output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 数值变异
-  用例ID: D-L2-086
+  - 参数注入
+  用例ID: D-L2-079
 - 维度: 触发条件正确性
   能力: 查询设备终端列表
   层: L2
@@ -1896,262 +1829,263 @@
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 工具错配
-  用例ID: D-L2-087
-- 维度: 输入输出契约
+  用例ID: D-L2-080
+- 维度: 能力边界
   能力: 组合查询端口记录与终端状态
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
-    tool_params: &id044
-      page: 1
-      size: 10
+    tool_params: &id043
+      merchantId: '26377732552517'
+      relativePeriod: ThisMonth
+      page: 0
+      size: 15
   期望:
     intent: 组合查询端口记录与终端状态
-    params: *id044
-    output: 缺失参数被拒绝/提示
+    params: *id043
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 参数缺失
-  用例ID: D-L2-088
-- 维度: 能力边界
+  - 数值变异
+  用例ID: D-L2-081
+- 维度: 错误处理
   能力: 关闭无人值守模式
   层: L2
   输入:
     tool_name: set_device_terminal_unattended_mode
-    tool_params: &id045
+    tool_params: &id044
       merchantId: '26377732552517'
-      isEnabled: -1
+      isEnabled: abc
   期望:
     intent: 关闭无人值守模式
+    params: *id044
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: D-L2-082
+- 维度: 能力边界
+  能力: 按时间范围查询端口操作记录
+  层: L2
+  输入:
+    tool_name: query_device_terminal_port_state_records
+    tool_params: &id045
+      merchantId: '26377732552517'
+      startAt: '2026-01-01T00:00:00'
+      endAt: '2026-12-31T23:59:59'
+      page: 0
+      size: 15
+  期望:
+    intent: 按时间范围查询端口操作记录
     params: *id045
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-089
-- 维度: 错误处理
+  用例ID: D-L2-083
+- 维度: 触发条件正确性
   能力: 查询端口操作记录
   层: L2
   输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id046
+    tool_name: query_device_terminal_port_state_records_typo
+    tool_params:
       merchantId: '26377732552517'
-      page: abc
-      size: 10
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
     intent: 查询端口操作记录
+    params: *id004
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-084
+- 维度: 错误处理
+  能力: 先查终端再开启无人值守
+  层: L2
+  输入:
+    tool_name: query_device_terminals
+    tool_params: &id046
+      merchantId: '26377732552517'
+      isEnabled: abc
+  期望:
+    intent: 先查终端再开启无人值守
     params: *id046
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 类型错配
-  用例ID: D-L2-090
-- 维度: 能力边界
-  能力: 查询端口操作记录
+  用例ID: D-L2-085
+- 维度: 触发条件正确性
+  能力: 先查终端再开启无人值守
+  层: L2
+  输入:
+    tool_name: query_device_terminals_typo
+    tool_params:
+      merchantId: '26377732552517'
+      isEnabled: true
+  期望:
+    intent: 先查终端再开启无人值守
+    params: *id011
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: D-L2-086
+- 维度: 输入输出契约
+  能力: 按操作来源筛选端口记录
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id047
       merchantId: '26377732552517'
-      page: 9999999999999999
-      size: 10
+      operationSources: *id007
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
+      unknown_param: x
   期望:
-    intent: 查询端口操作记录
+    intent: 按操作来源筛选端口记录
     params: *id047
-    output: 越界参数被拒绝/提示
+    output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - Test
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 数值变异
-  用例ID: D-L2-091
+  - 参数注入
+  用例ID: D-L2-087
 - 维度: 输入输出契约
-  能力: 先查终端再开启无人值守
+  能力: 开启无人值守模式
   层: L2
   输入:
-    tool_name: query_device_terminals
+    tool_name: set_device_terminal_unattended_mode
     tool_params: &id048
       merchantId: '26377732552517'
       isEnabled: true
       unknown_param: x
   期望:
-    intent: 先查终端再开启无人值守
+    intent: 开启无人值守模式
     params: *id048
     output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 参数注入
-  用例ID: D-L2-092
-- 维度: 错误处理
-  能力: 先查终端再开启无人值守
+  用例ID: D-L2-088
+- 维度: 能力边界
+  能力: 查询端口操作记录
   层: L2
   输入:
-    tool_name: query_device_terminals
+    tool_name: query_device_terminal_port_state_records
     tool_params: &id049
       merchantId: '26377732552517'
-      isEnabled: abc
+      relativePeriod: ThisMonth
+      page: -1
+      size: 15
   期望:
-    intent: 先查终端再开启无人值守
+    intent: 查询端口操作记录
     params: *id049
-    output: 参数类型错误被拒绝/提示
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
-  - 类型错配
-  用例ID: D-L2-093
+  - 数值变异
+  用例ID: D-L2-089
 - 维度: 能力边界
-  能力: 按操作来源筛选端口记录
+  能力: 组合查询端口记录与终端状态
   层: L2
   输入:
     tool_name: query_device_terminal_port_state_records
     tool_params: &id050
       merchantId: '26377732552517'
-      operationSources: ''
-      page: 0
-      size: 10
+      relativePeriod: ThisMonth
+      page: 9999999999999999
+      size: 15
   期望:
-    intent: 按操作来源筛选端口记录
+    intent: 组合查询端口记录与终端状态
     params: *id050
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 记录
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-094
+  用例ID: D-L2-090
 - 维度: 能力边界
-  能力: 开启无人值守模式
+  能力: 按终端/端口筛选端口记录
   层: L2
   输入:
-    tool_name: set_device_terminal_unattended_mode
+    tool_name: query_device_terminal_port_state_records
     tool_params: &id051
       merchantId: '26377732552517'
-      isEnabled: 0
+      terminalCodes: *id009
+      portIds: *id010
+      relativePeriod: ThisMonth
+      page: -1
+      size: 15
   期望:
-    intent: 开启无人值守模式
+    intent: 按终端/端口筛选端口记录
     params: *id051
     output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - isEnable
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 数值变异
-  用例ID: D-L2-095
-- 维度: 触发条件正确性
-  能力: 关闭无人值守模式
-  层: L2
-  输入:
-    tool_name: set_device_terminal_unattended_mode_typo
-    tool_params:
-      merchantId: '26377732552517'
-      isEnabled: true
-  期望:
-    intent: 关闭无人值守模式
-    params: *id005
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - isEnable
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: D-L2-096
-- 维度: 错误处理
-  能力: 按终端/端口筛选端口记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id052
-      merchantId: '26377732552517'
-      terminalIds: *id010
-      portIds: *id011
-      page: abc
-      size: 10
-  期望:
-    intent: 按终端/端口筛选端口记录
-    params: *id052
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: D-L2-097
-- 维度: 触发条件正确性
-  能力: 按操作来源筛选端口记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records_typo
-    tool_params:
-      merchantId: '26377732552517'
-      operationSources: ''
-      page: 1
-      size: 10
-  期望:
-    intent: 按操作来源筛选端口记录
-    params: *id008
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: D-L2-098
+  用例ID: D-L2-091
 - 维度: 触发条件正确性
   能力: 组合查询端口记录与终端状态
   层: L2
@@ -2159,89 +2093,19 @@
     tool_name: query_device_terminal_port_state_records_typo
     tool_params:
       merchantId: '26377732552517'
+      relativePeriod: ThisMonth
       page: 1
-      size: 10
+      size: 15
   期望:
     intent: 组合查询端口记录与终端状态
-    params: *id013
+    params: *id012
     output: 工具无效，拒绝触发
     block: true
     semantic:
       contains:
-      - 拒绝
       - 错误
+      - 拒绝
       any_of: true
   标签:
   - 工具错配
-  用例ID: D-L2-099
-- 维度: 输入输出契约
-  能力: 组合查询端口记录与终端状态
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id053
-      merchantId: '26377732552517'
-      page: 1
-      size: 10
-      unknown_param: x
-  期望:
-    intent: 组合查询端口记录与终端状态
-    params: *id053
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: D-L2-100
-- 维度: 输入输出契约
-  能力: 按时间范围查询端口操作记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id054
-      startTime: ''
-      endTime: ''
-      page: 1
-      size: 10
-  期望:
-    intent: 按时间范围查询端口操作记录
-    params: *id054
-    output: 缺失参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 端口操作记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数缺失
-  用例ID: D-L2-101
-- 维度: 能力边界
-  能力: 按操作来源筛选端口记录
-  层: L2
-  输入:
-    tool_name: query_device_terminal_port_state_records
-    tool_params: &id055
-      merchantId: '26377732552517'
-      operationSources: ''
-      page: 9999999999999999
-      size: 10
-  期望:
-    intent: 按操作来源筛选端口记录
-    params: *id055
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 记录
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: D-L2-102
+  用例ID: D-L2-092

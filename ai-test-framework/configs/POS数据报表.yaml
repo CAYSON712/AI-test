@@ -1,0 +1,59 @@
+# =====================================================================
+# 系统配置：POS 数据报表（POS(proton) DataX 三报表 MCP）
+# =====================================================================
+# 用途：给 generic_mcp_executor / direct_mcp_executor 提供"连接 + 工具 schema"。
+# 能力→工具映射从 ability/能力目录_POS数据报表.yaml 读取。
+# 真实 MCP：https://pos-test-mcp.proton-system.com/mcp
+# 公司：cayson自动化公司(12599656434959365)；店铺：自动化店铺7(12600071176193029，洛杉矶时区)
+# =====================================================================
+
+# ---- 连接配置（从 .env 读，POS_MCP_* 前缀）----
+连接:
+  需求类型: "A"                  # A=工具直连；B/C 走 LLM（本系统三类共用能力目录）
+  base_url_env: "POS_MCP_URL"
+  token_env: "POS_MCP_TOKEN"
+  company_id_env: "POS_MCP_COMPANY_ID"      # 请求头 CompanyId = 12599656434959365
+  merchant_id_env: "POS_MERCHANT_ID"        # 默认店铺 = 自动化店铺7
+  llm_base_url_env: "LLM_API_BASE"
+  llm_api_key_env: "LLM_API_KEY"
+  llm_model_env: "LLM_MODEL"
+  system_prompt_env: "POS_SYSTEM_PROMPT"
+  请求头: {Authorization: "Bearer {{token}}", CompanyId: "{{company_id}}"}
+  参数包装: "toolParams"          # 所有工具参数必须包在 toolParams 里
+
+# ---- 通用命名 ----
+公司ID请求头: "CompanyId"
+默认上下文参数名: "merchantIds"
+实体ID参数名: "orderId"
+实体名参数名: "name"
+连接演示工具: "query_merchants"
+
+# ---- MCP 工具 schema（DataX 三报表 + 订单商品明细）----
+mcp_tools:
+  - name: query_datax_total_reports
+    description: 查询 DataX 店铺经营汇总报表（FlatTotalReport）。必填 merchantId；时间用 relativePeriod(Today/Yesterday/ThisWeek/LastWeek/ThisMonth/LastMonth) 或 startAt+endAt(店铺本地时间，不带时区；汇总含结束日期)。返回 orderCount/totalSales/netSales/preTaxRevenue/actualRevenue/dueAmount/unpaidAmount/refundAmount/totalTaxAmount/totalTipsAmount/totalDiscountAmount/totalSurchargeAmount/cancelledOrders/各支付方式金额/各订单类型金额 等，并含 timeZoneId/requestedDateRange。
+    params: [merchantId, relativePeriod, startAt, endAt, limit, sortField, sortDirection]
+    required: [merchantId]
+  - name: query_datax_order_sales_reports
+    description: 查询 DataX 订单销售报表（FlatOrderSalesReport），可按订单/状态/支付/来源筛选。必填 merchantId；时间用 relativePeriod 或 startAt+endAt（订单 endAt 不含，须 endAt=次日才能覆盖当天）。可按 orderId/orderSerial/orderType/orderStatus/paymentStatus/paymentType/operatorName/sourceName/orderSourceType/paymentTerminalType/customizedPaymentName 筛选；sortField=Amount/Date，limit 上限 1000。
+    params: [orderId, orderSerial, orderType, orderStatus, paymentStatus, paymentType, operatorName, sourceName, orderSourceType, paymentTerminalType, customizedPaymentName, merchantId, relativePeriod, startAt, endAt, sortField, sortDirection, limit]
+    required: [merchantId]
+  - name: query_datax_menu_product_category_reports
+    description: 查询 DataX 菜单商品分类报表（FlatMenuProductCategoryReport），可按 refId/name/type 筛选。type 枚举 Menu/Product/Category。必填 merchantId；时间用 relativePeriod 或 startAt+endAt(含结束日期)。sortField 可用 Amount/Quantity，sortDirection 枚举 Ascending/Descending，limit 上限 1000。
+    params: [refId, name, type, merchantId, relativePeriod, startAt, endAt, sortField, sortDirection, limit]
+    required: [merchantId]
+  - name: query_order_details_by_ids
+    description: 按 merchantId 和 orderIds（1~500 个）查询完整订单商品明细，含成交名称/规格/数量/价格/折扣/加收/金额。用于折扣/加收下钻（itemDiscountAmount/couponDiscountAmount/rechargeDiscountAmount/discountAmount/itemChargeAmount/chargeAmount）。
+    params: [merchantId, orderIds]
+    required: [merchantId, orderIds]
+  - name: query_companies
+    description: 查询当前账号授权范围内的所有公司，返回公司ID、名称和下属店铺列表。
+    params: [companyName, companyIds]
+    required: []
+  - name: query_merchants
+    description: 获取当前账号授权范围内的所有店铺列表。业务前置步骤：先拿店铺ID(MerchantId)再查报表。
+    params: [merchantName]
+    required: []
+
+# ---- 需要自动补默认店铺的工具 ----
+需要默认上下文参数的工具: []

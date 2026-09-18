@@ -1,0 +1,690 @@
+系统: POS员工考勤
+需求类型: A
+被测系统: POS(proton) MCP — https://pos-test-mcp.proton-system.com/mcp
+CompanyId: '12599656434959365'  # cayson自动化公司
+merchantId: '12600071176193029' # 自动化店铺7 (Auto test store7, 洛杉矶时区)
+分层说明:
+  L1: 黄金集(60%) 手工精选，覆盖员工列表/考勤记录/目录查询，含字段与结构断言
+  L2: 场景演化(30%) 参数校验/边界/权限/异常容错
+  L3: 生产回放(10%) 待接入
+数据口径:
+  时区: '店铺为洛杉矶时区，夏令时 PDT=UTC-7'
+  时间参数: 'startTime/endTime 支持 YYYY-MM-DD 或 ISO8601；不支持空格分隔（YYYY-MM-DD HH:MM:SS 会报错）'
+  数组参数: 'merchantIds / merchantStaffIds 必须为数组，传字符串报错'
+  分页: 'page 默认1；size 默认15，范围 1~100（越界返回 40000）'
+  工具入参: '统一为 {toolParams: {...}}'
+真值快照(2026-09-10 实测):
+  员工列表: 5 人（Boss Boss/1111 q/2222 c/3333/4444），仅 Boss isOwner=true
+  attendanceStatus 枚举: NotCheckIn/OnDuty/StartRest/EndRest/OffDuty
+  考勤记录: 8月考勤仅 1 条（2222 c, 08/03 10:19~23:23 PDT, 14.3h）
+  字段: checkIn/checkOut/duration/workTotalTime/breakTotalTime/overWorkTotalTime
+  注意: 员工与考勤为实时数据，断言以字段存在性/关系约束为主，避免硬编码数值
+用例数: 37
+用例列表:
+# =====================================================================
+# 一、L1 员工列表与实时状态
+# =====================================================================
+- 维度: 调用正确性
+  能力: 查询店铺员工列表
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &E1
+      merchantIds: ['12600071176193029']
+  期望:
+    intent: 查询店铺员工列表
+    params: *E1
+    output: 返回员工列表，含 id/firstName/lastName/isOwner/attendanceStatus 字段
+    block: false
+    semantic:
+      fields: [id, firstName, lastName, isOwner, attendanceStatus]
+  标签: [正常, 员工列表]
+  用例ID: AT-L1-001
+- 维度: 调用正确性
+  能力: 查询店铺员工列表
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &E2
+      merchantIds: ['12600071176193029']
+  期望:
+    intent: 查询店铺员工列表
+    params: *E2
+    output: 返回员工列表，至少包含店主 Boss（isOwner=true）
+    block: false
+    semantic:
+      contains: ["Boss"]
+      fields: [firstName, isOwner]
+  标签: [正常, 店主]
+  用例ID: AT-L1-002
+- 维度: 调用正确性
+  能力: 查询员工实时考勤状态
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &E3
+      merchantIds: ['12600071176193029']
+  期望:
+    intent: 查询员工实时考勤状态
+    params: *E3
+    output: 返回各员工 attendanceStatus（枚举 NotCheckIn/OnDuty/StartRest/EndRest/OffDuty）
+    block: false
+    semantic:
+      fields: [attendanceStatus]
+  标签: [正常, 实时状态]
+  用例ID: AT-L1-003
+- 维度: 调用正确性
+  能力: 查询店铺员工列表
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &E4
+      merchantIds: ['12600071176193029']
+  期望:
+    intent: 查询店铺员工列表
+    params: *E4
+    output: 返回员工列表含 isActive、isNeedCheckIn 布尔字段
+    block: false
+    semantic:
+      fields: [isActive, isNeedCheckIn]
+  标签: [正常, 字段完整性]
+  用例ID: AT-L1-004
+
+# =====================================================================
+# 二、L1 考勤记录
+# =====================================================================
+- 维度: 调用正确性
+  能力: 查询员工考勤记录
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E5
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *E5
+    output: 返回考勤记录分页结构（list/totalElements/totalPages/isLast）
+    block: false
+    semantic:
+      fields: [list, totalElements, totalPages, isLast]
+  标签: [正常, 考勤分页]
+  用例ID: AT-L1-005
+- 维度: 调用正确性
+  能力: 查询员工考勤记录
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E6
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *E6
+    output: 每条记录含 checkIn/checkOut/duration/workTotalTime/breakTotalTime/overWorkTotalTime
+    block: false
+    semantic:
+      fields: [checkIn, checkOut, duration, workTotalTime, breakTotalTime, overWorkTotalTime]
+  标签: [正常, 记录字段]
+  用例ID: AT-L1-006
+- 维度: 调用正确性
+  能力: 查询员工考勤记录
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E7
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-08-31'
+      page: 1
+      size: 100
+  期望:
+    intent: 查询员工考勤记录
+    params: *E7
+    output: 返回 8 月考勤记录（实测 1 条：2222 c，时长 14.3h）；时间过滤生效
+    block: false
+    semantic:
+      fields: [checkIn, checkOut, duration]
+  标签: [正常, 时间范围]
+  用例ID: AT-L1-007
+- 维度: 调用正确性
+  能力: 按员工查考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E8
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-08-31'
+      page: 1
+      size: 100
+  期望:
+    intent: 按员工查考勤
+    params: *E8
+    output: 返回的考勤记录均属于该店铺（merchantId 一致）
+    block: false
+    semantic:
+      fields: [merchantId, checkIn]
+  标签: [正常, 时间范围2]
+  用例ID: AT-L1-008
+- 维度: 调用正确性
+  能力: 查询员工考勤记录
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E9
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-10'
+      page: 1
+      size: 100
+  期望:
+    intent: 查询员工考勤记录
+    params: *E9
+    output: 返回 9 月考勤记录（多条），时间过滤生效
+    block: false
+    semantic:
+      fields: [checkIn, checkOut]
+  标签: [正常, 时间范围3]
+  用例ID: AT-L1-009
+
+# =====================================================================
+# 三、L1 基础目录 + 协议
+# =====================================================================
+- 维度: 调用正确性
+  能力: 查询公司列表
+  层: L1
+  输入:
+    tool_name: query_companies
+    tool_params: {}
+  期望:
+    intent: 查询公司列表
+    params: {}
+    output: 返回授权公司列表，至少含 cayson自动化公司
+    block: false
+    semantic:
+      contains: ["cayson"]
+  标签: [正常, 公司列表]
+  用例ID: AT-L1-010
+- 维度: 调用正确性
+  能力: 查询店铺列表
+  层: L1
+  输入:
+    tool_name: query_merchants
+    tool_params: {}
+  期望:
+    intent: 查询店铺列表
+    params: {}
+    output: 返回店铺列表，至少含 自动化店铺7 / Auto test store7
+    block: false
+    semantic:
+      contains: ["Auto test store7"]
+  标签: [正常, 店铺列表]
+  用例ID: AT-L1-011
+- 维度: 协议契约
+  能力: 查询店铺员工列表
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &E12
+      merchantIds: ['12600071176193029']
+  期望:
+    intent: 查询店铺员工列表
+    params: *E12
+    output: 返回体可被 JSON 解析且含 code/msg/data/success 顶层字段
+    block: false
+    semantic:
+      fields: [code, msg, data, success]
+  标签: [协议]
+  用例ID: AT-L1-012
+- 维度: 协议契约
+  能力: 查询员工考勤记录
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E13
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *E13
+    output: 返回体含 code/msg/data/success；data 含 list
+    block: false
+    semantic:
+      fields: [code, msg, data, success, list]
+  标签: [协议]
+  用例ID: AT-L1-013
+
+# =====================================================================
+# 四、L2 参数校验 / 边界 / 权限 / 异常
+# =====================================================================
+- 维度: 参数校验
+  能力: 查询店铺员工列表
+  层: L2
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params:
+      merchantIds: '12600071176193029'
+  期望:
+    intent: 查询店铺员工列表
+    params: {}
+    output: merchantIds 必须为数组，传字符串应被拒绝（报错）
+    block: true
+  标签: [参数校验, 数组要求]
+  用例ID: AT-L2-001
+- 维度: 参数校验
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: {}
+    output: merchantIds 传字符串应被拒绝（报错）
+    block: true
+  标签: [参数校验, 数组要求]
+  用例ID: AT-L2-002
+- 维度: 参数校验
+  能力: 按员工查考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      merchantStaffIds: '12600071189824517'
+      page: 1
+      size: 15
+  期望:
+    intent: 按员工查考勤
+    params: {}
+    output: merchantStaffIds 传字符串应被拒绝（须为数组）
+    block: true
+  标签: [参数校验, 数组要求]
+  用例ID: AT-L2-003
+- 维度: 参数边界
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 0
+  期望:
+    intent: 查询员工考勤记录
+    params: {}
+    output: size=0 应被拒绝（须 1~100，返回 40000）
+    block: true
+  标签: [参数边界, size]
+  用例ID: AT-L2-004
+- 维度: 参数边界
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 1000
+  期望:
+    intent: 查询员工考勤记录
+    params: {}
+    output: size=1000 应被拒绝（须 1~100，返回 40000）
+    block: true
+  标签: [参数边界, size上限]
+  用例ID: AT-L2-005
+- 维度: 参数边界
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E14
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 100
+  期望:
+    intent: 查询员工考勤记录
+    params: *E14
+    output: size=100（上界）应正常返回
+    block: false
+    semantic:
+      fields: [list]
+  标签: [参数边界, size上界]
+  用例ID: AT-L2-006
+- 维度: 参数边界
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E15
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 999
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *E15
+    output: page=999 越界不报错，返回空 list（totalPages=1）
+    block: false
+    semantic:
+      fields: [list, totalPages]
+  标签: [参数边界, page越界]
+  用例ID: AT-L2-007
+- 维度: 参数格式
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01 00:00:00'
+      endAt: '2026-09-11 23:59:59'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: {}
+    output: 空格分隔的时间格式应被拒绝（须 YYYY-MM-DD 或 ISO8601）
+    block: true
+  标签: [参数格式, 时间]
+  用例ID: AT-L2-008
+- 维度: 参数格式
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026/09/01'
+      endAt: '2026/09/11'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: {}
+    output: 斜杠日期格式应被拒绝
+    block: true
+  标签: [参数格式, 时间]
+  用例ID: AT-L2-009
+- 维度: 参数格式
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E16
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *E16
+    output: 纯日期 YYYY-MM-DD 应正常返回
+    block: false
+    semantic:
+      fields: [list]
+  标签: [参数格式, 纯日期]
+  用例ID: AT-L2-010
+- 维度: 安全与权限
+  能力: 查询店铺员工列表
+  层: L2
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params:
+      merchantIds: ['99999999999999999']
+  期望:
+    intent: 越权查询
+    params: {}
+    output: 非授权店铺应被拒绝（40100 Unauthorized）
+    block: true
+  标签: [权限, 越权]
+  用例ID: AT-L2-011
+- 维度: 安全与权限
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '99999999999999999'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 15
+  期望:
+    intent: 越权查询
+    params: {}
+    output: 非授权店铺应被拒绝（40100 Unauthorized）
+    block: true
+  标签: [权限, 越权]
+  用例ID: AT-L2-012
+- 维度: 异常与容错
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E17
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *E17
+    output: 不指定店铺时返回所有授权店铺的考勤记录（不报错）
+    block: false
+    semantic:
+      fields: [list]
+  标签: [异常, 缺省店铺]
+  用例ID: AT-L2-013
+- 维度: 异常与容错
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E18
+      merchantId: '12600071176193029'
+      startAt: '2030-01-01'
+      endAt: '2030-01-31'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *E18
+    output: 未来时间无记录应返回空 list，不崩溃
+    block: false
+    semantic:
+      fields: [list]
+  标签: [异常, 空结果]
+  用例ID: AT-L2-014
+- 维度: 异常与容错
+  能力: 查询店铺员工列表
+  层: L2
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params:
+      merchantIds: []
+  期望:
+    intent: 查询店铺员工列表
+    params: {}
+    output: merchantIds 空数组应被拒绝或返回空，不崩溃
+    block: true
+  标签: [参数边界, 空数组]
+  用例ID: AT-L2-015
+- 维度: 安全与权限
+  能力: 按员工查考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      merchantStaffIds: ['99999999999999']
+      page: 1
+      size: 15
+  期望:
+    intent: 按员工查考勤
+    params: {}
+    output: 不存在的员工ID应返回空，不崩溃
+    block: false
+    semantic:
+      fields: [list]
+  标签: [异常, 无效员工]
+  用例ID: AT-L2-016
+- 维度: 性能与资源
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E19
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 100
+  期望:
+    intent: 查询员工考勤记录
+    params: *E19
+    output: size=100 满页查询延迟可接受（P95 <= 3s）
+    block: false
+  标签: [性能]
+  用例ID: AT-L2-017
+- 维度: 稳定性
+  能力: 查询店铺员工列表
+  层: L2
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &E20
+      merchantIds: ['12600071176193029']
+  期望:
+    intent: 查询店铺员工列表
+    params: *E20
+    output: 幂等性：短时间内重复调用员工数应一致（考勤状态可能变，人员名单稳定）
+    block: false
+  标签: [幂等]
+  用例ID: AT-L2-018
+- 维度: 工具描述
+  能力: 工具描述
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: {}
+  期望:
+    intent: 工具描述检查
+    params: {}
+    output: 描述包含"考勤"关键词
+    block: false
+    semantic:
+      contains: ["考勤"]
+  标签: [描述]
+  用例ID: AT-L2-019
+- 维度: 工具描述
+  能力: 工具描述
+  层: L2
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: {}
+  期望:
+    intent: 工具描述检查
+    params: {}
+    output: 描述包含"员工"关键词
+    block: false
+    semantic:
+      contains: ["员工"]
+  标签: [描述]
+  用例ID: AT-L2-020
+- 维度: 异常与容错
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-11'
+      endAt: '2026-09-01'
+  期望:
+    intent: 查询员工考勤记录
+    params: {}
+    output: 开始时间晚于结束时间应被拒绝或返回空
+    block: true
+  标签: [异常, 倒序时间]
+  用例ID: AT-L2-021
+- 维度: 协议契约
+  能力: 列出可用工具
+  层: L2
+  输入:
+    tool_name: tools/list
+    tool_params: {}
+  期望:
+    intent: 列出可用工具
+    params: {}
+    output: 工具列表含 query_merchant_staffs 与 query_staff_attendances，schema 完整
+    block: false
+    semantic:
+      contains: ["query_merchant_staffs", "query_staff_attendances"]
+  标签: [协议, schema]
+  用例ID: AT-L2-022
+- 维度: 稳定性
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E23
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-08-31'
+      page: 1
+      size: 100
+  期望:
+    intent: 查询员工考勤记录
+    params: *E23
+    output: 幂等：同一历史时间窗（8月）重复查询结果应一致
+    block: false
+    semantic:
+      fields: [list, totalElements]
+  标签: [幂等, 历史窗口]
+  用例ID: AT-L2-023
+- 维度: 性能与资源
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &E24
+      merchantId: '12600071176193029'
+      startAt: '2026-08-01'
+      endAt: '2026-09-11'
+      page: 1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *E24
+    output: 单次调用延迟可接受（P95 <= 2s）
+    block: false
+  标签: [性能]
+  用例ID: AT-L2-024

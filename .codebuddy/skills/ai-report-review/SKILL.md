@@ -10,7 +10,7 @@ description: AI 测试「报告复盘」专用入口。当用户需要对测试�
 本 Skill 读取测试执行结果，生成结构化评估报告，分析各维度表现，定位问题，反哺数据集。**不绑定任何具体系统**，只读执行结果 YAML。
 
 - **框架**：`ai-test-framework/`
-- **报告入口**：`ai-test-framework/scripts/report.py`
+- **报告入口**：`ai-test-framework/scripts/_08_report.py`
 - **报告输出**：`ai-test-framework/report/`
 
 ## 前置条件（生成报告前必读）
@@ -28,8 +28,13 @@ description: AI 测试「报告复盘」专用入口。当用户需要对测试�
 cd ai-test-framework/scripts
 
 # 生成评估报告（读执行结果 result_<类型>.yaml）
-python report.py --result ../results/result_<类型>.yaml --out ../report/<报告名>.md
+python _08_report.py --result ../results/result_<类型>.yaml --out ../report/<报告名>.md
+
+# 或只传 result（自动按 评估报告_<时间戳>_<类型>_<数据集名>.md 命名并落到 report/）
+python _08_report.py --result ../results/result_<类型>.yaml
 ```
+
+> ⚠️ 中文路径/文件名在 PowerShell 下易乱码，建议用 Python 直接调用 `_08_report.generate_report(result_path, out_path)` 生成（可参考 `scripts/_gen_report.py`）。
 
 ## 报告内容
 

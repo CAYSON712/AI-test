@@ -1,28 +1,46 @@
 # =====================================================================
 # 实体清单：小韩面无人值守门禁（AutoMart MCP test 环境真实数据）
-# 探针日期：2026-09-02/09-03
+# 探针日期：2026-09-02/09-03，2026-09-17 schema 复核
 # 公司：测试公司 26377677164869
-# 店铺：Test Store 26377732552517（isUnattendedModeEnabled=false）
-# 设备：终端(中环) id 26456010686725 / terminalId 10cbd4110b19040f0f
+# 店铺：Test Store 26377732552517（isUnattendedModeEnabled=true，2026-09-17 复核）
+# 设备：终端(中环) id 26456010686725 / terminalCode 10cbd4110b19040f0f
 #       端口 16 个；端口(前门) id 26456101370181 / portIndex 0 / deviceName 前门
-# 端口操作记录：15 条（总 29 页），operationSource 含 UnattendedModeEnabled/
+#       端口2(入口门锁2) id 27004013050693 / portIndex 1
+# 端口操作记录：operationSource 含 UnattendedModeEnabled/
 #       UnattendedModeDisabled 等，operatorDisplayName test@test.com
 #
 # 注意：所有 ID 一律用字符串（AutoMart MCP 的 ID 类参数只接受 string）。
 # 公共字段冗余：merchantId/companyId/terminalId/portId/isEnabled
 #       同时挂到所有业务实体上，保证生成器任意实体回退都能填出合法参数。
-# 端口操作记录参数约束：size 取值 10~50（小于 10 报 40000 Size must be between 10 and 50）
+#
+# 端口操作记录参数约束（2026-09-17 对齐真实 schema）：
+#   - size 默认 15，范围 1~100（旧记录「必须 10~50」已作废：
+#     那只是 ≤50 分页的限制，新 schema 允许到 100）
+#   - 必须传 relativePeriod，或同时传 startAt + endAt（互斥，最多 366 天）；
+#     时间为店铺本地时间（无 Z 无偏移）。只传 startTime/endTime 报 40000。
+#   - terminalCodes 用终端 SN 码（如 10cbd4110b19040f0f），
+#     不是内部 terminalId（26456010686725）——探针实测用内部 id 报
+#     "Invalid terminal SN codes …"；按名解析白名单已取消（配置里按名搜索工具为空）
+#
+# 无人值守状态字段：isUnattendedModeEnabled，由 query_merchants 返回
+#   （query_device_terminals 只返回 isActive 与端口绑定，不含无人值守状态）
 # =====================================================================
 实体清单:
   # ---- 公司 ----
   - 名称: "测试公司"
     id: "26377677164869"
     companyId: "26377677164869"
+    startAt: "2026-01-01T00:00:00"
+    endAt: "2026-12-31T23:59:59"
+    relativePeriod: "ThisMonth"
+    operationSources: ["UnattendedModeEnabled"]
     merchantId: "26377732552517"
     merchantIds: ["26377732552517"]
     merchantName: "Test Store"
     companyName: "测试公司"
-    terminalId: "10cbd4110b19040f0f"
+    terminalCode: "10cbd4110b19040f0f"
+    terminalCodes: ["10cbd4110b19040f0f"]
+    terminalId: "26456010686725"
     terminalIds: ["26456010686725"]
     portId: "26456101370181"
     portIds: ["26456101370181"]
@@ -30,17 +48,24 @@
     portIndex: 0
     isEnabled: true
     page: 1
-    size: 10
+    size: 15
 
   # ---- 店铺 ----
   - 名称: "Test Store"
     id: "26377732552517"
+    startAt: "2026-01-01T00:00:00"
+    endAt: "2026-12-31T23:59:59"
+    relativePeriod: "ThisMonth"
+    isUnattendedModeEnabled: true
+    operationSources: ["UnattendedModeEnabled"]
     merchantId: "26377732552517"
     merchantIds: ["26377732552517"]
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    terminalId: "10cbd4110b19040f0f"
+    terminalCode: "10cbd4110b19040f0f"
+    terminalCodes: ["10cbd4110b19040f0f"]
+    terminalId: "26456010686725"
     terminalIds: ["26456010686725"]
     portId: "26456101370181"
     portIds: ["26456101370181"]
@@ -48,13 +73,19 @@
     portIndex: 0
     isEnabled: true
     page: 1
-    size: 10
+    size: 15
 
   # ---- 设备终端（中环）----
   - 名称: "终端(中环)"
     id: "26456010686725"
+    startAt: "2026-01-01T00:00:00"
+    endAt: "2026-12-31T23:59:59"
+    relativePeriod: "ThisMonth"
+    operationSources: ["UnattendedModeEnabled"]
     deviceId: "26456010686725"
-    terminalId: "10cbd4110b19040f0f"
+    terminalCode: "10cbd4110b19040f0f"
+    terminalCodes: ["10cbd4110b19040f0f"]
+    terminalId: "26456010686725"
     terminalIds: ["26456010686725"]
     terminalName: "终端(中环)"
     merchantId: "26377732552517"
@@ -70,7 +101,7 @@
     isEnabled: true
     isActive: true
     page: 1
-    size: 10
+    size: 15
 
   # ---- 端口（前门）----
   - 名称: "前门"
@@ -78,7 +109,9 @@
     portId: "26456101370181"
     portIds: ["26456101370181"]
     deviceId: "26456010686725"
-    terminalId: "10cbd4110b19040f0f"
+    terminalCode: "10cbd4110b19040f0f"
+    terminalCodes: ["10cbd4110b19040f0f"]
+    terminalId: "26456010686725"
     terminalIds: ["26456010686725"]
     merchantId: "26377732552517"
     merchantIds: ["26377732552517"]
@@ -89,5 +122,33 @@
     portIndex: 0
     isEnabled: true
     isOpen: false
+    startAt: "2026-01-01T00:00:00"
+    endAt: "2026-12-31T23:59:59"
+    relativePeriod: "ThisMonth"
     page: 1
-    size: 10
+    size: 15
+
+  # ---- 端口（入口门锁2）----
+  - 名称: "入口门锁2"
+    id: "27004013050693"
+    portId: "27004013050693"
+    portIds: ["27004013050693"]
+    deviceId: "26456010686725"
+    terminalCode: "10cbd4110b19040f0f"
+    terminalCodes: ["10cbd4110b19040f0f"]
+    terminalId: "26456010686725"
+    terminalIds: ["26456010686725"]
+    merchantId: "26377732552517"
+    merchantIds: ["26377732552517"]
+    merchantName: "Test Store"
+    companyId: "26377677164869"
+    companyName: "测试公司"
+    deviceName: "入口门锁2"
+    portIndex: 1
+    isEnabled: true
+    isOpen: false
+    startAt: "2026-01-01T00:00:00"
+    endAt: "2026-12-31T23:59:59"
+    relativePeriod: "ThisMonth"
+    page: 1
+    size: 15

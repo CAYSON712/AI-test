@@ -28,6 +28,22 @@ from scripts._07_evaluate import load_dimension_tables
 from scripts._12_trace_client import report_case_trace
 
 
+def _wilson_ci(passed, total, z=1.96):
+    """Wilson score 95% 置信区间（小样本/极端比例下比正态近似稳健）。
+
+    返回 (low, high)，保留 3 位小数；total<=0 时返回 (0, 0)。
+    用途：报告里判断"通过率是否稳定、样本量是否足够"——n 小则区间宽，
+    提示需要补采样，而不是把点估计当结论。
+    """
+    if not total or total <= 0:
+        return (0, 0)
+    p = passed / total
+    d = 1 + z * z / total
+    center = (p + z * z / (2 * total)) / d
+    margin = z * ((p * (1 - p) / total + z * z / (4 * total * total)) ** 0.5) / d
+    return (round(max(0.0, center - margin), 3), round(min(1.0, center + margin), 3))
+
+
 def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=None,
                 report_trace=False, use_llm_judge=False, llm_detail=False,
                 auto_report=False):
@@ -199,6 +215,10 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                 score_type = "rate" if rate_score >= round(avg, 2) else "avg"
         if final_score is None:
             final_score = round(avg, 2)
+        # Wilson 95% 置信区间：小样本 + 极端通过率(0/1)下比正态近似稳健。
+        # 历史问题：此处曾硬编码 (0,0)，报告里所有维度都显示 [0.00, 0.00]，
+        # 掩盖了"样本量是否足够、结果是否稳定"这一复盘要点。
+        ci = _wilson_ci(passed_cases, judgeable_cases)
         # pass@k 通过率（以用例计）；k 为该维度实际采样次数（可能受 sample_extra 提升）
         dimensions[dim] = {
             "avg_score": round(avg, 2),
@@ -208,7 +228,7 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
             "rate": round(rate, 3) if rate is not None else None,  # 原始通过率（完全正确比例）
             "n": judgeable_cases,           # 可程序化判定的用例数
             "runs": max_k,                  # 该维度用例实际采样次数（pass@k 的 k）
-            "ci": (0, 0),
+            "ci": ci,                       # Wilson 95% CI (low, high)，n=0 时为 (0, 0)
         }
 
     # 组装失分用例明细（供报告"错误类型分布 + 失分用例明细"）
@@ -256,11 +276,15 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
           f" | 已拦截(符合预期): {len(blocked_cases)} 条")
 
     # 可选：跑完自动生成评估报告（--report）
+    # 报告命名 = 时间戳 + 数据集文件名 → 评估报告_<时间>_<数据集名>.md
+    # 好处：同一数据集多次执行不互相覆盖，一眼能看出哪天跑、跑的是哪个数据集
     if auto_report:
         try:
             from scripts._08_report import generate_report
+            ts = time.strftime("%Y%m%d_%H%M%S")
+            dataset_stem = os.path.splitext(dataset_name)[0]  # e.g. A_RetailPOS数据查询
             report_path = os.path.join(_ROOT, "report",
-                                       f"评估报告_{req_type}.md")
+                                       f"评估报告_{ts}_{dataset_stem}.md")
             generate_report(out_path, report_path)
             print(f"报告已自动生成: {report_path}")
         except Exception as e:
@@ -279,7 +303,7 @@ def main():
     parser.add_argument("--trace", action="store_true",
                         help="上报 trace 到 trace_platform（需先启动该服务）")
     parser.add_argument("--report", action="store_true",
-                        help="跑完自动生成评估报告（report/评估报告_<req_type>.md）")
+                        help="跑完自动生成评估报告（report/评估报告_<时间戳>_<数据集名>.md）")
     parser.add_argument("--llm-judge", action="store_true",
                         help="启用 LLM-as-Judge：对规则判不了的主观维度由 LLM 打分（更慢、耗 token）")
     parser.add_argument("--llm-detail", action="store_true",

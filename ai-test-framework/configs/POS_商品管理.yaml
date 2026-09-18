@@ -19,8 +19,8 @@
   llm_api_key_env: "POS_LLM_API_KEY"
   llm_model_env: "POS_LLM_MODEL"
   system_prompt_env: "POS_SYSTEM_PROMPT"
-  请求头: {CompanyId: "{{company_id}}"}
-  auth_header: "Authorization: Bearer {{token}}"
+  请求头: {Authorization: "Bearer {{token}}", CompanyId: "{{company_id}}"}
+  参数包装: "toolParams"          # 2026-09-04 服务端升级：所有工具参数必须包在 toolParams 里
 
 # ---- 通用命名（可覆盖字段；新系统复制时改成自己的字段名/工具名即可）----
 # 这些字段让 generic_mcp_executor 的业务命名可被配置覆盖，不再写死 POS。
@@ -81,6 +81,18 @@ mcp_tools:
     description: 查询授权店铺列表，获取 MerchantId。
     params: []
     required: []
+  - name: query_datax_total_reports
+    description: DataX 经营汇总报表 FlatTotalReport。按 merchantId 和时间范围查询店铺经营汇总。
+    params: [merchantId, startAt, endAt]
+    required: [merchantId, startAt, endAt]
+  - name: query_datax_order_sales_reports
+    description: DataX 订单销售报表 FlatOrderSalesReport。按 merchantId 和时间范围查询订单级销售明细。
+    params: [merchantId, startAt, endAt]
+    required: [merchantId, startAt, endAt]
+  - name: query_datax_menu_product_category_reports
+    description: DataX 菜单商品分类报表 FlatMenuProductCategoryReport。按 merchantId、时间范围和类型查询菜单/商品/分类销售。
+    params: [merchantId, startAt, endAt, type, refId, name, sortDirection, limit]
+    required: [merchantId, startAt, endAt]
 
 # ---- 操作后实时校验用的查询工具（name 需存在于 mcp_tools）----
 verify:

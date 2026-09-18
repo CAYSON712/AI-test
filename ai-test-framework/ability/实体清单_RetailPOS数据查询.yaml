@@ -1,19 +1,34 @@
 # =====================================================================
 # 实体清单：小韩面 RetailPOS 数据查询（AutoMart MCP test 环境真实数据）
-# 探针日期：2026-09-02
+# 探针日期：2026-09-02，2026-09-17 schema 复核
 # 公司：测试公司 26377677164869
-# 店铺：Test Store 26377732552517（isUnattendedModeEnabled=false）
+# 店铺：Test Store 26377732552517（isUnattendedModeEnabled=true，2026-09-17 复核）
 # 菜单：id 26386470622021（name 空、type Normal、status Active）
 # 分类：20 个（instant noodles / Goods / 特色飲料 / A001-BEEF 牛類 等）
 # 商品：27 个在售（小韓面泡麵、三养奶油火鸡面、OKF康普茶系列…）
-# 设备：终端(中环) id 26456010686725 / terminalId 10cbd4110b19040f0f
+# 员工：员工ID 见 query_merchant_staffs 实测返回（本次未固化作假值，
+#       生成器用例取真实员工 ID 需先跑探针补录）
+# 订单：orderId 26907187620613 为 2026-09-01 金额最高单
 # DataX 报表数据窗口：2026-09-01（total 1 条、menu_product_category 1 条、
 #        order_sales 需 orderSourceType=0 才命中 36 条）
 #
 # 注意：所有 ID 一律用字符串（AutoMart MCP 的 ID 类参数只接受 string，
 #       数字会报 "An error occurred invoking ..."）。
-# 公共字段冗余：merchantId/merchantIds/companyId/startAt/endAt/orderSourceType
+#
+# 时间语义（2026-09-17 对齐真实 schema，旧"+08:00"写法已作废）：
+#   - 优先 relativePeriod（Today/Yesterday/ThisWeek/LastWeek/ThisMonth/LastMonth），
+#     服务端按店铺时区解析，不要自行换算日期
+#   - 固定区间用 startAt/endAt：【不带 Z、不带时区偏移】的店铺本地时间
+#     经营汇总/目录销售汇总：忽略时分秒、含结束日期（同日=单日）
+#     订单明细：保留时分秒、含起点排终点（查整天填次日 00:00:00）
+#   - sortDirection 统一枚举 Ascending/Descending（旧 '1'/'0' 写法已作废）
+#
+# 公共字段冗余：merchantId/merchantIds/companyId/startAt/endAt/relativePeriod/
+#       orderStatus/paymentType/paymentStatus/orderId/sortField/sortDirection/limit
 #       同时挂到所有业务实体上，保证生成器任意实体回退都能填出合法报表参数。
+# 报表筛选事实（探针 2026-09-03）：
+#       orderStatus 真实枚举 Returned(32)/Progressing(2)/Completed(2)；paymentType CreditCard/Cash；
+#       orderId 26907187620613 为 2026-09-01 金额最高单；
 # =====================================================================
 实体清单:
   # ---- 公司 ----
@@ -25,9 +40,18 @@
     merchantIds: ["26377732552517"]
     merchantName: "Test Store"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
 
   # ---- 店铺 ----
   - 名称: "Test Store"
@@ -37,9 +61,19 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    isUnattendedModeEnabled: true
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
 
   # ---- 分类（真实 20 个中挑代表）----
   - 名称: "instant noodles"
@@ -47,50 +81,93 @@
     categoryName: "instant noodles"
     categoryId: "26386653604165"
     categoryIds: ["26386653604165"]
+    menuIds: ["26386470622021"]
     merchantId: "26377732552517"
     merchantIds: ["26377732552517"]
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "Goods"
     id: "26677529097102"
     categoryName: "Goods"
     categoryId: "26677529097102"
+    categoryIds: ["26677529097102"]
+    menuIds: ["26386470622021"]
     merchantId: "26377732552517"
     merchantIds: ["26377732552517"]
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "特色飲料"
     id: "26677529097109"
     categoryName: "特色飲料"
     categoryId: "26677529097109"
+    categoryIds: ["26677529097109"]
+    menuIds: ["26386470622021"]
     merchantId: "26377732552517"
     merchantIds: ["26377732552517"]
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "A001-BEEF 牛類"
     id: "26677529097093"
     categoryName: "A001-BEEF 牛類"
     categoryId: "26677529097093"
+    categoryIds: ["26677529097093"]
+    menuIds: ["26386470622021"]
     merchantId: "26377732552517"
     merchantIds: ["26377732552517"]
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
 
   # ---- 商品（真实 27 个在售中挑 10 个覆盖高低价）----
   - 名称: "小韓面泡麵"
@@ -106,9 +183,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "三养奶油火鸡面"
     id: "26723267157201"
     productName: "三养奶油火鸡面"
@@ -122,9 +208,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "三养双倍辣火鸡面"
     id: "26723267157200"
     productName: "三养双倍辣火鸡面"
@@ -138,9 +233,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "OKF康普茶菠萝桃子味汽水"
     id: "26723267157197"
     productName: "OKF康普茶菠萝桃子味汽水"
@@ -154,9 +258,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "可口可乐"
     id: "26853676268741"
     productName: "可口可乐"
@@ -170,9 +283,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "Ice talk甜美式咖啡味饮料230ml"
     id: "26723267157190"
     productName: "Ice talk甜美式咖啡味饮料230ml"
@@ -186,9 +308,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "Ice talk桃子味饮料230ml"
     id: "26723267157189"
     productName: "Ice talk桃子味饮料230ml"
@@ -202,9 +333,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "三养三倍辣火鸡面"
     id: "26723267157199"
     productName: "三养三倍辣火鸡面"
@@ -218,9 +358,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "泡面碗"
     id: "26723267157210"
     productName: "泡面碗"
@@ -234,9 +383,18 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
   - 名称: "赞萌露比炸酱面"
     id: "26723267157211"
     productName: "赞萌露比炸酱面"
@@ -250,6 +408,38 @@
     merchantName: "Test Store"
     companyId: "26377677164869"
     companyName: "测试公司"
-    startAt: "2026-09-01T00:00:00+08:00"
-    endAt: "2026-09-02T00:00:00+08:00"
-    orderSourceType: 0
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    orderId: "26907187620613"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15
+
+  # ---- 订单（orderId 真实存在，用于订单明细/销售明细能力）----
+  - 名称: "订单26907187620613"
+    id: "26907187620613"
+    orderId: "26907187620613"
+    orderIds: ["26907187620613"]
+    merchantId: "26377732552517"
+    merchantIds: ["26377732552517"]
+    merchantName: "Test Store"
+    companyId: "26377677164869"
+    companyName: "测试公司"
+    relativePeriod: "ThisMonth"
+    startAt: "2026-09-01T00:00:00"
+    endAt: "2026-09-02T00:00:00"
+    orderStatus: "Completed"
+    orderType: "DineIn"
+    paymentType: "CreditCard"
+    paymentStatus: "FullyPaid"
+    sortField: "Amount"
+    sortDirection: "Descending"
+    limit: 5
+    page: 1
+    size: 15

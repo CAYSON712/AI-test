@@ -114,7 +114,7 @@ def main():
     print("\n[OK] 流水线完成")
     print(f"   结果: {out}")
     if not args.no_report:
-        print(f"   报告: {os.path.join(_ROOT, 'report', f'评估报告_{args.req_type}.md')}")
+        print("   报告: report/ 目录，命名=评估报告_<时间戳>_<数据集名>.md（见上方『报告已自动生成』提示）")
     if args.trace:
         print("   trace: 已上报 trace_platform（打开 http://127.0.0.1:8000 查看）")
 

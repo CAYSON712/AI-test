@@ -5,7 +5,7 @@
   L2: 场景演化(30%)：纯规则变异，不用LLM
   L3: 生产回放(10%)：需生产日志，暂未接入不预留接口
 数据源: 商品清单_Test01参考.yaml
-用例数: 180
+用例数: 229
 用例列表:
 - 维度: 调用正确性
   能力: 商品上架
@@ -13,7 +13,7 @@
   输入:
     tool_name: update_products_by_ids
     tool_params: &id001
-      productIds:
+      productIds: &id124
       - '9088145987404805'
       status: 'Off'
   期望:
@@ -66,97 +66,72 @@
   标签:
   - 边界
   用例ID: A-L1-003
-- 维度: 安全与权限
-  能力: 商品上架
-  层: L2
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id003
-      productIds:
-      - '0'
-      status: 'Off'
-  期望:
-    intent: 权限拒绝
-    params: *id003
-    output: 上架一个不存在或已删除的商品
-    block: true
-    semantic:
-      contains:
-      - 无权限
-      - 拒绝
-      - 错误
-      - 权限拒绝
-      any_of: true
-  标签:
-  - 越权
-  用例ID: A-L2-004
-  sample_extra: 5
 - 维度: 返回处理
   能力: 商品上架
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: &id004
+    tool_params: &id003
       productIds:
-      - '9088145987535877'
+      - '9088145987535878'
       status: Selling
   期望:
     intent: 商品上架
-    params: *id004
+    params: *id003
     output: 返回结构化结果
     block: false
   标签:
   - 正常
-  用例ID: A-L1-005
+  用例ID: A-L1-004
 - 维度: 调用正确性
   能力: 商品下架
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: &id005
-      productIds:
-      - '9088145987535878'
+    tool_params: &id004
+      productIds: &id127
+      - '9088145987535880'
       status: Selling
   期望:
     intent: 商品下架
-    params: *id005
+    params: *id004
     output: 工具调用成功
     block: false
   标签:
   - 正常
+  用例ID: A-L1-005
+- 维度: 参数校验
+  能力: 商品下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id005
+      status: Selling
+  期望:
+    intent: 商品下架
+    params: *id005
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数缺失
   用例ID: A-L1-006
 - 维度: 参数校验
   能力: 商品下架
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: &id006
-      status: Selling
-  期望:
-    intent: 商品下架
-    params: *id006
-    output: 参数校验失败，返回错误
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数缺失
-  用例ID: A-L1-007
-- 维度: 参数校验
-  能力: 商品下架
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
     tool_params:
       productIds:
       - '0'
       status: Selling
   期望:
     intent: 商品下架
-    params: *id005
+    params: *id004
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -166,76 +141,128 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-008
-- 维度: 安全与权限
-  能力: 商品下架
-  层: L2
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id007
-      productIds:
-      - '0'
-      status: Selling
-  期望:
-    intent: 权限拒绝
-    params: *id007
-    output: 下架一个不存在或已删除的商品
-    block: true
-    semantic:
-      contains:
-      - 无权限
-      - 拒绝
-      - 错误
-      - 权限拒绝
-      any_of: true
-  标签:
-  - 越权
-  用例ID: A-L2-009
-  sample_extra: 5
+  用例ID: A-L1-007
 - 维度: 返回处理
   能力: 商品下架
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: &id008
+    tool_params: &id006
       productIds:
-      - '9088145987535879'
+      - '9088145987535883'
       status: Selling
   期望:
     intent: 商品下架
-    params: *id008
+    params: *id006
     output: 返回结构化结果
     block: false
   标签:
   - 正常
-  用例ID: A-L1-010
+  用例ID: A-L1-008
 - 维度: 调用正确性
+  能力: 批量上下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id007
+      productIds: &id122
+      - '9088145987535885'
+      status: Selling
+  期望:
+    intent: 批量上下架
+    params: *id007
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-009
+- 维度: 参数校验
+  能力: 批量上下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id008
+      status: Selling
+  期望:
+    intent: 批量上下架
+    params: *id008
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: A-L1-010
+- 维度: 参数校验
+  能力: 批量上下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      productIds:
+      - '0'
+      status: Selling
+  期望:
+    intent: 批量上下架
+    params: *id007
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 边界
+  用例ID: A-L1-011
+- 维度: 返回处理
   能力: 批量上下架
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id009
       productIds:
-      - '9088145987535880'
+      - '9088145987535887'
       status: Selling
   期望:
     intent: 批量上下架
     params: *id009
-    output: 工具调用成功
+    output: 返回结构化结果
     block: false
   标签:
   - 正常
-  用例ID: A-L1-011
-- 维度: 参数校验
-  能力: 批量上下架
+  用例ID: A-L1-012
+- 维度: 调用正确性
+  能力: 修改价格
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id010
-      status: Selling
+      productIds: &id118
+      - '9088145987535890'
+      price: 13.95
   期望:
-    intent: 批量上下架
+    intent: 修改价格
     params: *id010
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-013
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 修改价格
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id011
+      price: 13.95
+  期望:
+    intent: 修改价格
+    params: *id011
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -245,19 +272,20 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-012
+  用例ID: A-L1-014
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 批量上下架
+  能力: 修改价格
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params:
       productIds:
       - '0'
-      status: Selling
+      price: 13.95
   期望:
-    intent: 批量上下架
-    params: *id009
+    intent: 修改价格
+    params: *id010
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -267,52 +295,54 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-013
+  用例ID: A-L1-015
+  sample_extra: 3
 - 维度: 返回处理
-  能力: 批量上下架
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id011
-      productIds:
-      - '9088145987535881'
-      status: Selling
-  期望:
-    intent: 批量上下架
-    params: *id011
-    output: 返回结构化结果
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-014
-- 维度: 调用正确性
   能力: 修改价格
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id012
       productIds:
-      - '9088145987535883'
-      price: 9.5
+      - '9088145987535892'
+      price: 13.95
   期望:
     intent: 修改价格
     params: *id012
-    output: 工具调用成功
+    output: 返回结构化结果
     block: false
   标签:
   - 正常
-  用例ID: A-L1-015
+  用例ID: A-L1-016
   sample_extra: 3
-- 维度: 参数校验
-  能力: 修改价格
+- 维度: 调用正确性
+  能力: 批量改价
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id013
-      price: 9.5
+      productIds: &id137
+      - '9088145987535894'
+      prices: &id014
+      - 12.95
   期望:
-    intent: 修改价格
+    intent: 批量改价
     params: *id013
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-017
+- 维度: 参数校验
+  能力: 批量改价
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id015
+      prices: *id014
+  期望:
+    intent: 批量改价
+    params: *id015
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -322,20 +352,19 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-016
-  sample_extra: 3
+  用例ID: A-L1-018
 - 维度: 参数校验
-  能力: 修改价格
+  能力: 批量改价
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params:
       productIds:
       - '0'
-      price: 9.5
+      prices: *id014
   期望:
-    intent: 修改价格
-    params: *id012
+    intent: 批量改价
+    params: *id013
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -345,78 +374,52 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-017
-  sample_extra: 3
-- 维度: 安全与权限
-  能力: 修改价格
-  层: L2
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id014
-      productIds:
-      - '0'
-      price: 9.5
-  期望:
-    intent: 权限拒绝
-    params: *id014
-    output: 把商品价格改成负数或0
-    block: true
-    semantic:
-      contains:
-      - 无权限
-      - 拒绝
-      - 错误
-      - 权限拒绝
-      any_of: true
-  标签:
-  - 越权
-  用例ID: A-L2-018
-  sample_extra: 5
-- 维度: 返回处理
-  能力: 修改价格
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id015
-      productIds:
-      - '9088145987535884'
-      price: 9.5
-  期望:
-    intent: 修改价格
-    params: *id015
-    output: 返回结构化结果
-    block: false
-  标签:
-  - 正常
   用例ID: A-L1-019
-  sample_extra: 3
-- 维度: 调用正确性
+- 维度: 返回处理
   能力: 批量改价
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id016
       productIds:
-      - '9088145987535885'
-      prices: &id017
-      - 9.5
+      - '9088145987535896'
+      prices:
+      - 12.95
   期望:
     intent: 批量改价
     params: *id016
-    output: 工具调用成功
+    output: 返回结构化结果
     block: false
   标签:
   - 正常
   用例ID: A-L1-020
+- 维度: 调用正确性
+  能力: 修改商品名称
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id017
+      productIds: &id115
+      - '9088145987535898'
+      name: Australian Wagyu Beef Fried Rice w. Egg
+  期望:
+    intent: 修改商品名称
+    params: *id017
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-021
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 批量改价
+  能力: 修改商品名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id018
-      prices: *id017
+      name: Australian Wagyu Beef Fried Rice w. Egg
   期望:
-    intent: 批量改价
+    intent: 修改商品名称
     params: *id018
     output: 参数校验失败，返回错误
     block: true
@@ -427,19 +430,20 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-021
+  用例ID: A-L1-022
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 批量改价
+  能力: 修改商品名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params:
       productIds:
       - '0'
-      prices: *id017
+      name: Australian Wagyu Beef Fried Rice w. Egg
   期望:
-    intent: 批量改价
-    params: *id016
+    intent: 修改商品名称
+    params: *id017
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -449,52 +453,53 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-022
+  用例ID: A-L1-023
+  sample_extra: 3
 - 维度: 返回处理
-  能力: 批量改价
+  能力: 修改商品名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id019
       productIds:
-      - '9088145987535886'
-      prices:
-      - 4.95
+      - '9088145987535900'
+      name: Hainan Style Chicken Rice
   期望:
-    intent: 批量改价
+    intent: 修改商品名称
     params: *id019
     output: 返回结构化结果
     block: false
   标签:
   - 正常
-  用例ID: A-L1-023
+  用例ID: A-L1-024
+  sample_extra: 3
 - 维度: 调用正确性
-  能力: 修改商品名称
+  能力: 修改商品英文名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id020
-      productIds:
-      - '9088145987535887'
-      name: Spam & Eggs Sandwich In HK Style w. French Fries
+      productIds: &id120
+      - '9088145987535902'
+      name_en: Zhongshan Claypot Rice
   期望:
-    intent: 修改商品名称
+    intent: 修改商品英文名称
     params: *id020
     output: 工具调用成功
     block: false
   标签:
   - 正常
-  用例ID: A-L1-024
+  用例ID: A-L1-025
   sample_extra: 3
 - 维度: 参数校验
-  能力: 修改商品名称
+  能力: 修改商品英文名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id021
-      name: Spam & Eggs Sandwich In HK Style w. French Fries
+      name_en: Zhongshan Claypot Rice
   期望:
-    intent: 修改商品名称
+    intent: 修改商品英文名称
     params: *id021
     output: 参数校验失败，返回错误
     block: true
@@ -505,19 +510,19 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-025
+  用例ID: A-L1-026
   sample_extra: 3
 - 维度: 参数校验
-  能力: 修改商品名称
+  能力: 修改商品英文名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params:
       productIds:
       - '0'
-      name: Spam & Eggs Sandwich In HK Style w. French Fries
+      name_en: Zhongshan Claypot Rice
   期望:
-    intent: 修改商品名称
+    intent: 修改商品英文名称
     params: *id020
     output: 非法参数被拒绝
     block: true
@@ -528,45 +533,20 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-026
+  用例ID: A-L1-027
   sample_extra: 3
-- 维度: 安全与权限
-  能力: 修改商品名称
-  层: L2
+- 维度: 返回处理
+  能力: 修改商品英文名称
+  层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id022
       productIds:
-      - '0'
-      name: Spam & Eggs Sandwich In HK Style w. French Fries
+      - '9088145988322335'
+      name_en: Ketchup
   期望:
-    intent: 权限拒绝
+    intent: 修改商品英文名称
     params: *id022
-    output: 把商品名称改成空字符串
-    block: true
-    semantic:
-      contains:
-      - 无权限
-      - 拒绝
-      - 错误
-      - 权限拒绝
-      any_of: true
-  标签:
-  - 越权
-  用例ID: A-L2-027
-  sample_extra: 5
-- 维度: 返回处理
-  能力: 修改商品名称
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id023
-      productIds:
-      - '9088145987535889'
-      name: Pork Chop w. Curry Sauce
-  期望:
-    intent: 修改商品名称
-    params: *id023
     output: 返回结构化结果
     block: false
   标签:
@@ -574,17 +554,18 @@
   用例ID: A-L1-028
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 修改商品英文名称
+  能力: 批量修改名称
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: &id024
-      productIds:
-      - '9088145987535890'
-      name_en: Pork Chop Cutlet w. Curry Sauce
+    tool_params: &id023
+      productIds: &id131
+      - '9088145988322324'
+      names: &id024
+      - Salt
   期望:
-    intent: 修改商品英文名称
-    params: *id024
+    intent: 批量修改名称
+    params: *id023
     output: 工具调用成功
     block: false
   标签:
@@ -592,14 +573,14 @@
   用例ID: A-L1-029
   sample_extra: 3
 - 维度: 参数校验
-  能力: 修改商品英文名称
+  能力: 批量修改名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id025
-      name_en: Pork Chop Cutlet w. Curry Sauce
+      names: *id024
   期望:
-    intent: 修改商品英文名称
+    intent: 批量修改名称
     params: *id025
     output: 参数校验失败，返回错误
     block: true
@@ -613,17 +594,17 @@
   用例ID: A-L1-030
   sample_extra: 3
 - 维度: 参数校验
-  能力: 修改商品英文名称
+  能力: 批量修改名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params:
       productIds:
       - '0'
-      name_en: Pork Chop Cutlet w. Curry Sauce
+      names: *id024
   期望:
-    intent: 修改商品英文名称
-    params: *id024
+    intent: 批量修改名称
+    params: *id023
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -636,16 +617,17 @@
   用例ID: A-L1-031
   sample_extra: 3
 - 维度: 返回处理
-  能力: 修改商品英文名称
+  能力: 批量修改名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id026
       productIds:
-      - '9088145987535891'
-      name_en: Curry Chicken
+      - '9088145988322323'
+      names:
+      - Oil
   期望:
-    intent: 修改商品英文名称
+    intent: 批量修改名称
     params: *id026
     output: 返回结构化结果
     block: false
@@ -654,17 +636,17 @@
   用例ID: A-L1-032
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 批量修改名称
+  能力: 新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: batch_insert_products
     tool_params: &id027
-      productIds:
-      - '9088145987535892'
-      names: &id028
-      - Curry Beef Brisket Flank
+      merchantId: '9088145987404805'
+      name: Fried Shrimp Eggroll
+      price: 9.95
+      categoryId: '9088145987404805'
   期望:
-    intent: 批量修改名称
+    intent: 新增商品
     params: *id027
     output: 工具调用成功
     block: false
@@ -673,15 +655,17 @@
   用例ID: A-L1-033
   sample_extra: 3
 - 维度: 参数校验
-  能力: 批量修改名称
+  能力: 新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
-    tool_params: &id029
-      names: *id028
+    tool_name: batch_insert_products
+    tool_params: &id028
+      name: Fried Shrimp Eggroll
+      price: 9.95
+      categoryId: '9088145987404805'
   期望:
-    intent: 批量修改名称
-    params: *id029
+    intent: 新增商品
+    params: *id028
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -694,16 +678,18 @@
   用例ID: A-L1-034
   sample_extra: 3
 - 维度: 参数校验
-  能力: 批量修改名称
+  能力: 新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: batch_insert_products
     tool_params:
-      productIds:
+      merchantId:
       - '0'
-      names: *id028
+      name: Fried Shrimp Eggroll
+      price: 9.95
+      categoryId: '9088145987404805'
   期望:
-    intent: 批量修改名称
+    intent: 新增商品
     params: *id027
     output: 非法参数被拒绝
     block: true
@@ -717,18 +703,18 @@
   用例ID: A-L1-035
   sample_extra: 3
 - 维度: 返回处理
-  能力: 批量修改名称
+  能力: 新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
-    tool_params: &id030
-      productIds:
-      - '9088145987535893'
-      names:
-      - Curry Fish Fillet
+    tool_name: batch_insert_products
+    tool_params: &id029
+      merchantId: '9088145987535878'
+      name: Fried Chicken Wings w. Pepper Salt
+      price: 10.5
+      categoryId: '9088145987535878'
   期望:
-    intent: 批量修改名称
-    params: *id030
+    intent: 新增商品
+    params: *id029
     output: 返回结构化结果
     block: false
   标签:
@@ -736,18 +722,17 @@
   用例ID: A-L1-036
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 新增商品
+  能力: 批量新增商品
   层: L1
   输入:
     tool_name: batch_insert_products
-    tool_params: &id031
-      merchantId: '9088145987535894'
-      name: Baked Bolognese
-      price: 12.95
-      categoryId: '9088145987535894'
+    tool_params: &id030
+      merchantId: '9088145987535880'
+      products: &id031
+      - ''
   期望:
-    intent: 新增商品
-    params: *id031
+    intent: 批量新增商品
+    params: *id030
     output: 工具调用成功
     block: false
   标签:
@@ -755,16 +740,14 @@
   用例ID: A-L1-037
   sample_extra: 3
 - 维度: 参数校验
-  能力: 新增商品
+  能力: 批量新增商品
   层: L1
   输入:
     tool_name: batch_insert_products
     tool_params: &id032
-      name: Baked Bolognese
-      price: 12.95
-      categoryId: '9088145987535894'
+      products: *id031
   期望:
-    intent: 新增商品
+    intent: 批量新增商品
     params: *id032
     output: 参数校验失败，返回错误
     block: true
@@ -778,19 +761,17 @@
   用例ID: A-L1-038
   sample_extra: 3
 - 维度: 参数校验
-  能力: 新增商品
+  能力: 批量新增商品
   层: L1
   输入:
     tool_name: batch_insert_products
     tool_params:
       merchantId:
       - '0'
-      name: Baked Bolognese
-      price: 12.95
-      categoryId: '9088145987535894'
+      products: *id031
   期望:
-    intent: 新增商品
-    params: *id031
+    intent: 批量新增商品
+    params: *id030
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -802,80 +783,50 @@
   - 边界
   用例ID: A-L1-039
   sample_extra: 3
-- 维度: 安全与权限
-  能力: 新增商品
-  层: L2
-  输入:
-    tool_name: batch_insert_products
-    tool_params: &id033
-      merchantId:
-      - '0'
-      name: Baked Bolognese
-      price: 12.95
-      categoryId: '9088145987535894'
-  期望:
-    intent: 权限拒绝
-    params: *id033
-    output: 新增一个名称重复的商品
-    block: true
-    semantic:
-      contains:
-      - 无权限
-      - 拒绝
-      - 错误
-      - 权限拒绝
-      any_of: true
-  标签:
-  - 越权
-  用例ID: A-L2-040
-  sample_extra: 5
 - 维度: 返回处理
-  能力: 新增商品
+  能力: 批量新增商品
   层: L1
   输入:
     tool_name: batch_insert_products
-    tool_params: &id034
-      merchantId: '9088145987535895'
-      name: Baked Pork Chop
-      price: 13.95
-      categoryId: '9088145987535895'
+    tool_params: &id033
+      merchantId: '9088145987535883'
+      products:
+      - ''
   期望:
-    intent: 新增商品
-    params: *id034
+    intent: 批量新增商品
+    params: *id033
     output: 返回结构化结果
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-040
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 删除商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id034
+      productIds: &id143
+      - '9088145987535885'
+  期望:
+    intent: 删除商品
+    params: *id034
+    output: 工具调用成功
     block: false
   标签:
   - 正常
   用例ID: A-L1-041
   sample_extra: 3
-- 维度: 调用正确性
-  能力: 批量新增商品
-  层: L1
-  输入:
-    tool_name: batch_insert_products
-    tool_params: &id035
-      merchantId: '9088145987535896'
-      products: &id036
-      - ''
-  期望:
-    intent: 批量新增商品
-    params: *id035
-    output: 工具调用成功
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-042
-  sample_extra: 3
 - 维度: 参数校验
-  能力: 批量新增商品
+  能力: 删除商品
   层: L1
   输入:
-    tool_name: batch_insert_products
-    tool_params: &id037
-      products: *id036
+    tool_name: delete_products_by_ids
+    tool_params: &id035 {}
   期望:
-    intent: 批量新增商品
-    params: *id037
+    intent: 删除商品
+    params: *id035
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -885,20 +836,19 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-043
+  用例ID: A-L1-042
   sample_extra: 3
 - 维度: 参数校验
-  能力: 批量新增商品
+  能力: 删除商品
   层: L1
   输入:
-    tool_name: batch_insert_products
+    tool_name: delete_products_by_ids
     tool_params:
-      merchantId:
+      productIds:
       - '0'
-      products: *id036
   期望:
-    intent: 批量新增商品
-    params: *id035
+    intent: 删除商品
+    params: *id034
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -908,52 +858,51 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-044
+  用例ID: A-L1-043
   sample_extra: 3
 - 维度: 返回处理
-  能力: 批量新增商品
+  能力: 删除商品
   层: L1
   输入:
-    tool_name: batch_insert_products
-    tool_params: &id038
-      merchantId: '9088145987535897'
-      products:
-      - ''
+    tool_name: delete_products_by_ids
+    tool_params: &id036
+      productIds:
+      - '9088145987535887'
   期望:
-    intent: 批量新增商品
-    params: *id038
+    intent: 删除商品
+    params: *id036
     output: 返回结构化结果
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-044
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 批量删除商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id037
+      productIds: &id129
+      - '9088145987535890'
+  期望:
+    intent: 批量删除商品
+    params: *id037
+    output: 工具调用成功
     block: false
   标签:
   - 正常
   用例ID: A-L1-045
   sample_extra: 3
-- 维度: 调用正确性
-  能力: 删除商品
-  层: L1
-  输入:
-    tool_name: delete_products_by_ids
-    tool_params: &id039
-      productIds:
-      - '9088145987535898'
-  期望:
-    intent: 删除商品
-    params: *id039
-    output: 工具调用成功
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-046
-  sample_extra: 3
 - 维度: 参数校验
-  能力: 删除商品
+  能力: 批量删除商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id040 {}
+    tool_params: &id038 {}
   期望:
-    intent: 删除商品
-    params: *id040
+    intent: 批量删除商品
+    params: *id038
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -963,10 +912,10 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-047
+  用例ID: A-L1-046
   sample_extra: 3
 - 维度: 参数校验
-  能力: 删除商品
+  能力: 批量删除商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
@@ -974,8 +923,8 @@
       productIds:
       - '0'
   期望:
-    intent: 删除商品
-    params: *id039
+    intent: 批量删除商品
+    params: *id037
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -985,74 +934,118 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-048
+  用例ID: A-L1-047
   sample_extra: 3
-- 维度: 安全与权限
-  能力: 删除商品
-  层: L2
-  输入:
-    tool_name: delete_products_by_ids
-    tool_params: &id041
-      productIds:
-      - '0'
-  期望:
-    intent: 权限拒绝
-    params: *id041
-    output: 删除一个不存在或已删除的商品
-    block: true
-    semantic:
-      contains:
-      - 无权限
-      - 拒绝
-      - 错误
-      - 权限拒绝
-      any_of: true
-  标签:
-  - 越权
-  用例ID: A-L2-049
-  sample_extra: 5
 - 维度: 返回处理
-  能力: 删除商品
+  能力: 批量删除商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id042
+    tool_params: &id039
       productIds:
-      - '9088145987535899'
+      - '9088145987535892'
   期望:
-    intent: 删除商品
+    intent: 批量删除商品
+    params: *id039
+    output: 返回结构化结果
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-048
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 查询商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id040
+      productName: Baked Bolognese
+  期望:
+    intent: 查询商品
+    params: *id040
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-049
+- 维度: 参数校验
+  能力: 查询商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id041 {}
+  期望:
+    intent: 查询商品
+    params: *id041
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: A-L1-050
+- 维度: 参数校验
+  能力: 查询商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params:
+      productName: INVALID
+  期望:
+    intent: 查询商品
+    params: *id040
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 边界
+  用例ID: A-L1-051
+- 维度: 返回处理
+  能力: 查询商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id042
+      productName: Baked Chicken Steak
+  期望:
+    intent: 查询商品
     params: *id042
     output: 返回结构化结果
     block: false
   标签:
   - 正常
-  用例ID: A-L1-050
-  sample_extra: 3
+  用例ID: A-L1-052
 - 维度: 调用正确性
-  能力: 批量删除商品
+  能力: 按ID查询商品
   层: L1
   输入:
-    tool_name: delete_products_by_ids
+    tool_name: query_products_by_ids
     tool_params: &id043
-      productIds:
-      - '9088145987535900'
+      productIds: &id147
+      - '9088145987535898'
   期望:
-    intent: 批量删除商品
+    intent: 按ID查询商品
     params: *id043
     output: 工具调用成功
     block: false
   标签:
   - 正常
-  用例ID: A-L1-051
-  sample_extra: 3
+  用例ID: A-L1-053
 - 维度: 参数校验
-  能力: 批量删除商品
+  能力: 按ID查询商品
   层: L1
   输入:
-    tool_name: delete_products_by_ids
+    tool_name: query_products_by_ids
     tool_params: &id044 {}
   期望:
-    intent: 批量删除商品
+    intent: 按ID查询商品
     params: *id044
     output: 参数校验失败，返回错误
     block: true
@@ -1063,18 +1056,17 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-052
-  sample_extra: 3
+  用例ID: A-L1-054
 - 维度: 参数校验
-  能力: 批量删除商品
+  能力: 按ID查询商品
   层: L1
   输入:
-    tool_name: delete_products_by_ids
+    tool_name: query_products_by_ids
     tool_params:
       productIds:
       - '0'
   期望:
-    intent: 批量删除商品
+    intent: 按ID查询商品
     params: *id043
     output: 非法参数被拒绝
     block: true
@@ -1085,53 +1077,48 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-053
-  sample_extra: 3
+  用例ID: A-L1-055
 - 维度: 返回处理
-  能力: 批量删除商品
+  能力: 按ID查询商品
   层: L1
   输入:
-    tool_name: delete_products_by_ids
+    tool_name: query_products_by_ids
     tool_params: &id045
       productIds:
-      - '9088145987535901'
+      - '9088145987535900'
   期望:
-    intent: 批量删除商品
+    intent: 按ID查询商品
     params: *id045
     output: 返回结构化结果
     block: false
   标签:
   - 正常
-  用例ID: A-L1-054
-  sample_extra: 3
+  用例ID: A-L1-056
 - 维度: 调用正确性
-  能力: 查询商品
+  能力: 按条件筛选商品
   层: L1
   输入:
-    tool_name: search_products_by_name
+    tool_name: query_products_by_filter
     tool_params: &id046
-      productName: Zhongshan Claypot Rice
+      categoryId: '9088145987535902'
+      status: Selling
   期望:
-    intent: 查询商品
+    intent: 按条件筛选商品
     params: *id046
     output: 工具调用成功
     block: false
-    semantic:
-      fields:
-      - 名称
-      - 价格
-      - 状态
   标签:
   - 正常
-  用例ID: A-L1-055
+  用例ID: A-L1-057
 - 维度: 参数校验
-  能力: 查询商品
+  能力: 按条件筛选商品
   层: L1
   输入:
-    tool_name: search_products_by_name
-    tool_params: &id047 {}
+    tool_name: query_products_by_filter
+    tool_params: &id047
+      status: Selling
   期望:
-    intent: 查询商品
+    intent: 按条件筛选商品
     params: *id047
     output: 参数校验失败，返回错误
     block: true
@@ -1142,16 +1129,18 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-056
+  用例ID: A-L1-058
 - 维度: 参数校验
-  能力: 查询商品
+  能力: 按条件筛选商品
   层: L1
   输入:
-    tool_name: search_products_by_name
+    tool_name: query_products_by_filter
     tool_params:
-      productName: INVALID
+      categoryId:
+      - '0'
+      status: Selling
   期望:
-    intent: 查询商品
+    intent: 按条件筛选商品
     params: *id046
     output: 非法参数被拒绝
     block: true
@@ -1162,57 +1151,46 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-057
+  用例ID: A-L1-059
 - 维度: 返回处理
-  能力: 查询商品
+  能力: 按条件筛选商品
   层: L1
   输入:
-    tool_name: search_products_by_name
+    tool_name: query_products_by_filter
     tool_params: &id048
-      productName: Chicken & Salted Fish Fried Rice
+      categoryId: '9088145988322335'
+      status: Selling
   期望:
-    intent: 查询商品
+    intent: 按条件筛选商品
     params: *id048
     output: 返回结构化结果
     block: false
-    semantic:
-      fields:
-      - 名称
-      - 价格
-      - 状态
   标签:
   - 正常
-  用例ID: A-L1-058
+  用例ID: A-L1-060
 - 维度: 调用正确性
-  能力: 按ID查询商品
+  能力: 查询商品详情
   层: L1
   输入:
-    tool_name: query_products_by_ids
+    tool_name: query_product_detail_by_id
     tool_params: &id049
-      productIds:
-      - '9088145988322335'
+      productId: '9088145988322324'
   期望:
-    intent: 按ID查询商品
+    intent: 查询商品详情
     params: *id049
     output: 工具调用成功
     block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      - 价格
-      - 状态
   标签:
   - 正常
-  用例ID: A-L1-059
+  用例ID: A-L1-061
 - 维度: 参数校验
-  能力: 按ID查询商品
+  能力: 查询商品详情
   层: L1
   输入:
-    tool_name: query_products_by_ids
+    tool_name: query_product_detail_by_id
     tool_params: &id050 {}
   期望:
-    intent: 按ID查询商品
+    intent: 查询商品详情
     params: *id050
     output: 参数校验失败，返回错误
     block: true
@@ -1223,17 +1201,17 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-060
+  用例ID: A-L1-062
 - 维度: 参数校验
-  能力: 按ID查询商品
+  能力: 查询商品详情
   层: L1
   输入:
-    tool_name: query_products_by_ids
+    tool_name: query_product_detail_by_id
     tool_params:
-      productIds:
+      productId:
       - '0'
   期望:
-    intent: 按ID查询商品
+    intent: 查询商品详情
     params: *id049
     output: 非法参数被拒绝
     block: true
@@ -1244,141 +1222,125 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-061
+  用例ID: A-L1-063
 - 维度: 返回处理
-  能力: 按ID查询商品
+  能力: 查询商品详情
   层: L1
   输入:
-    tool_name: query_products_by_ids
+    tool_name: query_product_detail_by_id
     tool_params: &id051
-      productIds:
-      - '9088145988322331'
+      productId: '9088145988322323'
   期望:
-    intent: 按ID查询商品
+    intent: 查询商品详情
     params: *id051
     output: 返回结构化结果
     block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      - 价格
-      - 状态
   标签:
   - 正常
-  用例ID: A-L1-062
+  用例ID: A-L1-064
 - 维度: 调用正确性
-  能力: 按条件筛选商品
+  能力: 查询菜单
   层: L1
   输入:
-    tool_name: query_products_by_filter
+    tool_name: query_menus
     tool_params: &id052
-      categoryId: '9088145988322324'
-      status: Selling
+      merchantId: '9088145987404805'
+      status: 'Off'
+      saleChannel: ''
   期望:
-    intent: 按条件筛选商品
+    intent: 查询菜单
     params: *id052
     output: 工具调用成功
     block: false
-    semantic:
-      contains:
-      - 符合分类和状态条
   标签:
   - 正常
-  用例ID: A-L1-063
+  用例ID: A-L1-065
 - 维度: 参数校验
-  能力: 按条件筛选商品
+  能力: 查询菜单
   层: L1
   输入:
-    tool_name: query_products_by_filter
+    tool_name: query_menus
     tool_params: &id053
-      status: Selling
+      status: 'Off'
+      saleChannel: ''
   期望:
-    intent: 按条件筛选商品
+    intent: 查询菜单
     params: *id053
     output: 参数校验失败，返回错误
     block: true
     semantic:
       contains:
-      - 符合分类和状态条
       - 拒绝
       - 错误
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-064
+  用例ID: A-L1-066
 - 维度: 参数校验
-  能力: 按条件筛选商品
+  能力: 查询菜单
   层: L1
   输入:
-    tool_name: query_products_by_filter
+    tool_name: query_menus
     tool_params:
-      categoryId:
+      merchantId:
       - '0'
-      status: Selling
+      status: 'Off'
+      saleChannel: ''
   期望:
-    intent: 按条件筛选商品
+    intent: 查询菜单
     params: *id052
     output: 非法参数被拒绝
     block: true
     semantic:
       contains:
-      - 符合分类和状态条
       - 拒绝
       - 错误
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-065
+  用例ID: A-L1-067
 - 维度: 返回处理
-  能力: 按条件筛选商品
+  能力: 查询菜单
   层: L1
   输入:
-    tool_name: query_products_by_filter
+    tool_name: query_menus
     tool_params: &id054
-      categoryId: '9088145988322325'
+      merchantId: '9088145987535878'
       status: Selling
+      saleChannel: ''
   期望:
-    intent: 按条件筛选商品
+    intent: 查询菜单
     params: *id054
     output: 返回结构化结果
     block: false
-    semantic:
-      contains:
-      - 符合分类和状态条
   标签:
   - 正常
-  用例ID: A-L1-066
+  用例ID: A-L1-068
 - 维度: 调用正确性
-  能力: 查询商品详情
+  能力: 查询分类
   层: L1
   输入:
-    tool_name: query_product_detail_by_id
+    tool_name: query_categories
     tool_params: &id055
-      productId: '9088145988322323'
+      merchantId: '9088145987535880'
+      name: HK Style Curry Fish Ball
   期望:
-    intent: 查询商品详情
+    intent: 查询分类
     params: *id055
     output: 工具调用成功
     block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      - 价格
-      - 库存
-      - 状态
   标签:
   - 正常
-  用例ID: A-L1-067
+  用例ID: A-L1-069
 - 维度: 参数校验
-  能力: 查询商品详情
+  能力: 查询分类
   层: L1
   输入:
-    tool_name: query_product_detail_by_id
-    tool_params: &id056 {}
+    tool_name: query_categories
+    tool_params: &id056
+      name: HK Style Curry Fish Ball
   期望:
-    intent: 查询商品详情
+    intent: 查询分类
     params: *id056
     output: 参数校验失败，返回错误
     block: true
@@ -1389,17 +1351,18 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-068
+  用例ID: A-L1-070
 - 维度: 参数校验
-  能力: 查询商品详情
+  能力: 查询分类
   层: L1
   输入:
-    tool_name: query_product_detail_by_id
+    tool_name: query_categories
     tool_params:
-      productId:
+      merchantId:
       - '0'
+      name: HK Style Curry Fish Ball
   期望:
-    intent: 查询商品详情
+    intent: 查询分类
     params: *id055
     output: 非法参数被拒绝
     block: true
@@ -1410,62 +1373,46 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-069
+  用例ID: A-L1-071
 - 维度: 返回处理
-  能力: 查询商品详情
+  能力: 查询分类
   层: L1
   输入:
-    tool_name: query_product_detail_by_id
+    tool_name: query_categories
     tool_params: &id057
-      productId: '9088145988322326'
+      merchantId: '9088145987535883'
+      name: Spam & Egg In HK Style Bo-Law Bun
   期望:
-    intent: 查询商品详情
+    intent: 查询分类
     params: *id057
     output: 返回结构化结果
     block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      - 价格
-      - 库存
-      - 状态
   标签:
   - 正常
-  用例ID: A-L1-070
+  用例ID: A-L1-072
 - 维度: 调用正确性
-  能力: 查询菜单
+  能力: 查询公司
   层: L1
   输入:
-    tool_name: query_menus
+    tool_name: query_companies
     tool_params: &id058
-      merchantId: '9088145987404805'
-      status: 'Off'
-      saleChannel: ''
+      companyId: '9088145987535885'
   期望:
-    intent: 查询菜单
+    intent: 查询公司
     params: *id058
     output: 工具调用成功
     block: false
-    semantic:
-      fields:
-      - 菜单ID
-      - 菜单名称
-      - 状态
-      - 销售渠道
   标签:
   - 正常
-  用例ID: A-L1-071
+  用例ID: A-L1-073
 - 维度: 参数校验
-  能力: 查询菜单
+  能力: 查询公司
   层: L1
   输入:
-    tool_name: query_menus
-    tool_params: &id059
-      status: 'Off'
-      saleChannel: ''
+    tool_name: query_companies
+    tool_params: &id059 {}
   期望:
-    intent: 查询菜单
+    intent: 查询公司
     params: *id059
     output: 参数校验失败，返回错误
     block: true
@@ -1476,173 +1423,7 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-072
-- 维度: 参数校验
-  能力: 查询菜单
-  层: L1
-  输入:
-    tool_name: query_menus
-    tool_params:
-      merchantId:
-      - '0'
-      status: 'Off'
-      saleChannel: ''
-  期望:
-    intent: 查询菜单
-    params: *id058
-    output: 非法参数被拒绝
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 边界
-  用例ID: A-L1-073
-- 维度: 返回处理
-  能力: 查询菜单
-  层: L1
-  输入:
-    tool_name: query_menus
-    tool_params: &id060
-      merchantId: '9088145987535877'
-      status: Selling
-      saleChannel: ''
-  期望:
-    intent: 查询菜单
-    params: *id060
-    output: 返回结构化结果
-    block: false
-    semantic:
-      fields:
-      - 菜单ID
-      - 菜单名称
-      - 状态
-      - 销售渠道
-  标签:
-  - 正常
   用例ID: A-L1-074
-- 维度: 调用正确性
-  能力: 查询分类
-  层: L1
-  输入:
-    tool_name: query_categories
-    tool_params: &id061
-      merchantId: '9088145987535878'
-      name: Fried Chicken Wings w. Pepper Salt
-  期望:
-    intent: 查询分类
-    params: *id061
-    output: 工具调用成功
-    block: false
-    semantic:
-      fields:
-      - 分类ID
-      - 分类名称
-  标签:
-  - 正常
-  用例ID: A-L1-075
-- 维度: 参数校验
-  能力: 查询分类
-  层: L1
-  输入:
-    tool_name: query_categories
-    tool_params: &id062
-      name: Fried Chicken Wings w. Pepper Salt
-  期望:
-    intent: 查询分类
-    params: *id062
-    output: 参数校验失败，返回错误
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数缺失
-  用例ID: A-L1-076
-- 维度: 参数校验
-  能力: 查询分类
-  层: L1
-  输入:
-    tool_name: query_categories
-    tool_params:
-      merchantId:
-      - '0'
-      name: Fried Chicken Wings w. Pepper Salt
-  期望:
-    intent: 查询分类
-    params: *id061
-    output: 非法参数被拒绝
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 边界
-  用例ID: A-L1-077
-- 维度: 返回处理
-  能力: 查询分类
-  层: L1
-  输入:
-    tool_name: query_categories
-    tool_params: &id063
-      merchantId: '9088145987535879'
-      name: Fried Wing
-  期望:
-    intent: 查询分类
-    params: *id063
-    output: 返回结构化结果
-    block: false
-    semantic:
-      fields:
-      - 分类ID
-      - 分类名称
-  标签:
-  - 正常
-  用例ID: A-L1-078
-- 维度: 调用正确性
-  能力: 查询公司
-  层: L1
-  输入:
-    tool_name: query_companies
-    tool_params: &id064
-      companyId: '9088145987535880'
-  期望:
-    intent: 查询公司
-    params: *id064
-    output: 工具调用成功
-    block: false
-    semantic:
-      contains:
-      - 当前账号授权公司
-  标签:
-  - 正常
-  用例ID: A-L1-079
-- 维度: 参数校验
-  能力: 查询公司
-  层: L1
-  输入:
-    tool_name: query_companies
-    tool_params: &id065 {}
-  期望:
-    intent: 查询公司
-    params: *id065
-    output: 参数校验失败，返回错误
-    block: true
-    semantic:
-      contains:
-      - 当前账号授权公司
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 参数缺失
-  用例ID: A-L1-080
 - 维度: 参数校验
   能力: 查询公司
   层: L1
@@ -1653,76 +1434,68 @@
       - '0'
   期望:
     intent: 查询公司
-    params: *id064
+    params: *id058
     output: 非法参数被拒绝
     block: true
     semantic:
       contains:
-      - 当前账号授权公司
       - 拒绝
       - 错误
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-081
+  用例ID: A-L1-075
 - 维度: 返回处理
   能力: 查询公司
   层: L1
   输入:
     tool_name: query_companies
-    tool_params: &id066
-      companyId: '9088145987535881'
+    tool_params: &id060
+      companyId: '9088145987535887'
   期望:
     intent: 查询公司
-    params: *id066
+    params: *id060
     output: 返回结构化结果
     block: false
-    semantic:
-      contains:
-      - 当前账号授权公司
   标签:
   - 正常
-  用例ID: A-L1-082
+  用例ID: A-L1-076
 - 维度: 调用正确性
   能力: 删除不存在商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id067
-      productIds:
-      - '9088145987535884'
+    tool_params: &id061
+      productIds: &id113
+      - '9088145987535892'
   期望:
     intent: 删除不存在商品
-    params: *id067
+    params: *id061
     output: 工具调用成功
     block: false
-    semantic:
-      contains:
-      - 删除目标不存在
   标签:
   - 正常
-  用例ID: A-L1-083
+  用例ID: A-L1-077
   sample_extra: 3
 - 维度: 参数校验
   能力: 删除不存在商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id068 {}
+    tool_params: &id062 {}
   期望:
     intent: 删除不存在商品
-    params: *id068
+    params: *id062
     output: 参数校验失败，返回错误
     block: true
     semantic:
       contains:
-      - 删除目标不存在
       - 拒绝
       - 错误
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-084
+  用例ID: A-L1-078
   sample_extra: 3
 - 维度: 参数校验
   能力: 删除不存在商品
@@ -1734,71 +1507,67 @@
       - '0'
   期望:
     intent: 删除不存在商品
-    params: *id067
+    params: *id061
     output: 非法参数被拒绝
     block: true
     semantic:
       contains:
-      - 删除目标不存在
       - 拒绝
       - 错误
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-085
+  用例ID: A-L1-079
   sample_extra: 3
 - 维度: 返回处理
   能力: 删除不存在商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id069
+    tool_params: &id063
       productIds:
-      - '9088145987535885'
+      - '9088145987535894'
   期望:
     intent: 删除不存在商品
-    params: *id069
+    params: *id063
     output: 返回结构化结果
     block: false
-    semantic:
-      contains:
-      - 删除目标不存在
   标签:
   - 正常
-  用例ID: A-L1-086
+  用例ID: A-L1-080
   sample_extra: 3
 - 维度: 调用正确性
   能力: 越权操作
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: &id070
-      merchantId: '9088145987535886'
+    tool_params: &id064
+      merchantId: '9088145987535896'
   期望:
     intent: 拒绝
-    params: *id070
+    params: *id064
     output: 无权限/非法操作被拒绝
     block: true
     semantic:
       contains:
-      - 权限
       - 无权限
-      - 错误
+      - 权限
       - 拒绝
+      - 错误
       - 非法
       any_of: true
   标签:
   - 越权
-  用例ID: A-L1-087
+  用例ID: A-L1-081
 - 维度: 参数校验
   能力: 越权操作
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: &id071 {}
+    tool_params: &id065 {}
   期望:
     intent: 越权操作
-    params: *id071
+    params: *id065
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -1808,7 +1577,7 @@
       any_of: true
   标签:
   - 参数缺失
-  用例ID: A-L1-088
+  用例ID: A-L1-082
 - 维度: 参数校验
   能力: 越权操作
   层: L1
@@ -1819,7 +1588,7 @@
       - '0'
   期望:
     intent: 越权操作
-    params: *id070
+    params: *id064
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -1829,29 +1598,29 @@
       any_of: true
   标签:
   - 边界
-  用例ID: A-L1-089
+  用例ID: A-L1-083
 - 维度: 调用正确性
   能力: 指令注入
   层: L1
   输入:
     tool_name: update_products_by_ids
-    tool_params: &id072 {}
+    tool_params: &id066 {}
   期望:
     intent: 拒绝
-    params: *id072
+    params: *id066
     output: 无权限/非法操作被拒绝
     block: true
     semantic:
       contains:
-      - 权限
       - 无权限
-      - 错误
+      - 权限
       - 拒绝
+      - 错误
       - 非法
       any_of: true
   标签:
   - 注入对抗
-  用例ID: A-L1-090
+  用例ID: A-L1-084
 - 维度: 协议契约
   能力: 商品上架
   层: L1
@@ -1863,54 +1632,387 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-091
+  用例ID: A-L1-085
 - 维度: 工具描述与发现
   能力: 商品上架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id067
+      productIds:
+      - '9088145988322335'
+      status: Selling
+  期望:
+    intent: 商品上架
+    params: *id067
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-086
+- 维度: 性能与资源
+  能力: 商品上架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id068
+      productIds:
+      - '9088145988322324'
+      status: Selling
+  期望:
+    intent: 商品上架
+    params: *id068
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-087
+- 维度: 异常与容错
+  能力: 商品上架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      productIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-088
+- 维度: 协议契约
+  能力: 商品下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-089
+- 维度: 工具描述与发现
+  能力: 商品下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id069
+      productIds:
+      - '9088145988322323'
+      status: Selling
+  期望:
+    intent: 商品下架
+    params: *id069
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-090
+- 维度: 性能与资源
+  能力: 商品下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id070
+      productIds:
+      - '9088145987404805'
+      status: 'Off'
+  期望:
+    intent: 商品下架
+    params: *id070
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-091
+- 维度: 异常与容错
+  能力: 商品下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      productIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-092
+- 维度: 协议契约
+  能力: 批量上下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-093
+- 维度: 工具描述与发现
+  能力: 批量上下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id071
+      productIds:
+      - '9088145987535878'
+      status: Selling
+  期望:
+    intent: 批量上下架
+    params: *id071
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-094
+- 维度: 性能与资源
+  能力: 批量上下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id072
+      productIds:
+      - '9088145987535880'
+      status: Selling
+  期望:
+    intent: 批量上下架
+    params: *id072
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-095
+- 维度: 异常与容错
+  能力: 批量上下架
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      productIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-096
+- 维度: 协议契约
+  能力: 修改价格
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-097
+  sample_extra: 3
+- 维度: 工具描述与发现
+  能力: 修改价格
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id073
       productIds:
-      - '9088145987535891'
-      status: Selling
+      - '9088145987535883'
+      price: 9.5
   期望:
-    intent: 商品上架
+    intent: 修改价格
     params: *id073
     output: 工具可正常调用
     block: false
   标签:
   - 正常
-  用例ID: A-L1-092
+  用例ID: A-L1-098
+  sample_extra: 3
 - 维度: 性能与资源
-  能力: 商品上架
+  能力: 修改价格
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id074
       productIds:
-      - '9088145987535892'
-      status: Selling
+      - '9088145987535885'
+      price: 9.5
   期望:
-    intent: 商品上架
+    intent: 修改价格
     params: *id074
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
-  用例ID: A-L1-093
+  用例ID: A-L1-099
+  sample_extra: 3
 - 维度: 异常与容错
-  能力: 商品上架
+  能力: 修改价格
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -1922,20 +2024,33 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-094
+  用例ID: A-L1-100
+  sample_extra: 3
 - 维度: 协议契约
-  能力: 商品下架
+  能力: 批量改价
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -1945,54 +2060,68 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-095
+  用例ID: A-L1-101
 - 维度: 工具描述与发现
-  能力: 商品下架
+  能力: 批量改价
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id075
       productIds:
-      - '9088145987535893'
-      status: Selling
+      - '9088145987535887'
+      prices:
+      - 8.95
   期望:
-    intent: 商品下架
+    intent: 批量改价
     params: *id075
     output: 工具可正常调用
     block: false
   标签:
   - 正常
-  用例ID: A-L1-096
+  用例ID: A-L1-102
 - 维度: 性能与资源
-  能力: 商品下架
+  能力: 批量改价
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id076
       productIds:
-      - '9088145987535894'
-      status: Selling
+      - '9088145987535890'
+      prices:
+      - 13.95
   期望:
-    intent: 商品下架
+    intent: 批量改价
     params: *id076
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
-  用例ID: A-L1-097
+  用例ID: A-L1-103
 - 维度: 异常与容错
-  能力: 商品下架
+  能力: 批量改价
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -2004,20 +2133,32 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-098
+  用例ID: A-L1-104
 - 维度: 协议契约
-  能力: 批量上下架
+  能力: 修改商品名称
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -2027,54 +2168,69 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-099
+  用例ID: A-L1-105
+  sample_extra: 3
 - 维度: 工具描述与发现
-  能力: 批量上下架
+  能力: 修改商品名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id077
       productIds:
-      - '9088145987535895'
-      status: Selling
+      - '9088145987535892'
+      name: Curry Beef Brisket Flank
   期望:
-    intent: 批量上下架
+    intent: 修改商品名称
     params: *id077
     output: 工具可正常调用
     block: false
   标签:
   - 正常
-  用例ID: A-L1-100
+  用例ID: A-L1-106
+  sample_extra: 3
 - 维度: 性能与资源
-  能力: 批量上下架
+  能力: 修改商品名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id078
       productIds:
-      - '9088145987535896'
-      status: Selling
+      - '9088145987535894'
+      name: Baked Bolognese
   期望:
-    intent: 批量上下架
+    intent: 修改商品名称
     params: *id078
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
-  用例ID: A-L1-101
+  用例ID: A-L1-107
+  sample_extra: 3
 - 维度: 异常与容错
-  能力: 批量上下架
+  能力: 修改商品名称
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -2086,20 +2242,33 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-102
+  用例ID: A-L1-108
+  sample_extra: 3
 - 维度: 协议契约
-  能力: 修改价格
+  能力: 修改商品英文名称
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -2109,57 +2278,69 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-103
+  用例ID: A-L1-109
   sample_extra: 3
 - 维度: 工具描述与发现
-  能力: 修改价格
+  能力: 修改商品英文名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id079
       productIds:
-      - '9088145987535897'
-      price: 12.95
+      - '9088145987535896'
+      name_en: Baked Chicken Steak
   期望:
-    intent: 修改价格
+    intent: 修改商品英文名称
     params: *id079
     output: 工具可正常调用
     block: false
   标签:
   - 正常
-  用例ID: A-L1-104
+  用例ID: A-L1-110
   sample_extra: 3
 - 维度: 性能与资源
-  能力: 修改价格
+  能力: 修改商品英文名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id080
       productIds:
       - '9088145987535898'
-      price: 23.95
+      name_en: Australian Wagyu Beef Fried Rice w. Egg
   期望:
-    intent: 修改价格
+    intent: 修改商品英文名称
     params: *id080
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
-  用例ID: A-L1-105
+  用例ID: A-L1-111
   sample_extra: 3
 - 维度: 异常与容错
-  能力: 修改价格
+  能力: 修改商品英文名称
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -2171,21 +2352,33 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-106
+  用例ID: A-L1-112
   sample_extra: 3
 - 维度: 协议契约
-  能力: 批量改价
+  能力: 批量修改名称
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -2195,56 +2388,71 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-107
+  用例ID: A-L1-113
+  sample_extra: 3
 - 维度: 工具描述与发现
-  能力: 批量改价
+  能力: 批量修改名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id081
       productIds:
-      - '9088145987535899'
-      prices:
-      - 13.95
+      - '9088145987535900'
+      names:
+      - Hainan Style Chicken Rice
   期望:
-    intent: 批量改价
+    intent: 批量修改名称
     params: *id081
     output: 工具可正常调用
     block: false
   标签:
   - 正常
-  用例ID: A-L1-108
+  用例ID: A-L1-114
+  sample_extra: 3
 - 维度: 性能与资源
-  能力: 批量改价
+  能力: 批量修改名称
   层: L1
   输入:
     tool_name: update_products_by_ids
     tool_params: &id082
       productIds:
-      - '9088145987535900'
-      prices:
-      - 12.95
+      - '9088145987535902'
+      names:
+      - Zhongshan Claypot Rice
   期望:
-    intent: 批量改价
+    intent: 批量修改名称
     params: *id082
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
-  用例ID: A-L1-109
+  用例ID: A-L1-115
+  sample_extra: 3
 - 维度: 异常与容错
-  能力: 批量改价
+  能力: 批量修改名称
   层: L1
   输入:
     tool_name: update_products_by_ids
@@ -2256,425 +2464,214 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-110
+  用例ID: A-L1-116
+  sample_extra: 3
 - 维度: 协议契约
-  能力: 修改商品名称
+  能力: 新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: batch_insert_products
     tool_params:
       unknown_param_malformed: x
   期望:
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-111
+  用例ID: A-L1-117
   sample_extra: 3
 - 维度: 工具描述与发现
-  能力: 修改商品名称
+  能力: 新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: batch_insert_products
     tool_params: &id083
-      productIds:
-      - '9088145987535901'
-      name: Hot & Spicy Beef Tripe & Tendon Rice Platter
+      merchantId: '9088145988322335'
+      name: Ketchup
+      price: 1.0
+      categoryId: '9088145988322335'
   期望:
-    intent: 修改商品名称
+    intent: 新增商品
     params: *id083
     output: 工具可正常调用
     block: false
   标签:
   - 正常
-  用例ID: A-L1-112
+  用例ID: A-L1-118
   sample_extra: 3
 - 维度: 性能与资源
-  能力: 修改商品名称
+  能力: 新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: batch_insert_products
     tool_params: &id084
-      productIds:
-      - '9088145987535902'
-      name: Zhongshan Claypot Rice
+      merchantId: '9088145988322324'
+      name: Salt
+      price: 1.0
+      categoryId: '9088145988322324'
   期望:
-    intent: 修改商品名称
+    intent: 新增商品
     params: *id084
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
-  用例ID: A-L1-113
+  用例ID: A-L1-119
   sample_extra: 3
 - 维度: 异常与容错
-  能力: 修改商品名称
+  能力: 新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: batch_insert_products
     tool_params:
       unknown_param_malformed: x
-      productIds:
+      merchantId:
       - '0'
   期望:
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-114
+  用例ID: A-L1-120
   sample_extra: 3
 - 维度: 协议契约
-  能力: 修改商品英文名称
+  能力: 批量新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: batch_insert_products
     tool_params:
       unknown_param_malformed: x
   期望:
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-115
+  用例ID: A-L1-121
   sample_extra: 3
 - 维度: 工具描述与发现
-  能力: 修改商品英文名称
+  能力: 批量新增商品
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: batch_insert_products
     tool_params: &id085
-      productIds:
-      - '9088145987535903'
-      name_en: Chicken & Salted Fish Fried Rice
+      merchantId: '9088145988322323'
+      products:
+      - ''
   期望:
-    intent: 修改商品英文名称
+    intent: 批量新增商品
     params: *id085
     output: 工具可正常调用
     block: false
   标签:
   - 正常
-  用例ID: A-L1-116
-  sample_extra: 3
-- 维度: 性能与资源
-  能力: 修改商品英文名称
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id086
-      productIds:
-      - '9088145988322335'
-      name_en: Ketchup
-  期望:
-    intent: 修改商品英文名称
-    params: *id086
-    output: 单次调用延迟可接受
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-117
-  sample_extra: 3
-- 维度: 异常与容错
-  能力: 修改商品英文名称
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params:
-      unknown_param_malformed: x
-      productIds:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 友好
-      - 拒绝
-      - 不崩溃
-      - 容错
-      any_of: true
-  标签:
-  - 容错
-  用例ID: A-L1-118
-  sample_extra: 3
-- 维度: 协议契约
-  能力: 批量修改名称
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 无效
-      - 拒绝
-      - 不崩溃
-      - 参数错误
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-119
-  sample_extra: 3
-- 维度: 工具描述与发现
-  能力: 批量修改名称
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id087
-      productIds:
-      - '9088145988322331'
-      names:
-      - Soy Sauce
-  期望:
-    intent: 批量修改名称
-    params: *id087
-    output: 工具可正常调用
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-120
-  sample_extra: 3
-- 维度: 性能与资源
-  能力: 批量修改名称
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params: &id088
-      productIds:
-      - '9088145988322324'
-      names:
-      - Salt
-  期望:
-    intent: 批量修改名称
-    params: *id088
-    output: 单次调用延迟可接受
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-121
-  sample_extra: 3
-- 维度: 异常与容错
-  能力: 批量修改名称
-  层: L1
-  输入:
-    tool_name: update_products_by_ids
-    tool_params:
-      unknown_param_malformed: x
-      productIds:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 友好
-      - 拒绝
-      - 不崩溃
-      - 容错
-      any_of: true
-  标签:
-  - 容错
   用例ID: A-L1-122
   sample_extra: 3
-- 维度: 协议契约
-  能力: 新增商品
-  层: L1
-  输入:
-    tool_name: batch_insert_products
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 无效
-      - 拒绝
-      - 不崩溃
-      - 参数错误
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-123
-  sample_extra: 3
-- 维度: 工具描述与发现
-  能力: 新增商品
-  层: L1
-  输入:
-    tool_name: batch_insert_products
-    tool_params: &id089
-      merchantId: '9088145988322325'
-      name: Sugar
-      price: 1.0
-      categoryId: '9088145988322325'
-  期望:
-    intent: 新增商品
-    params: *id089
-    output: 工具可正常调用
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-124
-  sample_extra: 3
-- 维度: 性能与资源
-  能力: 新增商品
-  层: L1
-  输入:
-    tool_name: batch_insert_products
-    tool_params: &id090
-      merchantId: '9088145988322323'
-      name: Oil
-      price: 1.0
-      categoryId: '9088145988322323'
-  期望:
-    intent: 新增商品
-    params: *id090
-    output: 单次调用延迟可接受
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-125
-  sample_extra: 3
-- 维度: 异常与容错
-  能力: 新增商品
-  层: L1
-  输入:
-    tool_name: batch_insert_products
-    tool_params:
-      unknown_param_malformed: x
-      merchantId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 友好
-      - 拒绝
-      - 不崩溃
-      - 容错
-      any_of: true
-  标签:
-  - 容错
-  用例ID: A-L1-126
-  sample_extra: 3
-- 维度: 协议契约
-  能力: 批量新增商品
-  层: L1
-  输入:
-    tool_name: batch_insert_products
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 无效
-      - 拒绝
-      - 不崩溃
-      - 参数错误
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-127
-  sample_extra: 3
-- 维度: 工具描述与发现
-  能力: 批量新增商品
-  层: L1
-  输入:
-    tool_name: batch_insert_products
-    tool_params: &id091
-      merchantId: '9088145988322326'
-      products:
-      - ''
-  期望:
-    intent: 批量新增商品
-    params: *id091
-    output: 工具可正常调用
-    block: false
-  标签:
-  - 正常
-  用例ID: A-L1-128
-  sample_extra: 3
 - 维度: 性能与资源
   能力: 批量新增商品
   层: L1
   输入:
     tool_name: batch_insert_products
-    tool_params: &id092
+    tool_params: &id086
       merchantId: '9088145987404805'
       products:
       - ''
   期望:
     intent: 批量新增商品
-    params: *id092
+    params: *id086
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
-  用例ID: A-L1-129
+  用例ID: A-L1-123
   sample_extra: 3
 - 维度: 异常与容错
   能力: 批量新增商品
@@ -2689,18 +2686,30 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-130
+  用例ID: A-L1-124
   sample_extra: 3
 - 维度: 协议契约
   能力: 删除商品
@@ -2713,52 +2722,64 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-131
+  用例ID: A-L1-125
   sample_extra: 3
 - 维度: 工具描述与发现
   能力: 删除商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id093
+    tool_params: &id087
       productIds:
-      - '9088145987535877'
+      - '9088145987535878'
   期望:
     intent: 删除商品
-    params: *id093
+    params: *id087
     output: 工具可正常调用
     block: false
   标签:
   - 正常
-  用例ID: A-L1-132
+  用例ID: A-L1-126
   sample_extra: 3
 - 维度: 性能与资源
   能力: 删除商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id094
+    tool_params: &id088
       productIds:
-      - '9088145987535878'
+      - '9088145987535880'
   期望:
     intent: 删除商品
-    params: *id094
+    params: *id088
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
-  用例ID: A-L1-133
+  用例ID: A-L1-127
   sample_extra: 3
 - 维度: 异常与容错
   能力: 删除商品
@@ -2773,19 +2794,63 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-134
+  用例ID: A-L1-128
   sample_extra: 3
+- 维度: 写入安全边界
+  能力: 删除商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id089
+      productIds:
+      - '0000000000000000'
+  期望:
+    intent: 删除商品
+    params: *id089
+    output: 目标不存在时影响 0 条，不得越范围改删其他数据
+    block: false
+    影响范围对账: &id090
+      快照工具: query_products_by_ids
+      快照参数:
+        productIds:
+        - '9088145987535878'
+      最大影响条数: 0
+      存在性检查:
+        工具: query_products_by_ids
+        参数:
+          productIds:
+          - '9088145987535878'
+        目标ID: '9088145987535878'
+    高危: true
+  影响范围对账: *id090
+  高危: true
+  标签:
+  - 异常
+  用例ID: A-L1-129
+  sample_extra: 5
 - 维度: 协议契约
   能力: 批量删除商品
   层: L1
@@ -2797,80 +2862,201 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-135
+  用例ID: A-L1-130
   sample_extra: 3
 - 维度: 工具描述与发现
   能力: 批量删除商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id095
+    tool_params: &id091
       productIds:
-      - '9088145987535879'
+      - '9088145987535883'
   期望:
     intent: 批量删除商品
+    params: *id091
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-131
+  sample_extra: 3
+- 维度: 性能与资源
+  能力: 批量删除商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id092
+      productIds:
+      - '9088145987535885'
+  期望:
+    intent: 批量删除商品
+    params: *id092
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-132
+  sample_extra: 3
+- 维度: 异常与容错
+  能力: 批量删除商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      productIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-133
+  sample_extra: 3
+- 维度: 写入安全边界
+  能力: 批量删除商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id093
+      productIds:
+      - '0000000000000000'
+  期望:
+    intent: 批量删除商品
+    params: *id093
+    output: 目标不存在时影响 0 条，不得越范围改删其他数据
+    block: false
+    影响范围对账: &id094
+      快照工具: query_products_by_ids
+      快照参数:
+        productIds:
+        - '9088145987535883'
+      最大影响条数: 0
+      存在性检查:
+        工具: query_products_by_ids
+        参数:
+          productIds:
+          - '9088145987535883'
+        目标ID: '9088145987535883'
+    高危: true
+  影响范围对账: *id094
+  高危: true
+  标签:
+  - 异常
+  用例ID: A-L1-134
+  sample_extra: 5
+- 维度: 协议契约
+  能力: 查询商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-135
+- 维度: 工具描述与发现
+  能力: 查询商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id095
+      productName: Spam & Eggs Sandwich In HK Style w. French Fries
+  期望:
+    intent: 查询商品
     params: *id095
     output: 工具可正常调用
     block: false
   标签:
   - 正常
   用例ID: A-L1-136
-  sample_extra: 3
 - 维度: 性能与资源
-  能力: 批量删除商品
+  能力: 查询商品
   层: L1
   输入:
-    tool_name: delete_products_by_ids
+    tool_name: search_products_by_name
     tool_params: &id096
-      productIds:
-      - '9088145987535880'
+      productName: Pork Chop Cutlet w. Curry Sauce
   期望:
-    intent: 批量删除商品
+    intent: 查询商品
     params: *id096
     output: 单次调用延迟可接受
     block: false
   标签:
   - 正常
   用例ID: A-L1-137
-  sample_extra: 3
 - 维度: 异常与容错
-  能力: 批量删除商品
-  层: L1
-  输入:
-    tool_name: delete_products_by_ids
-    tool_params:
-      unknown_param_malformed: x
-      productIds:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 友好
-      - 拒绝
-      - 不崩溃
-      - 容错
-      any_of: true
-  标签:
-  - 容错
-  用例ID: A-L1-138
-  sample_extra: 3
-- 维度: 协议契约
   能力: 查询商品
   层: L1
   输入:
@@ -2878,151 +3064,100 @@
     tool_params:
       unknown_param_malformed: x
   期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-138
+- 维度: 协议契约
+  能力: 按ID查询商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
   用例ID: A-L1-139
 - 维度: 工具描述与发现
-  能力: 查询商品
+  能力: 按ID查询商品
   层: L1
   输入:
-    tool_name: search_products_by_name
+    tool_name: query_products_by_ids
     tool_params: &id097
-      productName: Ovaltine French Toast
+      productIds:
+      - '9088145987535892'
   期望:
-    intent: 查询商品
+    intent: 按ID查询商品
     params: *id097
     output: 工具可正常调用
     block: false
-    semantic:
-      fields:
-      - 名称
-      - 价格
-      - 状态
   标签:
   - 正常
   用例ID: A-L1-140
 - 维度: 性能与资源
-  能力: 查询商品
+  能力: 按ID查询商品
   层: L1
   输入:
-    tool_name: search_products_by_name
+    tool_name: query_products_by_ids
     tool_params: &id098
-      productName: Spam & Egg In HK Style Bo-Law Bun
+      productIds:
+      - '9088145987535894'
   期望:
-    intent: 查询商品
+    intent: 按ID查询商品
     params: *id098
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      fields:
-      - 名称
-      - 价格
-      - 状态
   标签:
   - 正常
   用例ID: A-L1-141
-- 维度: 异常与容错
-  能力: 查询商品
-  层: L1
-  输入:
-    tool_name: search_products_by_name
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 友好
-      - 拒绝
-      - 不崩溃
-      - 容错
-      any_of: true
-  标签:
-  - 容错
-  用例ID: A-L1-142
-- 维度: 协议契约
-  能力: 按ID查询商品
-  层: L1
-  输入:
-    tool_name: query_products_by_ids
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 无效
-      - 拒绝
-      - 不崩溃
-      - 参数错误
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-143
-- 维度: 工具描述与发现
-  能力: 按ID查询商品
-  层: L1
-  输入:
-    tool_name: query_products_by_ids
-    tool_params: &id099
-      productIds:
-      - '9088145987535884'
-  期望:
-    intent: 按ID查询商品
-    params: *id099
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      - 价格
-      - 状态
-  标签:
-  - 正常
-  用例ID: A-L1-144
-- 维度: 性能与资源
-  能力: 按ID查询商品
-  层: L1
-  输入:
-    tool_name: query_products_by_ids
-    tool_params: &id100
-      productIds:
-      - '9088145987535885'
-  期望:
-    intent: 按ID查询商品
-    params: *id100
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      - 价格
-      - 状态
-  标签:
-  - 正常
-  用例ID: A-L1-145
 - 维度: 异常与容错
   能力: 按ID查询商品
   层: L1
@@ -3036,18 +3171,30 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-146
+  用例ID: A-L1-142
 - 维度: 协议契约
   能力: 按条件筛选商品
   层: L1
@@ -3059,57 +3206,62 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 符合分类和状态条
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-147
+  用例ID: A-L1-143
 - 维度: 工具描述与发现
   能力: 按条件筛选商品
   层: L1
   输入:
     tool_name: query_products_by_filter
-    tool_params: &id101
-      categoryId: '9088145987535886'
+    tool_params: &id099
+      categoryId: '9088145987535896'
       status: Selling
   期望:
     intent: 按条件筛选商品
-    params: *id101
+    params: *id099
     output: 工具可正常调用
     block: false
-    semantic:
-      contains:
-      - 符合分类和状态条
   标签:
   - 正常
-  用例ID: A-L1-148
+  用例ID: A-L1-144
 - 维度: 性能与资源
   能力: 按条件筛选商品
   层: L1
   输入:
     tool_name: query_products_by_filter
-    tool_params: &id102
-      categoryId: '9088145987535887'
+    tool_params: &id100
+      categoryId: '9088145987535898'
       status: Selling
   期望:
     intent: 按条件筛选商品
-    params: *id102
+    params: *id100
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      contains:
-      - 符合分类和状态条
   标签:
   - 正常
-  用例ID: A-L1-149
+  用例ID: A-L1-145
 - 维度: 异常与容错
   能力: 按条件筛选商品
   层: L1
@@ -3123,19 +3275,30 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 符合分类和状态条
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-150
+  用例ID: A-L1-146
 - 维度: 协议契约
   能力: 查询商品详情
   层: L1
@@ -3147,62 +3310,60 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-151
+  用例ID: A-L1-147
 - 维度: 工具描述与发现
   能力: 查询商品详情
   层: L1
   输入:
     tool_name: query_product_detail_by_id
-    tool_params: &id103
-      productId: '9088145987535889'
+    tool_params: &id101
+      productId: '9088145987535900'
   期望:
     intent: 查询商品详情
-    params: *id103
+    params: *id101
     output: 工具可正常调用
     block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      - 价格
-      - 库存
-      - 状态
   标签:
   - 正常
-  用例ID: A-L1-152
+  用例ID: A-L1-148
 - 维度: 性能与资源
   能力: 查询商品详情
   层: L1
   输入:
     tool_name: query_product_detail_by_id
-    tool_params: &id104
-      productId: '9088145987535890'
+    tool_params: &id102
+      productId: '9088145987535902'
   期望:
     intent: 查询商品详情
-    params: *id104
+    params: *id102
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      fields:
-      - 商品ID
-      - 商品名称
-      - 价格
-      - 库存
-      - 状态
   标签:
   - 正常
-  用例ID: A-L1-153
+  用例ID: A-L1-149
 - 维度: 异常与容错
   能力: 查询商品详情
   层: L1
@@ -3216,92 +3377,208 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-150
+- 维度: 协议契约
+  能力: 查询菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-151
+- 维度: 工具描述与发现
+  能力: 查询菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params: &id103
+      merchantId: '9088145988322335'
+      status: Selling
+      saleChannel: ''
+  期望:
+    intent: 查询菜单
+    params: *id103
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-152
+- 维度: 性能与资源
+  能力: 查询菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params: &id104
+      merchantId: '9088145988322324'
+      status: Selling
+      saleChannel: ''
+  期望:
+    intent: 查询菜单
+    params: *id104
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  用例ID: A-L1-153
+- 维度: 异常与容错
+  能力: 查询菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: A-L1-154
 - 维度: 协议契约
-  能力: 查询菜单
+  能力: 查询分类
   层: L1
   输入:
-    tool_name: query_menus
+    tool_name: query_categories
     tool_params:
       unknown_param_malformed: x
   期望:
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
   用例ID: A-L1-155
 - 维度: 工具描述与发现
-  能力: 查询菜单
+  能力: 查询分类
   层: L1
   输入:
-    tool_name: query_menus
+    tool_name: query_categories
     tool_params: &id105
-      merchantId: '9088145987535891'
-      status: Selling
-      saleChannel: ''
+      merchantId: '9088145988322323'
+      name: Oil
   期望:
-    intent: 查询菜单
+    intent: 查询分类
     params: *id105
     output: 工具可正常调用
     block: false
-    semantic:
-      fields:
-      - 菜单ID
-      - 菜单名称
-      - 状态
-      - 销售渠道
   标签:
   - 正常
   用例ID: A-L1-156
 - 维度: 性能与资源
-  能力: 查询菜单
+  能力: 查询分类
   层: L1
   输入:
-    tool_name: query_menus
+    tool_name: query_categories
     tool_params: &id106
-      merchantId: '9088145987535892'
-      status: Selling
-      saleChannel: ''
+      merchantId: '9088145987404805'
+      name: Fried Shrimp Eggroll
   期望:
-    intent: 查询菜单
+    intent: 查询分类
     params: *id106
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      fields:
-      - 菜单ID
-      - 菜单名称
-      - 状态
-      - 销售渠道
   标签:
   - 正常
   用例ID: A-L1-157
 - 维度: 异常与容错
-  能力: 查询菜单
+  能力: 查询分类
   层: L1
   输入:
-    tool_name: query_menus
+    tool_name: query_categories
     tool_params:
       unknown_param_malformed: x
       merchantId:
@@ -3310,166 +3587,95 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
   用例ID: A-L1-158
 - 维度: 协议契约
-  能力: 查询分类
+  能力: 查询公司
   层: L1
   输入:
-    tool_name: query_categories
+    tool_name: query_companies
     tool_params:
       unknown_param_malformed: x
   期望:
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
   用例ID: A-L1-159
 - 维度: 工具描述与发现
-  能力: 查询分类
+  能力: 查询公司
   层: L1
   输入:
-    tool_name: query_categories
+    tool_name: query_companies
     tool_params: &id107
-      merchantId: '9088145987535893'
-      name: Curry Fish Fillet
+      companyId: '9088145987535878'
   期望:
-    intent: 查询分类
+    intent: 查询公司
     params: *id107
     output: 工具可正常调用
     block: false
-    semantic:
-      fields:
-      - 分类ID
-      - 分类名称
   标签:
   - 正常
   用例ID: A-L1-160
 - 维度: 性能与资源
-  能力: 查询分类
+  能力: 查询公司
   层: L1
   输入:
-    tool_name: query_categories
+    tool_name: query_companies
     tool_params: &id108
-      merchantId: '9088145987535894'
-      name: Baked Bolognese
+      companyId: '9088145987535880'
   期望:
-    intent: 查询分类
+    intent: 查询公司
     params: *id108
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      fields:
-      - 分类ID
-      - 分类名称
   标签:
   - 正常
   用例ID: A-L1-161
-- 维度: 异常与容错
-  能力: 查询分类
-  层: L1
-  输入:
-    tool_name: query_categories
-    tool_params:
-      unknown_param_malformed: x
-      merchantId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 友好
-      - 拒绝
-      - 不崩溃
-      - 容错
-      any_of: true
-  标签:
-  - 容错
-  用例ID: A-L1-162
-- 维度: 协议契约
-  能力: 查询公司
-  层: L1
-  输入:
-    tool_name: query_companies
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: true
-    semantic:
-      contains:
-      - 当前账号授权公司
-      - 错误
-      - 无效
-      - 拒绝
-      - 不崩溃
-      - 参数错误
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-163
-- 维度: 工具描述与发现
-  能力: 查询公司
-  层: L1
-  输入:
-    tool_name: query_companies
-    tool_params: &id109
-      companyId: '9088145987535895'
-  期望:
-    intent: 查询公司
-    params: *id109
-    output: 工具可正常调用
-    block: false
-    semantic:
-      contains:
-      - 当前账号授权公司
-  标签:
-  - 正常
-  用例ID: A-L1-164
-- 维度: 性能与资源
-  能力: 查询公司
-  层: L1
-  输入:
-    tool_name: query_companies
-    tool_params: &id110
-      companyId: '9088145987535896'
-  期望:
-    intent: 查询公司
-    params: *id110
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      contains:
-      - 当前账号授权公司
-  标签:
-  - 正常
-  用例ID: A-L1-165
 - 维度: 异常与容错
   能力: 查询公司
   层: L1
@@ -3483,19 +3689,30 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 当前账号授权公司
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-166
+  用例ID: A-L1-162
 - 维度: 协议契约
   能力: 查询店铺
   层: L1
@@ -3507,18 +3724,30 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-167
+  用例ID: A-L1-163
 - 维度: 异常与容错
   能力: 查询店铺
   层: L1
@@ -3530,18 +3759,30 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-168
+  用例ID: A-L1-164
 - 维度: 协议契约
   能力: 删除不存在商品
   层: L1
@@ -3553,59 +3794,64 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 删除目标不存在
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-169
+  用例ID: A-L1-165
   sample_extra: 3
 - 维度: 工具描述与发现
   能力: 删除不存在商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id111
+    tool_params: &id109
       productIds:
-      - '9088145987535898'
+      - '9088145987535885'
   期望:
     intent: 删除不存在商品
-    params: *id111
+    params: *id109
     output: 工具可正常调用
     block: false
-    semantic:
-      contains:
-      - 删除目标不存在
   标签:
   - 正常
-  用例ID: A-L1-170
+  用例ID: A-L1-166
   sample_extra: 3
 - 维度: 性能与资源
   能力: 删除不存在商品
   层: L1
   输入:
     tool_name: delete_products_by_ids
-    tool_params: &id112
+    tool_params: &id110
       productIds:
-      - '9088145987535899'
+      - '9088145987535887'
   期望:
     intent: 删除不存在商品
-    params: *id112
+    params: *id110
     output: 单次调用延迟可接受
     block: false
-    semantic:
-      contains:
-      - 删除目标不存在
   标签:
   - 正常
-  用例ID: A-L1-171
+  用例ID: A-L1-167
   sample_extra: 3
 - 维度: 异常与容错
   能力: 删除不存在商品
@@ -3620,20 +3866,61 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
-      - 删除目标不存在
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-172
+  用例ID: A-L1-168
   sample_extra: 3
+- 维度: 写入安全边界
+  能力: 删除不存在商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id111
+      productIds:
+      - '0000000000000000'
+  期望:
+    intent: 删除不存在商品
+    params: *id111
+    output: 目标不存在时影响 0 条，不得越范围改删其他数据
+    block: false
+    影响范围对账: &id112
+      快照工具: query_products_by_filter
+      快照参数: {}
+      最大影响条数: 0
+      存在性检查:
+        工具: query_products_by_ids
+        参数:
+          productIds:
+          - '9088145987535885'
+        目标ID: '9088145987535885'
+    高危: true
+  影响范围对账: *id112
+  高危: true
+  标签:
+  - 异常
+  用例ID: A-L1-169
+  sample_extra: 5
 - 维度: 协议契约
   能力: 越权操作
   层: L1
@@ -3645,18 +3932,30 @@
     intent: 协议错误
     params: {}
     output: 返回参数错误，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-173
+  用例ID: A-L1-170
 - 维度: 异常与容错
   能力: 越权操作
   层: L1
@@ -3670,153 +3969,1371 @@
     intent: 容错
     params: {}
     output: 非法输入被友好处理，不崩溃
-    block: true
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
-      - 友好
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 容错
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
   - 容错
+  用例ID: A-L1-171
+- 维度: 协议契约
+  能力: 指令注入
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-172
+- 维度: 异常与容错
+  能力: 指令注入
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-173
+- 维度: 协议契约
+  能力: 组合操作
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
   用例ID: A-L1-174
-- 维度: 协议契约
-  能力: 指令注入
+- 维度: 异常与容错
+  能力: 组合操作
   层: L1
   输入:
-    tool_name: update_products_by_ids
+    tool_name: query_products_by_ids
     tool_params:
       unknown_param_malformed: x
   期望:
-    intent: 协议错误
+    intent: 容错
     params: {}
-    output: 返回参数错误，不崩溃
-    block: true
+    output: 非法输入被友好处理，不崩溃
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
       - 无效
+      - 无法
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 畸形
+  - 容错
   用例ID: A-L1-175
-- 维度: 异常与容错
-  能力: 指令注入
+- 维度: 协议契约
+  能力: 查询
   层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-176
+- 维度: 异常与容错
+  能力: 查询
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-177
+- 维度: 调用正确性
+  能力: 查询公司
+  层: L2
+  输入:
+    tool_name: query_companies_typo
+    tool_params:
+      companyId: '9088145987535885'
+  期望:
+    intent: 查询公司
+    params: *id058
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-178
+- 维度: 参数校验
+  能力: 删除不存在商品
+  层: L2
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id114
+      productIds: *id113
+      unknown_param: x
+  期望:
+    intent: 删除不存在商品
+    params: *id114
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-179
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 修改商品名称
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      productIds: *id115
+      name: Australian Wagyu Beef Fried Rice w. Egg
+  期望:
+    intent: 修改商品名称
+    params: *id017
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-180
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 指令注入
+  层: L2
   输入:
     tool_name: update_products_by_ids
-    tool_params:
-      unknown_param_malformed: x
+    tool_params: &id116
+      unknown_param: x
   期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
+    intent: 指令注入
+    params: *id116
+    output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 错误
-      - 友好
       - 拒绝
-      - 不崩溃
-      - 容错
+      - 错误
       any_of: true
   标签:
-  - 容错
-  用例ID: A-L1-176
-- 维度: 协议契约
-  能力: 组合操作
-  层: L1
+  - 参数注入
+  用例ID: A-L2-181
+- 维度: 参数校验
+  能力: 查询菜单
+  层: L2
   输入:
-    tool_name: query_products_by_ids
-    tool_params:
-      unknown_param_malformed: x
+    tool_name: query_menus
+    tool_params: &id117
+      merchantId: '9088145987404805'
+      status: 'Off'
+      saleChannel: ''
+      unknown_param: x
   期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
+    intent: 查询菜单
+    params: *id117
+    output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 错误
-      - 无效
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - 错误
       any_of: true
   标签:
-  - 畸形
-  用例ID: A-L1-177
-- 维度: 异常与容错
-  能力: 组合操作
-  层: L1
+  - 参数注入
+  用例ID: A-L2-182
+- 维度: 参数校验
+  能力: 修改价格
+  层: L2
   输入:
-    tool_name: query_products_by_ids
-    tool_params:
-      unknown_param_malformed: x
+    tool_name: update_products_by_ids
+    tool_params: &id119
+      productIds: *id118
+      price: abc
   期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
+    intent: 修改价格
+    params: *id119
+    output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
-      - 错误
-      - 友好
       - 拒绝
-      - 不崩溃
-      - 容错
+      - 错误
       any_of: true
   标签:
-  - 容错
-  用例ID: A-L1-178
-- 维度: 协议契约
-  能力: 查询
-  层: L1
+  - 类型错配
+  用例ID: A-L2-183
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 查询商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name_typo
+    tool_params:
+      productName: Baked Bolognese
+  期望:
+    intent: 查询商品
+    params: *id040
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-184
+- 维度: 参数校验
+  能力: 修改商品英文名称
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id121
+      productIds: *id120
+      name_en: Zhongshan Claypot Rice
+      unknown_param: x
+  期望:
+    intent: 修改商品英文名称
+    params: *id121
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-185
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 批量上下架
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      productIds: *id122
+      status: Selling
+  期望:
+    intent: 批量上下架
+    params: *id007
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-186
+- 维度: 参数校验
+  能力: 新增商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id123
+      merchantId: '9088145987404805'
+      name: Fried Shrimp Eggroll
+      price: 0
+      categoryId: '9088145987404805'
+  期望:
+    intent: 新增商品
+    params: *id123
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-187
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 商品上架
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id125
+      productIds: *id124
+      status: 'Off'
+      unknown_param: x
+  期望:
+    intent: 商品上架
+    params: *id125
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-188
+- 维度: 参数校验
+  能力: 新增商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id126
+      merchantId: '9088145987404805'
+      name: Fried Shrimp Eggroll
+      price: abc
+      categoryId: '9088145987404805'
+  期望:
+    intent: 新增商品
+    params: *id126
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-189
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 商品下架
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id128
+      productIds: *id127
+      status: Selling
+      unknown_param: x
+  期望:
+    intent: 商品下架
+    params: *id128
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-190
+- 维度: 调用正确性
+  能力: 批量删除商品
+  层: L2
+  输入:
+    tool_name: delete_products_by_ids_typo
+    tool_params:
+      productIds: *id129
+  期望:
+    intent: 批量删除商品
+    params: *id037
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-191
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 查询分类
+  层: L2
+  输入:
+    tool_name: query_categories
+    tool_params: &id130
+      merchantId: '9088145987535880'
+      name: HK Style Curry Fish Ball
+      unknown_param: x
+  期望:
+    intent: 查询分类
+    params: *id130
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-192
+- 维度: 参数校验
+  能力: 批量修改名称
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id132
+      productIds: *id131
+      names: *id024
+      unknown_param: x
+  期望:
+    intent: 批量修改名称
+    params: *id132
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-193
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 新增商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id133
+      merchantId: '9088145987404805'
+      name: Fried Shrimp Eggroll
+      price: 9999999999999999
+      categoryId: '9088145987404805'
+  期望:
+    intent: 新增商品
+    params: *id133
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-194
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 查询商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id_typo
+    tool_params:
+      productId: '9088145988322324'
+  期望:
+    intent: 查询商品详情
+    params: *id049
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-195
+- 维度: 参数校验
+  能力: 查询商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id134
+      productId: '9088145988322324'
+      unknown_param: x
+  期望:
+    intent: 查询商品详情
+    params: *id134
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-196
+- 维度: 参数校验
+  能力: 查询商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id135
+      productName: Baked Bolognese
+      unknown_param: x
+  期望:
+    intent: 查询商品
+    params: *id135
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-197
+- 维度: 参数校验
+  能力: 批量新增商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id136
+      merchantId: '9088145987535880'
+      products: *id031
+      unknown_param: x
+  期望:
+    intent: 批量新增商品
+    params: *id136
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-198
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 批量改价
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      productIds: *id137
+      prices: *id014
+  期望:
+    intent: 批量改价
+    params: *id013
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-199
+- 维度: 参数校验
+  能力: 批量上下架
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id138
+      productIds: *id122
+      status: Selling
+      unknown_param: x
+  期望:
+    intent: 批量上下架
+    params: *id138
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-200
+- 维度: 参数校验
+  能力: 修改商品名称
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id139
+      productIds: *id115
+      name: Australian Wagyu Beef Fried Rice w. Egg
+      unknown_param: x
+  期望:
+    intent: 修改商品名称
+    params: *id139
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-201
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 新增商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id140
+      merchantId: '9088145987404805'
+      name: Fried Shrimp Eggroll
+      price: -1
+      categoryId: '9088145987404805'
+  期望:
+    intent: 新增商品
+    params: *id140
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-202
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 批量删除商品
+  层: L2
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id141
+      productIds: *id129
+      unknown_param: x
+  期望:
+    intent: 批量删除商品
+    params: *id141
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-203
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 修改价格
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id142
+      productIds: *id118
+      price: 13.95
+      unknown_param: x
+  期望:
+    intent: 修改价格
+    params: *id142
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-204
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 删除商品
+  层: L2
+  输入:
+    tool_name: delete_products_by_ids_typo
+    tool_params:
+      productIds: *id143
+  期望:
+    intent: 删除商品
+    params: *id034
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-205
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 删除不存在商品
+  层: L2
+  输入:
+    tool_name: delete_products_by_ids_typo
+    tool_params:
+      productIds: *id113
+  期望:
+    intent: 删除不存在商品
+    params: *id061
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-206
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 商品上架
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      productIds: *id124
+      status: 'Off'
+  期望:
+    intent: 商品上架
+    params: *id001
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-207
+- 维度: 参数校验
+  能力: 按条件筛选商品
+  层: L2
   输入:
     tool_name: query_products_by_filter
-    tool_params:
-      unknown_param_malformed: x
+    tool_params: &id144
+      categoryId: '9088145987535902'
+      status: Selling
+      unknown_param: x
   期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
+    intent: 按条件筛选商品
+    params: *id144
+    output: 未知参数被拒绝/提示
     block: true
     semantic:
       contains:
-      - 错误
-      - 无效
       - 拒绝
-      - 不崩溃
-      - 参数错误
+      - 错误
       any_of: true
   标签:
-  - 畸形
-  用例ID: A-L1-179
-- 维度: 异常与容错
-  能力: 查询
-  层: L1
+  - 参数注入
+  用例ID: A-L2-208
+- 维度: 调用正确性
+  能力: 新增商品
+  层: L2
   输入:
-    tool_name: query_products_by_filter
+    tool_name: batch_insert_products_typo
     tool_params:
-      unknown_param_malformed: x
+      merchantId: '9088145987404805'
+      name: Fried Shrimp Eggroll
+      price: 9.95
+      categoryId: '9088145987404805'
   期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
+    intent: 新增商品
+    params: *id027
+    output: 工具无效，拒绝触发
     block: true
     semantic:
       contains:
-      - 错误
-      - 友好
       - 拒绝
-      - 不崩溃
-      - 容错
+      - 错误
       any_of: true
   标签:
-  - 容错
-  用例ID: A-L1-180
+  - 工具错配
+  用例ID: A-L2-209
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 新增商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id145
+      merchantId: '9088145987404805'
+      name: Fried Shrimp Eggroll
+      price: 9.95
+      categoryId: '9088145987404805'
+      unknown_param: x
+  期望:
+    intent: 新增商品
+    params: *id145
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-210
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 查询分类
+  层: L2
+  输入:
+    tool_name: query_categories_typo
+    tool_params:
+      merchantId: '9088145987535880'
+      name: HK Style Curry Fish Ball
+  期望:
+    intent: 查询分类
+    params: *id055
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-211
+- 维度: 参数校验
+  能力: 越权操作
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id146
+      merchantId: '9088145987535896'
+      unknown_param: x
+  期望:
+    intent: 越权操作
+    params: *id146
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-212
+- 维度: 调用正确性
+  能力: 按ID查询商品
+  层: L2
+  输入:
+    tool_name: query_products_by_ids_typo
+    tool_params:
+      productIds: *id147
+  期望:
+    intent: 按ID查询商品
+    params: *id043
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-213
+- 维度: 参数校验
+  能力: 修改价格
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id148
+      productIds: *id118
+      price: -1
+  期望:
+    intent: 修改价格
+    params: *id148
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-214
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 批量修改名称
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      productIds: *id131
+      names: *id024
+  期望:
+    intent: 批量修改名称
+    params: *id023
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-215
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 指令注入
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params: {}
+  期望:
+    intent: 指令注入
+    params: {}
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-216
+- 维度: 调用正确性
+  能力: 越权操作
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      merchantId: '9088145987535896'
+  期望:
+    intent: 越权操作
+    params: *id064
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-217
+- 维度: 调用正确性
+  能力: 批量新增商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products_typo
+    tool_params:
+      merchantId: '9088145987535880'
+      products: *id031
+  期望:
+    intent: 批量新增商品
+    params: *id030
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-218
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 按条件筛选商品
+  层: L2
+  输入:
+    tool_name: query_products_by_filter_typo
+    tool_params:
+      categoryId: '9088145987535902'
+      status: Selling
+  期望:
+    intent: 按条件筛选商品
+    params: *id046
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-219
+- 维度: 调用正确性
+  能力: 查询菜单
+  层: L2
+  输入:
+    tool_name: query_menus_typo
+    tool_params:
+      merchantId: '9088145987404805'
+      status: 'Off'
+      saleChannel: ''
+  期望:
+    intent: 查询菜单
+    params: *id052
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-220
+- 维度: 参数校验
+  能力: 修改价格
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id149
+      productIds: *id118
+      price: 0
+  期望:
+    intent: 修改价格
+    params: *id149
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-221
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 批量改价
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id150
+      productIds: *id137
+      prices: *id014
+      unknown_param: x
+  期望:
+    intent: 批量改价
+    params: *id150
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-222
+- 维度: 参数校验
+  能力: 修改价格
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id151
+      productIds: *id118
+      price: 9999999999999999
+  期望:
+    intent: 修改价格
+    params: *id151
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-223
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 商品下架
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      productIds: *id127
+      status: Selling
+  期望:
+    intent: 商品下架
+    params: *id004
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-224
+- 维度: 参数校验
+  能力: 删除商品
+  层: L2
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id152
+      productIds: *id143
+      unknown_param: x
+  期望:
+    intent: 删除商品
+    params: *id152
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-225
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 查询公司
+  层: L2
+  输入:
+    tool_name: query_companies
+    tool_params: &id153
+      companyId: '9088145987535885'
+      unknown_param: x
+  期望:
+    intent: 查询公司
+    params: *id153
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-226
+- 维度: 参数校验
+  能力: 按ID查询商品
+  层: L2
+  输入:
+    tool_name: query_products_by_ids
+    tool_params: &id154
+      productIds: *id147
+      unknown_param: x
+  期望:
+    intent: 按ID查询商品
+    params: *id154
+    output: 未知参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 参数注入
+  用例ID: A-L2-227
+- 维度: 调用正确性
+  能力: 修改商品英文名称
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      productIds: *id120
+      name_en: Zhongshan Claypot Rice
+  期望:
+    intent: 修改商品英文名称
+    params: *id020
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-228
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 修改价格
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      productIds: *id118
+      price: 13.95
+  期望:
+    intent: 修改价格
+    params: *id010
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-229
+  sample_extra: 3

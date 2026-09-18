@@ -1,0 +1,730 @@
+{
+  "batch_insert_products": {
+    "description": "在指定店铺中批量新增商品。需要提供店铺ID和商品列表，每个商品包含价格、多语言名称，可选携带分类和规格组关联。单次最多新增 200 个商品。",
+    "required": [
+      "merchantId"
+    ],
+    "params": {
+      "merchantId": {
+        "type": "string",
+        "desc": "目标店铺ID，仅支持单个店铺，先调用 query_merchants 获取"
+      },
+      "products": {
+        "type": "array",
+        "desc": "要新增的商品列表，每个商品包含价格和多语言名称设置；NameLocalization 必须提供非空英文名，英文语言代码支持 en-US 或 en_US",
+        "items_type": "object"
+      }
+    }
+  },
+  "delete_products_by_ids": {
+    "description": "根据商品 ID 列表批量删除商品。删除操作不可恢复，请谨慎使用。通常配合 query_products_by_ids 工具使用，先查询确认要删除的商品。",
+    "required": [
+      "productIds"
+    ],
+    "params": {
+      "productIds": {
+        "type": "array",
+        "desc": "要删除的商品 ID 列表",
+        "items_type": "string"
+      }
+    }
+  },
+  "query_categories": {
+    "description": "查询分类列表。支持按店铺、分类名称筛选。不指定店铺时自动返回所有授权店铺的分类。支持按分类名称模糊匹配。",
+    "required": [],
+    "params": {
+      "merchantIds": {
+        "type": "array",
+        "desc": "店铺 ID 列表（可选），为空时返回当前 CompanyAccount 授权的所有店铺分类。先调用 query_merchants 获取店铺 ID。",
+        "items_type": "string"
+      },
+      "categoryName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "分类名称，用于对分类名称的匹配"
+      },
+      "menuIds": {
+        "type": "array",
+        "desc": "菜单 ID 列表（可选），用于筛选属于指定菜单的分类。",
+        "items_type": "string"
+      },
+      "categoryIds": {
+        "type": "array",
+        "desc": "分类 ID 列表（可选），用于直接筛选指定分类。如果同时指定了 MenuIds 和 CategoryIds，则优先使用 CategoryIds。",
+        "items_type": "string"
+      }
+    }
+  },
+  "query_companies": {
+    "description": "查询当前账号授权范围内的所有公司。返回公司ID、名称和下属店铺列表，是后续查询店铺、员工等操作的前置步骤。支持按公司名称模糊搜索或指定公司ID列表筛选。",
+    "required": [],
+    "params": {
+      "companyName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "公司名称"
+      },
+      "companyIds": {
+        "type": "array",
+        "desc": "公司ID列表",
+        "items_type": "string"
+      }
+    }
+  },
+  "query_datax_menu_product_category_reports": {
+    "description": "相对日期请求必须使用 relativePeriod，由服务器按店铺时区解析，不要自行转换今天／昨天等日期。按店铺营业日期查询报表，StartAt/EndAt 使用无 Z、无偏移的本地时间，忽略时分秒并包含结束日期，同日可查单日。本汇总报表将日期 D 转为 LA 当日 05:00 至次日 05:00 的营业窗口，此分界不适用于订单或考勤；窗口与近期 POS 阈值（默认 24 小时）相交则整窗 POS，其余 DataX，实际读取不晚于当前时刻。每片独立排序和应用 Limit；多片在 Segments 返回，不合计金额或提供全局排名。请求含今天、该日选择 POS 且当前当地时间不晚于 05:00 时，才将该日窗口改为午夜至当前时刻；未来日期略过，无可读窗口及未验证的历史 DST 窗口明确拒绝。实际范围见 EffectivePeriod，原始日期见 RequestedDateRange。",
+    "required": [
+      "merchantId"
+    ],
+    "params": {
+      "refId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的菜单、商品或分类 ID，用于精确筛选。"
+      },
+      "name": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的菜单、商品或分类名称关键字，按包含关系筛选。"
+      },
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的目录对象类型：Menu=菜单、Product=商品、Category=分类。",
+        "enum": [
+          "Menu",
+          "Product",
+          "Category",
+          "Unknown",
+          null
+        ]
+      },
+      "merchantId": {
+        "type": "string",
+        "desc": "目标店铺 ID，必须来自 query_merchants 返回的授权店铺列表。"
+      },
+      "startAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "店铺本地开始时间，ISO 8601 格式，不带 Z 或时区偏移。订单保留时分秒并包含该时刻；经营汇总及目录销售汇总忽略时分秒，包含该日期。"
+      },
+      "endAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "店铺本地结束时间，不带 Z 或时区偏移。订单保留时分秒且不包含该时刻；经营汇总及目录销售汇总忽略时分秒并包含结束日期，同日可查单日。实际读取不晚于当前时刻。"
+      },
+      "relativePeriod": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "用户说今天、昨天、本周、上周、本月、上月时，直接传 Today、Yesterday、ThisWeek、LastWeek、ThisMonth、LastMonth，不要按客户端时区换算日期。服务端按店铺时区日历解析，午夜换日、周一开周；订单 Today 从当地今日午夜起，只有经营汇总与目录销售汇总再按日期建立 05:00 营业窗口。使用此参数时省略 startAt/endAt；指定具体日期时省略此参数。",
+        "enum": [
+          "Today",
+          "Yesterday",
+          "ThisWeek",
+          "LastWeek",
+          "ThisMonth",
+          "LastMonth",
+          null
+        ]
+      },
+      "limit": {
+        "type": "integer",
+        "desc": "每个独立来源片最多返回的行数，范围为 1 到 1000，默认 100；Segments 各自先排序再应用此上限。"
+      },
+      "sortField": {
+        "type": "string",
+        "desc": "每个独立来源片的排序字段：Date=日期，Amount=金额；商品报表还支持 Quantity=数量。多片结果不代表全局排名。",
+        "enum": [
+          "Date",
+          "Amount",
+          "Quantity"
+        ]
+      },
+      "sortDirection": {
+        "type": "string",
+        "desc": "每个独立来源片的排序方向：Ascending=升序，Descending=降序；默认降序。",
+        "enum": [
+          "Ascending",
+          "Descending"
+        ]
+      }
+    }
+  },
+  "query_datax_order_sales_reports": {
+    "description": "相对日期请求必须使用 relativePeriod，由服务器按店铺时区解析，不要自行转换今天／昨天等日期。按订单建立时间筛选，店铺本地开始/结束时间保留时分秒，输入不得带 Z 或偏移，开始包含、结束排除。Today 从当地今日 00:00 起算；订单不使用汇总报表的 05:00 营业分界。按配置的近期 POS 阈值（默认 24 小时）切分：较早部分 DataX，近期部分 POS，实际结束截至当前时刻。POS 可拆为多片，每片独立排序和应用 Limit；多片在 Segments 返回，不提供跨片总计或全局排名。纯未来和 DST 不存在或歧义时间拒绝。",
+    "required": [
+      "merchantId"
+    ],
+    "params": {
+      "orderId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的订单 ID，用于精确筛选；支持数字 ID 和外部系统字符串 ID。"
+      },
+      "orderType": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的订单类型，例如 DineIn、Pickup、ToGo、Delivery。",
+        "enum": [
+          "DineIn",
+          "Pickup",
+          "ToGo",
+          "Delivery",
+          "OnlineDineIn",
+          "OnlinePickup",
+          "OnlineToGo",
+          "OnlineDelivery",
+          "OnlineTakeout",
+          "GiftCard",
+          "Kiosk",
+          "Unknown",
+          null
+        ]
+      },
+      "orderStatus": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的订单状态，例如 Progressing、Completed、Cancelled。",
+        "enum": [
+          "Progressing",
+          "Completed",
+          "Cancelled",
+          "BeMerged",
+          "Returned",
+          "Pending",
+          "Unknown",
+          null
+        ]
+      },
+      "paymentStatus": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的支付状态，例如 Unpaid、PartiallyPaid、FullyPaid。",
+        "enum": [
+          "Unpaid",
+          "PartiallyPaid",
+          "FullyPaid",
+          "Uncaptured",
+          "PartiallyCaptured",
+          "Captured",
+          "Unknown",
+          null
+        ]
+      },
+      "paymentType": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的支付方式，用于精确筛选。"
+      },
+      "sourceName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的第三方渠道来源名称关键字，按包含关系筛选。"
+      },
+      "orderSourceType": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的订单来源类型，例如 EasyPos、PocketStore、Deliverect、Kiosk。",
+        "enum": [
+          "EasyPos",
+          "PocketStore",
+          "Deliverect",
+          "AiPhoneOrder",
+          "ScanCodeToOrder",
+          "Kiosk",
+          "Unknown",
+          null
+        ]
+      },
+      "customizedPaymentName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的自定义支付名称，用于精确筛选。"
+      },
+      "paymentTerminalType": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的支付终端类型，用于精确筛选。"
+      },
+      "paymentTerminalName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的支付终端名称，用于精确筛选。"
+      },
+      "operatorName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的下单操作员名称关键字，按包含关系筛选。"
+      },
+      "orderSerial": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的订单流水号，用于精确筛选。"
+      },
+      "merchantId": {
+        "type": "string",
+        "desc": "目标店铺 ID，必须来自 query_merchants 返回的授权店铺列表。"
+      },
+      "startAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "店铺本地开始时间，ISO 8601 格式，不带 Z 或时区偏移。订单保留时分秒并包含该时刻；经营汇总及目录销售汇总忽略时分秒，包含该日期。"
+      },
+      "endAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "店铺本地结束时间，不带 Z 或时区偏移。订单保留时分秒且不包含该时刻；经营汇总及目录销售汇总忽略时分秒并包含结束日期，同日可查单日。实际读取不晚于当前时刻。"
+      },
+      "relativePeriod": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "用户说今天、昨天、本周、上周、本月、上月时，直接传 Today、Yesterday、ThisWeek、LastWeek、ThisMonth、LastMonth，不要按客户端时区换算日期。服务端按店铺时区日历解析，午夜换日、周一开周；订单 Today 从当地今日午夜起，只有经营汇总与目录销售汇总再按日期建立 05:00 营业窗口。使用此参数时省略 startAt/endAt；指定具体日期时省略此参数。",
+        "enum": [
+          "Today",
+          "Yesterday",
+          "ThisWeek",
+          "LastWeek",
+          "ThisMonth",
+          "LastMonth",
+          null
+        ]
+      },
+      "limit": {
+        "type": "integer",
+        "desc": "每个独立来源片最多返回的行数，范围为 1 到 1000，默认 100；Segments 各自先排序再应用此上限。"
+      },
+      "sortField": {
+        "type": "string",
+        "desc": "每个独立来源片的排序字段：Date=日期，Amount=金额；商品报表还支持 Quantity=数量。多片结果不代表全局排名。",
+        "enum": [
+          "Date",
+          "Amount",
+          "Quantity"
+        ]
+      },
+      "sortDirection": {
+        "type": "string",
+        "desc": "每个独立来源片的排序方向：Ascending=升序，Descending=降序；默认降序。",
+        "enum": [
+          "Ascending",
+          "Descending"
+        ]
+      }
+    }
+  },
+  "query_datax_total_reports": {
+    "description": "相对日期请求必须使用 relativePeriod，由服务器按店铺时区解析，不要自行转换今天／昨天等日期。按店铺营业日期查询报表，StartAt/EndAt 使用无 Z、无偏移的本地时间，忽略时分秒并包含结束日期，同日可查单日。本汇总报表将日期 D 转为 LA 当日 05:00 至次日 05:00 的营业窗口，此分界不适用于订单或考勤；窗口与近期 POS 阈值（默认 24 小时）相交则整窗 POS，其余 DataX，实际读取不晚于当前时刻。每片独立排序和应用 Limit；多片在 Segments 返回，不合计金额或提供全局排名。请求含今天、该日选择 POS 且当前当地时间不晚于 05:00 时，才将该日窗口改为午夜至当前时刻；未来日期略过，无可读窗口及未验证的历史 DST 窗口明确拒绝。实际范围见 EffectivePeriod，原始日期见 RequestedDateRange。",
+    "required": [
+      "merchantId"
+    ],
+    "params": {
+      "merchantName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "可选的店铺名称关键字，按包含关系筛选。"
+      },
+      "merchantId": {
+        "type": "string",
+        "desc": "目标店铺 ID，必须来自 query_merchants 返回的授权店铺列表。"
+      },
+      "startAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "店铺本地开始时间，ISO 8601 格式，不带 Z 或时区偏移。订单保留时分秒并包含该时刻；经营汇总及目录销售汇总忽略时分秒，包含该日期。"
+      },
+      "endAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "店铺本地结束时间，不带 Z 或时区偏移。订单保留时分秒且不包含该时刻；经营汇总及目录销售汇总忽略时分秒并包含结束日期，同日可查单日。实际读取不晚于当前时刻。"
+      },
+      "relativePeriod": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "用户说今天、昨天、本周、上周、本月、上月时，直接传 Today、Yesterday、ThisWeek、LastWeek、ThisMonth、LastMonth，不要按客户端时区换算日期。服务端按店铺时区日历解析，午夜换日、周一开周；订单 Today 从当地今日午夜起，只有经营汇总与目录销售汇总再按日期建立 05:00 营业窗口。使用此参数时省略 startAt/endAt；指定具体日期时省略此参数。",
+        "enum": [
+          "Today",
+          "Yesterday",
+          "ThisWeek",
+          "LastWeek",
+          "ThisMonth",
+          "LastMonth",
+          null
+        ]
+      },
+      "limit": {
+        "type": "integer",
+        "desc": "每个独立来源片最多返回的行数，范围为 1 到 1000，默认 100；Segments 各自先排序再应用此上限。"
+      },
+      "sortField": {
+        "type": "string",
+        "desc": "每个独立来源片的排序字段：Date=日期，Amount=金额；商品报表还支持 Quantity=数量。多片结果不代表全局排名。",
+        "enum": [
+          "Date",
+          "Amount",
+          "Quantity"
+        ]
+      },
+      "sortDirection": {
+        "type": "string",
+        "desc": "每个独立来源片的排序方向：Ascending=升序，Descending=降序；默认降序。",
+        "enum": [
+          "Ascending",
+          "Descending"
+        ]
+      }
+    }
+  },
+  "query_menus": {
+    "description": "查询菜单列表。支持按店铺、状态、销售渠道、菜单名称筛选。不指定店铺时自动返回所有授权店铺的菜单。",
+    "required": [],
+    "params": {
+      "merchantIds": {
+        "type": "array",
+        "desc": "店铺 ID 列表（可选），为空时返回当前 CompanyAccount 授权的所有店铺菜单。先调用 query_merchants 获取店铺 ID。",
+        "items_type": "string"
+      },
+      "statuses": {
+        "type": [
+          "array",
+          "null"
+        ],
+        "desc": "菜单状态筛选：UnActive（未激活）、Active（激活）",
+        "items_type": "string"
+      },
+      "saleChannel": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "销售渠道筛选：Pos（POS）、Delivery（外送）、Pickup（来取）、ToGo（等取）"
+      },
+      "menuName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "菜单名称筛选"
+      }
+    }
+  },
+  "query_merchant_staffs": {
+    "description": "查询店铺的员工列表。需要先调用 query_merchants 获取店铺 ID。",
+    "required": [
+      "merchantIds"
+    ],
+    "params": {
+      "merchantIds": {
+        "type": "array",
+        "desc": "店铺 ID，先调用 query_merchants 获取",
+        "items_type": "string"
+      }
+    }
+  },
+  "query_merchants": {
+    "description": "获取当前账号授权范围内的所有店铺列表。这是大多数业务操作的前置步骤，应先调用此工具获取店铺 ID，再使用返回的 MerchantId 调用其他工具（如查询商品、菜单等）。",
+    "required": [],
+    "params": {
+      "merchantName": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "商户名称, 用于对店铺的匹配"
+      }
+    }
+  },
+  "query_order_details_by_ids": {
+    "description": "按 merchantId 和 1 至 500 个 POS 内部 orderIds 查询完整订单商品明细，包括成交名称、规格加料、口味、数量、计重单位、价格、折扣和金额。单笔传一个 ID。直接读取 EasyPOS，无需日期参数；不适用报表 72 小时时间窗口限制。Orders 为命中订单的分页结果，包含 List、TotalElements、TotalPages、IsLast；NotFoundOrderIds 为整份输入中当前门店未找到的 ID，不随分页裁剪。完整返回商品明细。",
+    "required": [
+      "merchantId",
+      "orderIds"
+    ],
+    "params": {
+      "merchantId": {
+        "type": "string",
+        "desc": "目标门店 ID，订单必须属于此门店。"
+      },
+      "orderIds": {
+        "type": "array",
+        "desc": "POS 内部订单 ID 字符串列表，1 至 500 个。可由订单销售报表取得数字 OrderId；不能传订单流水号或第三方外部 ID。重复 ID 自动去重。",
+        "items_type": "string"
+      },
+      "page": {
+        "type": "integer",
+        "desc": "命中订单的页码，从 1 开始，默认 1。翻页时保持 orderIds 及顺序不变。"
+      },
+      "size": {
+        "type": "integer",
+        "desc": "每页订单数量，默认 15，范围 1 至 50。"
+      }
+    }
+  },
+  "query_product_detail_by_id": {
+    "description": "根据商品 ID 查询商品详细信息，包括商品基本信息、所属分类、规格组和菜单等关联数据",
+    "required": [
+      "productId"
+    ],
+    "params": {
+      "productId": {
+        "type": "string",
+        "desc": "需要查询的商品ID"
+      },
+      "includeCategory": {
+        "type": "boolean",
+        "desc": "是否包含所属分类信息（默认 true）"
+      },
+      "includeSpecificationGroup": {
+        "type": "boolean",
+        "desc": "是否包含所属规格组信息（默认 true）"
+      },
+      "includeMenu": {
+        "type": "boolean",
+        "desc": "是否包含所属菜单信息（默认 true）"
+      }
+    }
+  },
+  "query_products_by_filter": {
+    "description": "根据分类 ID、商品类型、商品状态等条件组合查询商品列表。所有参数均为可选，不指定任何条件时返回全部商品。分类 ID 可通过 query_categories 获取。结果按商品名称分组返回。",
+    "required": [],
+    "params": {
+      "categoryIds": {
+        "type": "array",
+        "desc": "分类 ID 列表（可选），先调用 query_categories 获取分类 ID",
+        "items_type": "string"
+      },
+      "type": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "商品类型筛选（可选）：Normal（一般商品）、Preference（偏好）、RechargeBenefit（充値减免权益）、MemberBenefit（会员权益）",
+        "enum": [
+          "Normal",
+          "Preference",
+          "RechargeBenefit",
+          "PointExchange",
+          "MemberBenefit",
+          "Unknown",
+          null
+        ]
+      },
+      "status": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "商品状态筛选（可选）：Selling（上架中）、Off（已下架）",
+        "enum": [
+          "Off",
+          "Selling",
+          "Unknown",
+          null
+        ]
+      }
+    }
+  },
+  "query_products_by_ids": {
+    "description": "根据商品 ID 列表批量查询商品信息，结果按商品名称分组返回，便于识别同名商品。需先通过 search_products_by_name 获取商品 ID。",
+    "required": [
+      "productIds"
+    ],
+    "params": {
+      "productIds": {
+        "type": "array",
+        "desc": "需要查询的商品ID列表，先从 search_products_by_name 获取",
+        "items_type": "string"
+      }
+    }
+  },
+  "query_staff_attendances": {
+    "description": "分页查询单店员工考勤，按上班打卡时间筛选，固定范围保留时分秒。Today 从店铺当地今日 00:00 起算，不使用汇总报表的 05:00 营业分界。必须提供 merchantId，以及 relativePeriod 或成对 startAt/endAt。时间按 POS 实际店铺时区解析，包含起点、排除终点，实际读取截至当前时刻；返回时区和查询范围。需先调用 query_merchants 获取店铺 ID。",
+    "required": [
+      "merchantId"
+    ],
+    "params": {
+      "merchantId": {
+        "type": "string",
+        "desc": "目标店铺 ID，先调用 query_merchants 获取；每次只查询一家店铺，按该店铺实际时区解析时间。"
+      },
+      "merchantStaffIds": {
+        "type": "array",
+        "desc": "员工 ID（可选）",
+        "items_type": "string"
+      },
+      "startAt": {
+        "type": null,
+        "desc": "店铺本地开始时间，ISO 8601 格式，不带 Z 或时区偏移，包含该时刻。与 endAt 成对提供；使用 relativePeriod 时省略。"
+      },
+      "endAt": {
+        "type": null,
+        "desc": "店铺本地结束时间，不带 Z 或时区偏移，不包含该时刻；查完整一天请填次日 00:00:00。与 startAt 成对提供，实际读取截至当前时刻，最多 366 天。"
+      },
+      "relativePeriod": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "用户说今天、昨天、本周、上周、本月、上月时，直接传 Today、Yesterday、ThisWeek、LastWeek、ThisMonth、LastMonth，不按客户端时区推算日期。服务端按店铺时区解析，周一为每周首日，今天从当地午夜开始；使用此参数时省略 startAt/endAt。",
+        "enum": [
+          "Today",
+          "Yesterday",
+          "ThisWeek",
+          "LastWeek",
+          "ThisMonth",
+          "LastMonth",
+          null
+        ]
+      },
+      "page": {
+        "type": "integer",
+        "desc": "页码，默认 1"
+      },
+      "size": {
+        "type": "integer",
+        "desc": "每页数量，默认 15"
+      }
+    }
+  },
+  "search_products_by_name": {
+    "description": "按商品名称模糊搜索商品，支持按上架/下架状态筛选。返回商品ID、名称、价格等基本信息，结果按名称分组。支持指定店铺过滤，通常作为 update_products_by_name 等工具的前置查询。",
+    "required": [
+      "productName"
+    ],
+    "params": {
+      "merchantIds": {
+        "type": "array",
+        "desc": "店铺 ID，可调用 query_merchants 获取",
+        "items_type": "string"
+      },
+      "productName": {
+        "type": "string",
+        "desc": "商品名称（支持模糊匹配）"
+      },
+      "status": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "商品状态筛选（可选）：Selling（上架中）、Off（已下架）",
+        "enum": [
+          "Off",
+          "Selling",
+          "Unknown",
+          null
+        ]
+      }
+    }
+  },
+  "update_products_by_ids": {
+    "description": "根据商品ID列表批量修改商品属性。支持修改库存状态、上下架状态、价格和名称。需要提供商品ID列表和至少一个要修改的属性。",
+    "required": [
+      "productIds"
+    ],
+    "params": {
+      "merchantIds": {
+        "type": "array",
+        "desc": "店铺 ID，先调用 query_merchants 获取",
+        "items_type": "string"
+      },
+      "productIds": {
+        "type": "array",
+        "desc": "要修改的商品 ID 列表",
+        "items_type": "string"
+      },
+      "stockStatus": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "目标库存状态：in_stock（有库存）或 out_of_stock（售罄）",
+        "enum": [
+          "InStock",
+          "OutOfStock",
+          "Unknown",
+          null
+        ]
+      },
+      "status": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "desc": "目标状态：Selling（上架）或 Off（下架）",
+        "enum": [
+          "Off",
+          "Selling",
+          "Unknown",
+          null
+        ]
+      },
+      "price": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "desc": "目标价格"
+      },
+      "nameLocalization": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "desc": "更改商品名称的多语言；英文语言代码支持 en-US 或 en_US，若提供英文名则不能为空白，例如 { \"zh-CN\": \"新商品名\", \"en-US\": \"New Product Name\" }"
+      }
+    }
+  }
+}

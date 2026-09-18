@@ -1,0 +1,146 @@
+# =====================================================================
+# 能力目录：POS 员工考勤（POS(proton) MCP）
+# =====================================================================
+# 被测系统：AI POS Mobile — 员工考勤查询
+# 真实 MCP：https://pos-test-mcp.proton-system.com/mcp
+# 公司：cayson自动化公司(12599656434959365)；店铺：自动化店铺7(12600071176193029)
+#
+# 数据事实（探针 2026-09-10/11）：
+#   - 员工列表字段：id/pin/staffCode/firstName/lastName/isOwner/isActive/isNeedCheckIn/
+#     attendanceStatus/languagePreference/phone/email/merchantId/merchantName/createAt/updateAt
+#   - attendanceStatus 枚举：NotCheckIn / OnDuty / StartRest / EndRest / OffDuty
+#   - 考勤记录字段：checkIn/checkOut/duration/workTotalTime/breakTotalTime/overWorkTotalTime/
+#     staffCode/firstName/lastName/merchantStaffId/description
+#   - 分页结构：{list, totalElements, totalPages, isLast}
+#
+# 【关键约束/易错点（2026-09-11 接口升级后）】
+#   - query_staff_attendances: 参数名 merchantId（单数字符串，必填）
+#   - 时间参数成对必填: startAt+endAt（店铺本地时间，不含时区偏移，endAt 不含该时刻）或 relativePeriod
+#   - query_merchant_staffs: 仍是 merchantIds（数组）
+#   - 时间按店铺实际时区解析（America/Los_Angeles），返回 timeZoneId
+#   - size 范围 1~100；page 越界不报错返回空
+#   - 越权店铺返回 code=40100 (EasyPos API Unauthorized)
+#   - 无时薪/工资/班次/排班/权限字段（能力缺口）
+# =====================================================================
+
+系统: "POS员工考勤"
+描述: "AI POS Mobile 的考勤查询能力：查员工列表与实时状态、查考勤记录（只读）"
+版本: "1.0"
+
+能力分组:
+  # ---------------------------------------------------------------
+  # 1. 员工列表与实时状态
+  # ---------------------------------------------------------------
+  - 分组: "员工列表与实时状态"
+    说明: "query_merchant_staffs：员工信息 + 实时考勤状态"
+    能力列表:
+      - 能力: "查询店铺员工列表"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantIds]
+        工具: query_merchant_staffs
+        口语问法:
+          - "店里有哪些员工"
+          - "看看员工名单"
+        成功标准:
+          - 模式: 语义
+            期望: "返回员工列表，含 id/firstName/lastName/isOwner/attendanceStatus 等字段"
+        负向场景:
+          - 输入: "查询非授权店铺的员工"
+            工具参数:
+              merchantIds: ["99999999999999999"]
+            成功标准:
+              - 模式: 拒绝
+      - 能力: "查询员工实时考勤状态"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantIds]
+        工具: query_merchant_staffs
+        口语问法:
+          - "现在谁在上班"
+          - "员工都打卡了吗"
+        成功标准:
+          - 模式: 语义
+            期望: "返回各员工 attendanceStatus（NotCheckIn/OnDuty/StartRest/EndRest/OffDuty）"
+
+  # ---------------------------------------------------------------
+  # 2. 考勤记录查询
+  # ---------------------------------------------------------------
+  - 分组: "考勤记录查询"
+    说明: "query_staff_attendances：分页查考勤记录"
+    能力列表:
+      - 能力: "查询员工考勤记录"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantIds, merchantStaffIds, startTime, endTime, page, size]
+        工具: query_staff_attendances
+        口语问法:
+          - "查一下考勤记录"
+          - "Boss 上个月的考勤"
+        成功标准:
+          - 模式: 语义
+            期望: "返回考勤记录，含 checkIn/checkOut/duration/workTotalTime/breakTotalTime/overWorkTotalTime"
+        负向场景:
+          - 输入: "查询非授权店铺的考勤"
+            工具参数:
+              merchantIds: ["99999999999999999"]
+            成功标准:
+              - 模式: 拒绝
+      - 能力: "按员工查考勤"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantIds, merchantStaffIds]
+        工具: query_staff_attendances
+        口语问法:
+          - "Boss 的打卡记录"
+        成功标准:
+          - 模式: 语义
+            期望: "仅返回指定员工的考勤记录（merchantStaffIds 为数组）"
+
+  # ---------------------------------------------------------------
+  # 3. 基础目录
+  # ---------------------------------------------------------------
+  - 分组: "基础目录"
+    说明: "公司与店铺目录（前置步骤）"
+    能力列表:
+      - 能力: "查询公司列表"
+        操作类型: "查询"
+        layer: "L1"
+        参数: []
+        工具: query_companies
+        成功标准:
+          - 模式: 语义
+            期望: "返回授权公司列表"
+      - 能力: "查询店铺列表"
+        操作类型: "查询"
+        layer: "L1"
+        参数: []
+        工具: query_merchants
+        成功标准:
+          - 模式: 语义
+            期望: "返回店铺列表，至少含 自动化店铺7"
+
+  # ---------------------------------------------------------------
+  # 4. 工具元数据
+  # ---------------------------------------------------------------
+  - 分组: "工具元数据"
+    说明: "MCP 协议层工具发现"
+    能力列表:
+      - 能力: "列出可用工具"
+        操作类型: "查询"
+        layer: "L1"
+        参数: []
+        工具: "*"
+        类型: "meta"
+        成功标准:
+          - 模式: 语义
+            期望: "返回全部工具，至少含 query_merchant_staffs / query_staff_attendances"
+      - 能力: "工具描述"
+        操作类型: "查询"
+        layer: "L1"
+        参数: []
+        工具: "*"
+        类型: "meta"
+        成功标准:
+          - 模式: 语义
+            期望: "工具描述可读，能说明考勤/员工用途"

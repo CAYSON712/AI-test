@@ -1,0 +1,622 @@
+系统: POS 数据报表
+需求类型: C
+被测系统: POS(proton) MCP — https://pos-test-mcp.proton-system.com/mcp
+CompanyId: '12599656434959365'  # cayson自动化公司
+merchantId: '12600071176193029' # 自动化店铺7 (Auto test store7, 洛杉矶时区)
+分层说明:
+  L1: 黄金集(60%)：端到端集成 — 从自然语言到多工具串联、多轮下钻、跨报表核对
+  L2: 场景演化(30%)：跨月对比、异常中断恢复、跨工具口径一致性、多轮上下文
+  L3: 生产回放(10%)：需生产日志，暂未接入
+数据口径:
+  时区: '店铺为洛杉矶时区，夏令时 PDT=UTC-7'
+  归属日: '报表 date 按门店本地自然日切分'
+  分段: '服务端按来源分多段(segments)，SEGMENTS_MUST_NOT_BE_SUMMED'
+  C类断言: '端到端链路完整性 + 多工具结果一致性 + 口径勾稽'
+真值快照(2026-09-09 实测):
+  9/9: orderCount=13 totalSales=868.26 netSales=954.84 preTaxRevenue=878.92 actualRevenue=2384.11
+       dueAmount=2613.40 unpaidAmount=106.32 refundAmount=-32.00 tips=44.91 disc=-135.82 sur=158.48
+       guests=16 cancelled=3 线上=110.77 现金=394.10 信用卡=1783.94 会员余额=138.76
+  9/8: 明细 21 笔, 堂食 599.98, 礼品卡支付 58.19
+  折扣下钻: 单品-53.82 + 券-18.27 + 充值-47.73 + 其他-16.00 = -135.82
+  加收下钻: 单品 35.00 + 其他 123.48 = 158.48
+用例数: 31
+用例列表:
+# =====================================================================
+# 一、L1 端到端集成链路
+# =====================================================================
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 9月9号折扣为什么这么多？帮我看看明细
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-10'
+    output: '链路: query_datax_total_reports(取 totalDiscountAmount=-135.82) → 拉订单明细 → query_order_details_by_ids 下钻折扣四分类，四项之和应等于总折扣'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - -135.82
+      - 单品折扣
+      - 优惠券
+  verify: null
+  标签: [端到端, 下钻, 折扣]
+  用例ID: C-L1-001
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 9月9号的加收都是哪来的
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 总报表取 totalSurchargeAmount=158.48 → 商品明细下钻 itemChargeAmount(35.00)+chargeAmount(123.48)，两项之和应等于总加收'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - '158.48'
+      - 加收
+  verify: null
+  标签: [端到端, 下钻, 加收]
+  用例ID: C-L1-002
+- 维度: 端到端链路
+  能力: 查询订单商品明细
+  层: L1
+  输入: 9月9号那笔 143.19 的单买了什么
+  期望:
+    intent: 查询订单销售明细
+    params:
+      merchantId: '12600071176193029'
+      orderId: '13555140533800965'
+    output: '链路: 订单明细定位该单 → query_order_details_by_ids 取商品明细(含品名/数量/单价/折扣)'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 商品
+      - 143.19
+  verify: null
+  标签: [端到端, 商品明细]
+  用例ID: C-L1-003
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 9月9号订单数和小费能对上吗
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 总报表 orderCount=15/totalTipsAmount=44.91 → 订单明细逐笔核对(剔除取消)，两者口径需一致'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - '15'
+      - '44.91'
+  verify: null
+  标签: [端到端, 口径核对, 小费]
+  用例ID: C-L1-004
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 帮我核对 9月9号三个报表的数据一致吗
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 总报表 + 订单明细 + 菜单商品分类三表交叉核对，主要口径(orderCount/totalSales/线上金额)应可互相印证'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 一致
+      - 核对
+  verify: null
+  标签: [端到端, 三表勾稽]
+  用例ID: C-L1-005
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 9月9号线上订单金额和实际网络单对得上吗
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 总报表 totalOnlineOrderAmount=110.77 → 订单明细按 Yesmeal/Deliverect 汇总应同为 110.77'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - '110.77'
+  verify: null
+  标签: [端到端, 渠道核对]
+  用例ID: C-L1-006
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 9月9号支付方式合计等于实收吗
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: totalByPaymentTypeAmount 应等于 actualRevenue；验证 dueAmount-unpaidAmount==actualRevenue'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 合计
+      - 实收
+  verify: null
+  标签: [端到端, 勾稽]
+  用例ID: C-L1-007
+- 维度: 端到端链路
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入: 这个月卖最好的菜详细情况
+  期望:
+    intent: 查询菜单商品分类报表
+    params:
+      merchantId: '12600071176193029'
+      type: Product
+      sortField: Quantity
+      sortDirection: Descending
+      limit: 1
+    output: '链路: 列表按销量降序取 Top1(Curry Fish Fillet) → 再用 refId 查该商品详情'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - Curry Fish Fillet
+  verify: null
+  标签: [端到端, 排行下钻]
+  用例ID: C-L1-008
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 9月9号取消的订单明细和汇总一致吗
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 总报表 cancelledOrders=3/cancelledOrderAmount=195.40 → 明细按 orderStatus=Cancelled 筛选，笔数与金额应一致'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - '3'
+      - '195'
+  verify: null
+  标签: [端到端, 取消核对]
+  用例ID: C-L1-009
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 对比自动化店铺7 和 Test Store 的销售额
+  期望:
+    intent: 查询店铺经营汇总
+    params: {}
+    output: '链路: 先 query_companies/query_merchants 取店铺列表 → 分别对两店调 query_datax_total_reports → 对比'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 对比
+  verify: null
+  标签: [端到端, 多店]
+  用例ID: C-L1-010
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 我想同时看 9月9号的销售额、支付分布和销量 Top5
+  期望:
+    intent: 多报表查询
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 依次调用 3 个报表工具(经营汇总/支付分布取汇总、销量 Top5 取商品报表)，汇总成一份回答'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 销售额
+      - 支付
+      - 销量
+  verify: null
+  标签: [端到端, 多报表]
+  用例ID: C-L1-011
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 查一下 9月9号销售额，用公司 9088125566714885 的权限
+  期望:
+    intent: 越权查询
+    params: {}
+    output: 应使用当前授权 CompanyId(cayson)，不得越权用其他公司；越权应被拒绝
+    block: true
+  verify: null
+  标签: [端到端, 越权]
+  用例ID: C-L1-012
+- 维度: 端到端链路
+  能力: 查询店铺经营汇总
+  层: L1
+  输入: 给我 9月9号的完整经营日报
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 汇总核心指标(订单数/客流/销售额/实收/退款/小费/折扣/加收/取消)+支付分布+类型分布，输出结构化日报'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 订单数
+      - 销售额
+      - 小费
+  verify: null
+  标签: [端到端, 日报]
+  用例ID: C-L1-013
+
+# =====================================================================
+# 二、L2 场景演化 — 跨期对比 / 断链恢复 / 上下文 / 一致性
+# =====================================================================
+- 维度: 跨期对比
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 9月8号和9月9号销售额环比一下
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+    output: '链路: 分别查 9/8、9/9 两天汇总 → 计算环比；提示两段不得直接相加'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 环比
+      - 增长
+  verify: null
+  标签: [跨期对比]
+  用例ID: C-L2-001
+- 维度: 跨期对比
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入: Curry Fish Fillet 9月8号到9号销量变化
+  期望:
+    intent: 查询菜单商品分类报表
+    params:
+      merchantId: '12600071176193029'
+      type: Product
+      name: Curry Fish Fillet
+    output: '链路: 两次查询分别取 9/8、9/9 销量 → 对比；同商品跨期趋势'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 销量
+      - 变化
+  verify: null
+  标签: [跨期对比, 商品]
+  用例ID: C-L2-002
+- 维度: 异常恢复
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 先查 9月9号销售额，再查不存在店铺 999 的数据，然后回来继续看订单数
+  期望:
+    intent: 多步查询
+    params:
+      merchantId: '12600071176193029'
+    output: '链路: 第1步成功 → 第2步越权失败应被拒绝 → 第3步应能继续正常查询，不因中途失败中断'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 销售额
+      - 订单数
+  verify: null
+  标签: [异常恢复, 多步]
+  用例ID: C-L2-003
+- 维度: 上下文
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 查一下9月9号的销售额（然后）那折扣呢
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 第2轮"折扣呢"应继承上一轮的时间窗(9/9)与店铺，不得丢失上下文'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 折扣
+  verify: null
+  标签: [上下文, 多轮]
+  用例ID: C-L2-004
+- 维度: 上下文
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入: 刚才那个菜这周卖了多少
+  期望:
+    intent: 查询菜单商品分类报表
+    params:
+      merchantId: '12600071176193029'
+    output: '链路: 指代"刚才那个菜"应能关联到上一轮提到的商品；若无法确定应询问'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 销量
+  verify: null
+  标签: [上下文, 指代]
+  用例ID: C-L2-005
+- 维度: 一致性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 9月9号线上金额，用汇总和明细各查一次，对得上吗
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 汇总 totalOnlineOrderAmount(110.77) 与明细按来源汇总(Yesmeal+Deliverect) 应一致；不一致需说明口径差异'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - '110.77'
+      - 一致
+  verify: null
+  标签: [一致性, 跨工具]
+  用例ID: C-L2-006
+- 维度: 一致性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 把 9月9号折扣按类型拆开，看加起来等于总额吗
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: itemDiscountAmount(-53.82)+couponDiscountAmount(-18.27)+rechargeDiscountAmount(-47.73)+discountAmount(-16.00) = totalDiscountAmount(-135.82)'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - -135.82
+  verify: null
+  标签: [一致性, 折扣]
+  用例ID: C-L2-007
+- 维度: 一致性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 9月9号加收按类型拆开核对
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: itemChargeAmount(35.00)+chargeAmount(123.48) = totalSurchargeAmount(158.48)'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - '158.48'
+  verify: null
+  标签: [一致性, 加收]
+  用例ID: C-L2-008
+- 维度: 边界
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 9月1号到9月9号总共销售额，直接加起来给我
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-09'
+    output: '链路: 长窗口会分为多段(segments)，应提示 SEGMENTS_MUST_NOT_BE_SUMMED，不得简单相加冒充精确月总额'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 段
+      - 不能
+  verify: null
+  标签: [边界, 分段]
+  用例ID: C-L2-009
+- 维度: 边界
+  能力: 查询订单销售明细
+  层: L2
+  输入: 把 9月9号所有订单明细都列出来
+  期望:
+    intent: 查询订单销售明细
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+      limit: 1000
+    output: '链路: 请求全量明细应使用合法 limit(<=1000)；超限应提示而非报错崩溃'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 订单
+  verify: null
+  标签: [边界, limit]
+  用例ID: C-L2-010
+- 维度: 异常恢复
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 查 9月9号（先给错格式日期）2026/09/09 的销售
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+    output: '链路: 首轮格式错误应被识别并纠正/追问 → 纠正为 ISO8601 后正常返回'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 销售额
+  verify: null
+  标签: [异常恢复, 格式]
+  用例ID: C-L2-011
+- 维度: 权限链路
+  能力: 查询公司列表
+  层: L2
+  输入: 先列出我能访问哪些公司，再查自动化店铺7 的销售额
+  期望:
+    intent: 多步查询
+    params:
+      merchantId: '12600071176193029'
+    output: '链路: query_companies 列授权公司 → 校验店铺在授权范围内 → 再查汇总；全程 RBAC 一致'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 公司
+      - 销售额
+  verify: null
+  标签: [权限链路, RBAC]
+  用例ID: C-L2-012
+- 维度: 一致性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 9月9号税后营业额 954.84，为什么比商品销售总额还高？
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 应解释 netSales(税后营业额)=preTaxRevenue(878.92)+totalTaxAmount(75.92)=954.84，说明其口径为"税前营业额+税"，而非"销售额减折扣"'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 1068.49
+      - 税
+  verify: null
+  标签: [一致性, 口径解释]
+  用例ID: C-L2-013
+- 维度: 一致性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 9月9号实收怎么这么多，销售额没这么高啊
+  期望:
+    intent: 查询店铺经营汇总
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-09'
+      endAt: '2026-09-09'
+    output: '链路: 应指出实收(actualRevenue)含充值(礼品卡/会员充值)，与纯商品销售额(totalSales)口径不同，并说明差额来源'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 充值
+      - 口径
+  verify: null
+  标签: [一致性, 口径解释]
+  用例ID: C-L2-014
+- 维度: 端到端链路
+  能力: 查询订单销售明细
+  层: L2
+  输入: 这个月礼品卡充值了多少，有消费吗
+  期望:
+    intent: 多步查询
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-30'
+    output: '链路: 订单明细按 orderType=GiftCard 取充值(9月 2 笔: 6.00+1500.00) → 再按 paymentType=Gift Card 取消费(9/8 58.19)'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 充值
+      - 消费
+  verify: null
+  标签: [端到端, 礼品卡]
+  用例ID: C-L2-015
+- 维度: 端到端链路
+  能力: 查询订单销售明细
+  层: L2
+  输入: 这个月网络订单都有哪些，各平台多少钱
+  期望:
+    intent: 多步查询
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-30'
+    output: '链路: 明细按来源分别取 Yesmeal(2笔:20.90+31.35) 与 Deliverect(2笔:29.59+60.28) → 汇总线上=142.12'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - Yesmeal
+      - Deliverect
+  verify: null
+  标签: [端到端, 网络单]
+  用例ID: C-L2-016
+- 维度: 多轮
+  能力: 查询店铺经营汇总
+  层: L2
+  输入: 看下9月销售额 → 那支付方式呢 → 现金那部分明细呢
+  期望:
+    intent: 多步查询
+    params:
+      merchantId: '12600071176193029'
+      startAt: '2026-09-01'
+      endAt: '2026-09-30'
+    output: '链路: 3 轮逐步下钻，时间窗与店铺继承，最终给出现金支付明细'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 现金
+      - 明细
+  verify: null
+  标签: [多轮, 下钻]
+  用例ID: C-L2-017
+- 维度: 异常恢复
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入: 查 9月9号不存在的商品 XYZ 销量，再查当天销售额
+  期望:
+    intent: 多步查询
+    params:
+      merchantId: '12600071176193029'
+    output: '链路: 第1步空结果应如实告知 → 第2步应正常返回销售额，链路不中断'
+    block: false
+    semantic:
+      any_of: true
+      contains:
+      - 销售额
+  verify: null
+  标签: [异常恢复, 空结果]
+  用例ID: C-L2-018

@@ -272,7 +272,9 @@ def main():
     parser.add_argument("--result", required=True, help="评分结果 YAML")
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
-    out = args.out or os.path.join(_ROOT, "report", "评估报告.md")
+    import time
+    out = args.out or os.path.join(_ROOT, "report",
+                                   f"评估报告_{time.strftime('%Y%m%d_%H%M%S')}.md")
     generate_report(args.result, out)
 
 

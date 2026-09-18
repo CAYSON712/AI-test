@@ -1,0 +1,47 @@
+# =====================================================================
+# 系统配置：POS 员工考勤（POS(proton) 考勤 MCP）
+# =====================================================================
+# 真实 MCP：https://pos-test-mcp.proton-system.com/mcp
+# 公司：cayson自动化公司(12599656434959365)；店铺：自动化店铺7(12600071176193029)
+# 时区：洛杉矶（PDT=UTC-7）
+# 工具：query_merchant_staffs（员工列表）、query_staff_attendances（考勤记录）
+# =====================================================================
+
+连接:
+  需求类型: "A"
+  base_url_env: "POS_MCP_URL"
+  token_env: "POS_MCP_TOKEN"
+  company_id_env: "POS_MCP_COMPANY_ID"
+  merchant_id_env: "POS_MERCHANT_ID"
+  llm_base_url_env: "LLM_API_BASE"
+  llm_api_key_env: "LLM_API_KEY"
+  llm_model_env: "LLM_MODEL"
+  system_prompt_env: "POS_SYSTEM_PROMPT"
+  请求头: {Authorization: "Bearer {{token}}", CompanyId: "{{company_id}}"}
+  参数包装: "toolParams"
+
+公司ID请求头: "CompanyId"
+默认上下文参数名: "merchantIds"
+实体ID参数名: "merchantStaffIds"
+实体名参数名: "name"
+连接演示工具: "query_merchants"
+
+mcp_tools:
+  - name: query_merchant_staffs
+    description: 查询店铺的员工列表（含实时考勤状态 attendanceStatus）。必填 merchantIds（数组）。返回 id/pin/staffCode/isOwner/isActive/isNeedCheckIn/attendanceStatus/languagePreference 等。
+    params: [merchantIds]
+    required: [merchantIds]
+  - name: query_staff_attendances
+    description: 分页查询单店员工考勤。必填 merchantId（单数字符串）；时间用 relativePeriod(Today/Yesterday/ThisWeek/LastWeek/ThisMonth/LastMonth) 或成对 startAt+endAt（店铺本地时间，不含时区偏移，endAt 不含该时刻，查整天填次日00:00）。merchantStaffIds 数组可选。返回 checkIn/checkOut/duration/workTotalTime/breakTotalTime/overWorkTotalTime 及 timeZoneId。
+    params: [merchantId, merchantStaffIds, startAt, endAt, relativePeriod, page, size]
+    required: [merchantId]
+  - name: query_merchants
+    description: 获取当前账号授权范围内的店铺列表（前置步骤）。
+    params: [merchantName]
+    required: []
+  - name: query_companies
+    description: 查询当前账号授权范围内的公司列表。
+    params: [companyName, companyIds]
+    required: []
+
+需要默认上下文参数的工具: []

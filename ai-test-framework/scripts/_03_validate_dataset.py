@@ -200,7 +200,10 @@ class Checker:
                         self.warn(f"{uid}: E 类 semantic 建议含 contains（答案关键词）")
                 else:
                     block = expect.get("block")
-                    if "fields" not in sem and block is not True:
+                    # 容错/宽容语义用 contains 关键词（any_of）校验即可；
+                    # fields 结构校验仅对「能预知响应结构」的用例有意义。
+                    if ("fields" not in sem and block is not True
+                            and not sem.get("contains")):
                         self.warn(f"{uid}: A/D 类 semantic 建议含 fields 结构校验")
             tags = c.get("标签") or []
             if not tags:
@@ -255,7 +258,7 @@ class Checker:
                                                    "组合", "覆盖", "状态跟踪", "多步", "实体替换",
                                                    "数值变异", "表达改写", "时效", "忠实",
                                                    "检索", "竞态", "工具选择", "顺序",
-                                                   "回退", "参数错误")):
+                                                   "回退", "参数错误", "畸形")):
                     self.warn(f"{uid}: block=false 且标签既非正常也非典型正向量，请确认")
 
     def check_sample_extra(self):

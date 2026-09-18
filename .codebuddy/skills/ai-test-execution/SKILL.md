@@ -12,7 +12,7 @@ description: AI 测试「测试执行」专用入口。当用户需要对已生�
 - **框架**：`ai-test-framework/`
 - **执行器**：`ai-test-framework/executors/`（Mock / 配置驱动的通用真实执行器）
 - **评分**：`ai-test-framework/rubric/`（Rubric 5 分制 + LLM-as-Judge）
-- **执行入口**：`ai-test-framework/scripts/run_test.py`
+- **执行入口**：`ai-test-framework/scripts/_06_run_test.py`
 
 ## 前置条件（执行前必读）
 
@@ -66,38 +66,39 @@ ai-test-framework/
 
 系统名匹配已做容错（能力目录文件名与系统名之间，下划线/空格等分隔符差异不影响匹配）。
 
-## 执行流程
+## 执行流程（默认必带 --trace）
+
+> ⚠️ **`--trace` 为默认标配，不要省略**：所有执行命令都加 `--trace`，把多层链路上报 trace_platform（trace_platform 离线时自动跳过并提醒，不影响执行，所以无脑加即可）。漏跑会**无法事后补报**（结果 YAML 只存 trace_id、不存完整链路），只能重跑。
 
 ```powershell
 cd ai-test-framework/scripts
 
 # Mock 执行器（测 B/D：Agent/Skill 决策层，不连真实系统，零配置）
-python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor mock
+python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor mock --trace
 
 # 真实 MCP 执行器（测 C：E2E 层，需系统配置 + .env token）
-python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real
+python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --trace
 
 # 统计判定（每条跑 5 次，计算通过率 + 置信区间）
-python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --runs 5
+python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --runs 5 --trace
 
 # 显式指定系统（通常自动从数据集识别，也可手动指定）
-python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --system <系统名>
+python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --system <系统名> --trace
 ```
 
 系统名会自动从数据集「系统」字段读取，无需手动传（避免中文路径乱码）。
 
 ## Trace 上报（可视化链路）
 
-加 `--trace` 参数，执行器产出的多层链路（LLM意图→参数→MCP→校验→回答）会自动上报到 trace_platform：
-
-```powershell
-python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --trace
-```
+执行命令带 `--trace` 时，执行器产出的多层链路（LLM意图→参数→MCP→校验→回答）会自动上报到 trace_platform：
 
 - 上报到 `trace_platform`（默认 `http://127.0.0.1:8000`，可用环境变量 `TRACE_PLATFORM_URL` 覆盖）
 - 需先启动 trace_platform：`python -m uvicorn app:app --port 8000`（在 trace_platform/ 目录）
 - 服务离线时**跳过上报但提醒**，不影响主流程
-- 上报后 trace_id 记录进结果 YAML，报告会生成「Trace 链路」表带查看链接
+- 上报后 trace_id 记录进结果 YAML 的 `case_traces`，报告会生成「Trace 链路」表带查看链接
+
+> ✅ **收尾检查（每次跑完必做）**：核对结果 YAML 的 `case_traces` 数量 == 用例数；
+> 若为 0 → 说明漏了 `--trace` 或 trace_platform 未启动，需带 `--trace` 重跑（无法离线补报）。
 
 ## 执行器说明
 
@@ -113,6 +114,24 @@ python run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --
 - `--executor mock/real/auto` 切换执行器模式
 - `auto`：有 token 或 RAG 系统则真实优先，否则纯 Mock（新系统自动降级）
 - 按需求类型自动路由：A/D → direct MCP，B → chat，C → MCP+Agent，E → RAG
+
+### 高危写入类用例（维度「写入安全边界」）
+
+破坏性/写入类工具（delete / update / batch_insert）会产生**真实副作用**，因此：
+
+- **默认跳过**：用例带 `高危: true` 时执行器直接跳过，除非显式开启 `ALLOW_DESTRUCTIVE=1`
+  （PowerShell：`$env:ALLOW_DESTRUCTIVE="1"`）。**只在隔离测试环境开启。**
+- **两级影响范围对账**（执行器自动完成，结果写入 `output.impact`）：
+
+| 字段 | 含义 |
+|---|---|
+| `快照工具` / `before` / `after` / `delta` | 同域只读快照总数对账（辅判据）|
+| `存在性目标ID` / `exists_before` / `exists_after` | 真实目标实体存在性对账（**主判据**，执行前后各探一次）|
+
+- **判定顺序**：真实实体消失 → **1 分**；基线 > 0 → 按 `|Δ| ≤ 最大影响条数` 判 5 / 1 分；
+  基线不可用但真实实体仍在 → 5 分；两类证据都没有 → **不判分**（避免假高分）。
+- 探针或快照工具自身报业务错误码时记为「无证据」（`None`），**不会**误判成「数据被删」。
+- 测写入类工具的正确姿势：**自己建 → 操作 → 删自己建的**，全链路隔离。
 
 ## 评分说明
 
