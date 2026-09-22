@@ -327,8 +327,17 @@ def _pick_cap(abilities, op=None, not_op=None, name_kw=None, exclude=()):
 # 不绑定任何业务字段名（id/price/status 等仅是语义兜底别名）。
 # =====================================================================
 def _as_param_value(v, pl):
-    """复数参数名（ids/names/prices...）→ 列表；单数 → 标量。"""
-    if pl.endswith(("ids", "names", "prices", "values", "products", "orders")):
+    """复数参数名（ids/names/prices...）→ 列表；单数 → 标量。
+
+    注意：判定列表名大小写不敏感（内部统一 lower），
+    这样无论调用方传 "productIds"（驼峰）还是 "productids"（已归一化）都正确。
+    历史坑（2026-09-21 自测发现）：本函数原先直接用 endswith 判定，
+    依赖调用方「必须先 .lower()」这一隐含契约——而契约本身无文档、无防御，
+    任何直接调用（如新增的自测/新生成器）传驼峰会静默退化成标量，
+    导致服务端收到 "1" 而非 ["1"] 报 schema 错。
+    """
+    if str(pl).lower().endswith(("ids", "names", "prices", "values",
+                                 "products", "orders")):
         return v if isinstance(v, list) else [v]
     return v
 
@@ -374,56 +383,91 @@ def _param_value(param, e):
     return _as_param_value(e.get(param, e.get(pl, "")), pl)
 
 
-# 参数级枚举白名单：参数名 → 合法枚举集合。
+# 参数级枚举白名单：已于 2026-09-22 迁移到 configs/<系统>.yaml 的 param_enums。
+# 迁移原因：原先硬编码在此，导致「每接一个新 MCP 都要改本文件」，违背通用化目标。
+# 现由 load_param_schema() 读取；下方注释保留历史事故背景，供排查参考。
+#
 # 背景事故（2026-09-17）：实体清单为「任意实体回退都能填出合法参数」把报表字段
 #   冗余挂到所有实体上，导致 _param_value 按参数名跨域取错值——如商品工具的
 #   type 取到分类实体上的 paymentType "CreditCard"，服务端抛
 #   "An error occurred invoking 'query_products_by_filter'."，
-#   438 条本应正常的用例被拒。此处按参数名做枚举收敛，非法值回退到首个合法枚举。
-_PARAM_ENUMS = {
-    "type": {
-        "product": ["Normal", "Preference", "RechargeBenefit",
-                    "PointExchange", "MemberBenefit"],
-        "default": ["Normal"],
-    },
-    "status": {"default": ["Selling", "Off", "Active", "InActive"]},
-    "orderstatus": {"default": [
-        "Progressing", "Completed", "Cancelled", "BeMerged", "Returned",
-        "Pending", "Preparing", "Ready", "AwaitingCancel", "AwaitingRefund"]},
-    "ordertype": {"default": ["DineIn", "Pickup", "ToGo", "Delivery",
-                              "OnlineDineIn", "OnlinePickup"]},
-    "ordersourcetype": {"default": ["AutoMart", "PocketStore", "Deliverect",
-                                    "AiPhoneOrder", "ScanCodeToOrder",
-                                    "MarketOnlineOrder", "Kiosk"]},
-    "paymenttype": {"default": ["Cash", "CreditCard", "DebitCard", "Other"]},
-    "paymentstatus": {"default": ["Unpaid", "PartiallyPaid", "FullyPaid",
-                                  "Captured"]},
-    "paymentterminaltype": {"default": ["Physical", "Virtual", "None"]},
-    "sortfield": {"default": ["Date", "Amount", "Quantity"]},
-    "sortdirection": {"default": ["Ascending", "Descending"]},
-    # resultMode 仅接受 Count；缺省=Detail（服务端没有字面 "Detail" 值，
-    # 传 'Detail' 报 invoking error）。生成时对非 Count 一律置空不传。
-    "resultmode": {"default": ["Count"]},
-    "relativeperiod": {"default": ["Today", "Yesterday", "ThisWeek",
-                                   "LastWeek", "ThisMonth", "LastMonth"]},
-    "statuses": {"default": ["Active", "UnActive"]},
-    "operationsources": {"default": ["UnattendedModeEnabled",
-                                     "UnattendedModeDisabled", "SystemAccount",
-                                     "Member", "SystemAutoClose",
-                                     "CompanyAccount"]},
-    "salechennel": {"default": ["Pos", "Delivery", "Pickup", "ToGo"]},
-    "salechannel": {"default": ["Pos", "Delivery", "Pickup", "ToGo"]},
-}
+#   438 条本应正常的用例被拒。故需按参数名做枚举收敛，非法值回退首个合法值。
 
-# 布尔型参数：这些参数名必须传 true/false，传 '1'/'' 会触发服务端 invoking error。
-_PARAM_BOOL = {"includecategory", "includespecificationgroup", "includemenu",
-               "hasmember", "isenabled"}
+# =====================================================================
+# 参数取值域：从 configs/<系统>.yaml 读取（2026-09-22 通用化）
+# ---------------------------------------------------------------------
+# 历史：此处原为硬编码的 _PARAM_ENUMS / _PARAM_BOOL 两张表，
+#   导致「每接一个新 MCP 都要改本文件」。现已外置到系统配置：
+#     configs/<系统>.yaml:
+#       param_enums: {参数名: [合法值...] | [{tools:[...], values:[...]}]}
+#       param_bools: [参数名...]
+#   _02 只负责读取与生效，不再承载任何业务知识。
+# 兜底：未提供配置（或旧数据集无 config）时用最小安全默认，保证不崩。
+# =====================================================================
+_PARAM_ENUMS = {}      # 由 load_param_schema() 填充：{param_lower: spec}
+_PARAM_BOOL = set()    # 由 load_param_schema() 填充
+
+
+def load_param_schema(config_path):
+    """从系统配置加载参数取值域。返回 (enums, bools)。
+
+    enums: {param_lower: [{"tools": set|None, "values": [...]}, ...]}
+      同名参数可有多条规则，按 tools 限定生效工具（不限定则全局）。
+    bools: {param_lower, ...}
+    配置缺失/格式异常时返回安全默认（空表 = 不做收敛），不抛异常。
+    """
+    enums, bools = {}, set()
+    if not config_path or not os.path.exists(config_path):
+        return enums, bools
+    try:
+        doc = yaml.safe_load(open(config_path, encoding="utf-8")) or {}
+    except Exception:
+        return enums, bools
+
+    for pname, spec in (doc.get("param_enums") or {}).items():
+        pl = str(pname).lower()
+        rules = []
+        if isinstance(spec, list) and spec and isinstance(spec[0], dict):
+            for item in spec:
+                vals = [str(v) for v in (item.get("values") or [])]
+                if not vals:
+                    continue
+                tset = item.get("tools")
+                rules.append({"tools": set(tset) if tset else None,
+                              "values": vals})
+        elif isinstance(spec, list):
+            vals = [str(v) for v in spec]
+            if vals:
+                rules.append({"tools": None, "values": vals})
+        if rules:
+            enums[pl] = rules
+
+    for pname in (doc.get("param_bools") or []):
+        bools.add(str(pname).lower())
+    return enums, bools
+
+
+def _allowed_for(param_lower, tool):
+    """按参数名 + 工具名解析合法枚举列表（无规则返回 None）。"""
+    rules = _PARAM_ENUMS.get(param_lower)
+    if not rules:
+        return None
+    tool = str(tool or "").lower()
+    for rule in rules:
+        tset = rule["tools"]
+        if tset is None:
+            return rule["values"]           # 全局规则
+        if any(str(t).lower() in tool for t in tset):
+            return rule["values"]           # 工具限定规则命中
+    # 有规则但工具都不匹配 → 用最后一条（配置里通常把宽泛规则放最后）
+    return rules[-1]["values"]
 
 
 def _coerce_param(param, value, cap):
-    """按参数名收敛取值域：枚举白名单 + 布尔型 + 互斥参数去重。
+    """按参数名收敛取值域：枚举白名单 + 布尔型。
 
     只修正「明显跨域/非法」的值，不改动合法的业务值。
+    取值域来自 configs（load_param_schema），本函数不含任何业务知识。
     """
     pl = str(param).lower()
 
@@ -436,27 +480,8 @@ def _coerce_param(param, value, cap):
         return bool(value)
 
     # 2) 枚举型参数：不在白名单内 → 回退到首个合法值
-    spec = _PARAM_ENUMS.get(pl)
-    if spec:
-        tool = str(cap.get("工具") or "").lower()
-        # type 是典型的多义参数名，不同工具取值域完全不同：
-        #   商品工具 → 商品类型 Normal/Preference/...
-        #   菜单商品分类报表 → 对象维度 Menu/Product/Category
-        #   （历史事故：报表工具被填入商品枚举 "Normal" → invoking error；
-        #    也可能被填入支付方式 "CreditCard"）
-        if pl == "type":
-            if "menu_product_category" in tool:
-                allowed = ["Menu", "Product", "Category"]
-            elif "product" in tool:
-                allowed = spec.get("product")
-            else:
-                allowed = spec.get("default")
-        elif "product" in tool and "product" in spec and pl != "type":
-            allowed = spec.get("product")
-        else:
-            allowed = spec.get("default")
-        if not allowed:
-            return value
+    allowed = _allowed_for(pl, cap.get("工具"))
+    if allowed:
         vals = value if isinstance(value, list) else [value]
         fixed = []
         for v in vals:
@@ -464,8 +489,7 @@ def _coerce_param(param, value, cap):
                 fixed.append(v)
             else:
                 fixed.append(allowed[0])
-        out = fixed if isinstance(value, list) else fixed[0]
-        return out
+        return fixed if isinstance(value, list) else fixed[0]
 
     return value
 
@@ -2478,6 +2502,55 @@ def _req_type_config_name(req_type):
     return ""
 
 
+def _find_config_for(system, req_type):
+    """定位某系统对应的 configs/*.yaml（用于读取 param_enums / param_bools）。
+
+    ⚠ 不能按文件名直接拼：配置文件常按「别名」命名（RetailPOS数据查询.yaml），
+      而能力目录里的系统名是「小韩面 RetailPOS 数据查询」，两者对不上。
+      定位顺序：
+        1) 配置内若有「系统」字段且匹配 system → 用它
+        2) 文件名与 system 归一化后互相包含 → 用它
+        3) 按「连接.需求类型」匹配 req_type（排除已确定不匹配的）
+        4) 都失败返回 ""（调用方走无收敛兜底）
+    """
+    cfg_dir = os.path.join(_ROOT, "configs")
+    if not os.path.isdir(cfg_dir):
+        return ""
+    files = [f for f in sorted(os.listdir(cfg_dir)) if f.endswith(".yaml")]
+    if not files:
+        return ""
+
+    def norm(s):
+        return str(s or "").replace("_", "").replace(" ", "").replace("-", "").lower()
+
+    sys_n = norm(system)
+    # 1) 配置内「系统」字段精确匹配
+    if sys_n:
+        for f in files:
+            try:
+                d = yaml.safe_load(open(os.path.join(cfg_dir, f), encoding="utf-8")) or {}
+            except Exception:
+                continue
+            if norm(d.get("系统")) == sys_n:
+                return os.path.join(cfg_dir, f)
+        # 2) 文件名与系统名互相包含（取最长公共匹配，避免短名误命中）
+        cands = []
+        for f in files:
+            fn = norm(os.path.splitext(f)[0])
+            if fn and (fn in sys_n or sys_n in fn):
+                cands.append((len(os.path.splitext(f)[0]), f))
+        if cands:
+            return os.path.join(cfg_dir, max(cands)[1])
+
+    # 3) 按需求类型兜底
+    alt = _req_type_config_name(req_type)
+    if alt:
+        p = os.path.join(cfg_dir, f"{alt}.yaml")
+        if os.path.exists(p):
+            return p
+    return ""
+
+
 # =====================================================================
 # 生成防回归自检（semantic 覆盖）
 # =====================================================================
@@ -2606,6 +2679,23 @@ def main():
     ability_system, ability_groups = load_ability(ability_path)
     abilities = flat_abilities(ability_groups)
 
+    # 参数取值域：从 configs/<系统>.yaml 读取（通用化——本文件不再硬编码业务枚举）
+    # ⚠ 定位方式：不能按文件名猜（配置文件常以系统别名命名，如
+    #   「RetailPOS数据查询.yaml」对应系统名「小韩面 RetailPOS 数据查询」，
+    #   按文件名对不上会静默取错配置）。正确做法是遍历 configs/ 按系统字段/
+    #   别名匹配；匹配不到再按需求类型兜底。
+    _cfg_path = _find_config_for(ability_system or args.system, args.req_type)
+    _enums, _bools = load_param_schema(_cfg_path)
+    global _PARAM_ENUMS, _PARAM_BOOL
+    _PARAM_ENUMS = _enums
+    _PARAM_BOOL = _bools
+    if _enums or _bools:
+        print(f"参数取值域: 枚举 {len(_enums)} 组 / 布尔 {len(_bools)} 个"
+              f"（{os.path.basename(_cfg_path)}）")
+    else:
+        print(f"⚠ 未加载到参数取值域配置（{os.path.basename(_cfg_path) or '无'}）——"
+              f"枚举参数将不做收敛，建议在 configs/ 补 param_enums")
+
     # 能力目录自检：同名能力告警（重名会导致工具路由错乱，如 A 类用例混用两个工具）
     _seen = {}
     for _a in abilities:
@@ -2719,5 +2809,201 @@ def main():
         sys.exit(1)
 
 
+# =====================================================================
+# 生成器自测（--selftest）：离线、不read/write文件、不连 MCP
+# ---------------------------------------------------------------------
+# 定位：生成器 2700+ 行、每次新增系统都要改，是整个框架最易出问题的部分。
+#   这里只覆盖「能隔离测的纯逻辑」，重点是 2026-09 真实踩过的坑：
+#     - _coerce_param  参数跨域污染（商品 type 取到支付方式 CreditCard）
+#     - _param_value   实体字段匹配取错值
+#     - _fill_params   互斥参数同传 / 空值剔除
+#     - _pick_cap      轮换机制（全局 _PICK_ROTATE，静默失效风险最高）
+#   ⚠ 不覆盖：build_a / build_l1 等巨型构建函数（依赖重、无法隔离），
+#     它们只能靠端到端跑一遍验证。
+#
+# 用法：
+#   python scripts/_02_generate_dataset.py --selftest
+#   python scripts/_10_maintain.py selftest      # 统一入口（含本文件的用例）
+# =====================================================================
+_SF_PASS = []
+_SF_FAIL = []
+
+
+def _sf_check(name, fn):
+    try:
+        fn()
+        _SF_PASS.append(name)
+        print(f"  [PASS] {name}")
+    except AssertionError as e:
+        _SF_FAIL.append((name, str(e) or "断言失败"))
+        print(f"  [FAIL] {name}\n         {e}")
+    except Exception as e:
+        _SF_FAIL.append((name, f"{type(e).__name__}: {e}"))
+        print(f"  [ERR ] {name}\n         {type(e).__name__}: {e}")
+
+
+def _sf_as_param_value():
+    """复数参数名 → 列表；单数 → 标量。
+
+    大小写不敏感（2026-09-21 本自测首次运行时发现的真实隐患：
+    原实现依赖调用方先 .lower()，直接传驼峰会静默退化成标量）。
+    """
+    # 驼峰写法必须也能正确识别为列表（回归保护）
+    assert _as_param_value("1", "productIds") == ["1"], "驼峰 productIds 未转列表"
+    assert _as_param_value("1", "merchantIds") == ["1"], "驼峰 merchantIds 未转列表"
+    assert _as_param_value("1", "orderIds") == ["1"], "驼峰 orderIds 未转列表"
+    # 已归一化的写法同样正确
+    assert _as_param_value("1", "productids") == ["1"], "小写 productids 未转列表"
+    # 已是列表则不重复包裹
+    assert _as_param_value(["1"], "productIds") == ["1"], "列表被重复包裹"
+    # 单数必须保持标量
+    assert _as_param_value("1", "productId") == "1", "单数被误转列表"
+    assert _as_param_value("1", "merchantId") == "1", "单数被误转列表"
+
+
+def _sf_param_value():
+    """从实体取值：精确匹配优先 + 语义兜底 + 复数转列表。"""
+    # 精确匹配优先：防止 "id" 抢先命中 merchantId 而取错值
+    ent = {"id": "SELF", "merchantId": "MERCH"}
+    assert _param_value("merchantId", ent) == "MERCH", "merchantId 取到了 id"
+    assert _param_value("id", ent) == "SELF", "id 取值错误"
+    # 复数参数转列表
+    assert _param_value("productIds", {"productIds": ["p1"]}) == ["p1"], "列表参数异常"
+    assert _param_value("merchantIds", {"merchantIds": "m1"}) == ["m1"], "标量未转列表"
+    # 语义兜底：实体无该字段时按别名取
+    assert _param_value("productName", {"名称": "测试实体"}) == "测试实体", "名称兜底失效"
+    assert _param_value("价格字段", {"price": 10}) == 10, "价格兜底失效"
+    # 未命中 → 空串（调用方据此判空）
+    assert _param_value("完全未知的xyz", {}) == "", "未知参数未返回空"
+
+
+def _sf_coerce_param():
+    """参数值域收敛：枚举白名单 / 布尔 / 跨工具区分（bug4 核心）。"""
+    prod = {"工具": "query_products_by_filter"}
+    # 商品工具的 type 只能取商品枚举
+    assert _coerce_param("type", "CreditCard", prod) in (
+        "Normal", "Preference", "RechargeBenefit", "PointExchange",
+        "MemberBenefit"), "商品 type 未收敛（跨域污染）"
+    assert _coerce_param("type", "Normal", prod) == "Normal", "合法值被改动"
+    # 报表工具的 type 是另一个域（Menu/Product/Category）
+    rep = {"工具": "query_datax_menu_product_category_reports"}
+    assert _coerce_param("type", "Normal", rep) in (
+        "Menu", "Product", "Category"), "报表 type 未收敛"
+    # 布尔参数
+    assert _coerce_param("includeCategory", "1", prod) is True, "布尔未转 True"
+    assert _coerce_param("includeCategory", "", prod) is None, "空布尔未转 None"
+    assert _coerce_param("includeCategory", True, prod) is True, "bool 被改动"
+    # 非白名单参数原样透传
+    assert _coerce_param("merchantId", "abc", prod) == "abc", "普通参数被误改"
+
+
+def _sf_fill_params():
+    """组装参数：互斥参数去重 + 空值剔除 + 用能力目录声明的参数。"""
+    cap = {"工具": "query_products_by_filter", "参数": ["type", "status"]}
+    ent = {"type": "CreditCard", "status": "Completed"}
+    tp = _fill_params(cap, ent)
+    assert tp.get("type") in ("Normal", "Preference", "RechargeBenefit",
+                              "PointExchange", "MemberBenefit"), \
+        f"枚举未收敛: {tp.get('type')!r}"
+    assert tp.get("status") in ("Selling", "Off", "Active", "InActive"), \
+        f"status 未收敛: {tp.get('status')!r}"
+
+    # 互斥：relativePeriod 与 startAt/endAt 不能同传（服务端报 40000）
+    cap2 = {"工具": "query_datax_total_reports",
+            "参数": ["merchantId", "relativePeriod", "startAt", "endAt"]}
+    ent2 = {"merchantId": "M1", "relativePeriod": "ThisMonth",
+            "startAt": "2026-09-01T00:00:00", "endAt": "2026-09-02T00:00:00"}
+    tp2 = _fill_params(cap2, ent2)
+    assert "relativePeriod" not in tp2, "互斥参数 relativePeriod 未剔除"
+    assert "startAt" in tp2 and "endAt" in tp2, "精确区间被误删"
+
+    # 空值/空串不应出现在最终参数里（避免 schema 校验失败）
+    cap3 = {"工具": "query_product_detail_by_id",
+            "参数": ["productId", "includeCategory", "includeMenu"]}
+    ent3 = {"productId": "123", "includeCategory": "", "includeMenu": None}
+    tp3 = _fill_params(cap3, ent3)
+    assert tp3.get("productId") == "123", "正常参数丢失"
+    assert "includeCategory" not in tp3, "空串未剔除"
+    assert "includeMenu" not in tp3, "None 未剔除"
+
+
+def _sf_pick_cap_rotate():
+    """轮换抽样：全局 _PICK_ROTATE 必须让能力铺开、用完能重置。
+
+    ⚠ 这是最容易静默失效的机制（全局可变状态）——失效不报错，
+      只会让生成结果退化成「所有维度都选同一个能力」。
+    """
+    global _PICK_ROTATE, _ENTITY_ROTATE
+    abis = [{"能力": f"能力{i}", "layer": "L1"} for i in range(5)]
+
+    # 建队并按 build_l1 的方式初始化
+    _PICK_ROTATE = {"queue": list(abis), "cursor": 0, "used": set()}
+    picked = [_pick_cap(abis).get("能力") for _ in range(5)]
+    assert len(set(picked)) == 5, f"轮换未铺开（有重复）: {picked}"
+
+    # 用完一轮后应能重置继续（不能卡死/返回 None）
+    nxt = _pick_cap(abis)
+    assert nxt is not None, "轮换一圈后返回 None（重置逻辑失效）"
+
+    # 过滤条件与轮换共存：按 op 过滤时不能返回不符合条件的
+    abis2 = [{"能力": "查询A", "操作类型": "查询", "layer": "L1"},
+             {"能力": "更新B", "操作类型": "更新", "layer": "L1"},
+             {"能力": "查询C", "操作类型": "查询", "layer": "L1"}]
+    _PICK_ROTATE = {"queue": list(abis2), "cursor": 0, "used": set()}
+    for _ in range(4):
+        c = _pick_cap(abis2, op="查询")
+        assert c and _op_of(c) == "查询", f"过滤条件被轮换破坏: {c}"
+
+    # 无候选时返回 None（不抛异常）
+    _PICK_ROTATE = {"queue": list(abis2), "cursor": 0, "used": set()}
+    assert _pick_cap(abis2, name_kw="不存在的关键词") is None, \
+        "无候选应返回 None"
+
+    # 清理全局状态，避免污染后续真实生成
+    _PICK_ROTATE = None
+    _ENTITY_ROTATE = {"cursor": 0}
+
+
+GENERATOR_SELFTEST_CASES = [
+    ("gen1 _as_param_value 单复数转换", _sf_as_param_value),
+    ("gen2 _param_value 取值精确优先/兜底", _sf_param_value),
+    ("gen3 _coerce_param 枚举收敛", _sf_coerce_param),
+    ("gen4 _fill_params 互斥去重/空值剔除", _sf_fill_params),
+    ("gen5 _pick_cap 轮换铺开与重置", _sf_pick_cap_rotate),
+]
+
+
+def run_selftest(only=None):
+    """跑生成器自测。返回 0=全通过，1=有失败。
+
+    自测需先加载参数取值域（_coerce_param 依赖全局 _PARAM_ENUMS/_PARAM_BOOL）。
+    这里加载真实系统的配置，确保测的是「实际生效的规则」而非造出来的假规则。
+    """
+    global _PARAM_ENUMS, _PARAM_BOOL
+    if not _PARAM_ENUMS and not _PARAM_BOOL:
+        _cfg = os.path.join(_ROOT, "configs",
+                            "RetailPOS\u6570\u636e\u67e5\u8be2.yaml")
+        _PARAM_ENUMS, _PARAM_BOOL = load_param_schema(_cfg)
+    _SF_PASS.clear()
+    _SF_FAIL.clear()
+    print("=" * 70)
+    print("生成器自测（离线，不读写文件、不连 MCP）")
+    print("=" * 70)
+    for name, fn in GENERATOR_SELFTEST_CASES:
+        if only and only not in name:
+            continue
+        _sf_check(name, fn)
+    print("-" * 70)
+    print(f"通过 {len(_SF_PASS)} / 失败 {len(_SF_FAIL)}")
+    if _SF_FAIL:
+        for n, e in _SF_FAIL:
+            print(f"  - {n}: {e}")
+        return 1
+    print("全部通过 ✅")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        sys.exit(run_selftest())
     main()

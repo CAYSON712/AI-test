@@ -48,6 +48,14 @@
 需ID解析的工具: []                            # 参数均由用户/意图直接给出，无需自动解析
 连接演示工具: "query_merchants"               # _demo_connect 验证连接用
 
+# ---- 参数取值域声明（2026-09-22 通用化；详见 RetailPOS 配置同节注释）----
+param_enums:
+  relativePeriod: [Today, Yesterday, ThisWeek, LastWeek, ThisMonth, LastMonth]
+  operationSources: [UnattendedModeEnabled, UnattendedModeDisabled, SystemAccount,
+                     Member, SystemAutoClose, CompanyAccount]
+param_bools:
+  - isEnabled
+
 # ---- MCP 工具 schema（name 必须与能力目录「工具」字段一致；params/required 对齐真实 schema）----
 mcp_tools:
   - name: query_device_terminals

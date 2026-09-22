@@ -51,6 +51,42 @@
 连接演示工具: "query_merchants"               # _demo_connect 验证连接用
 
 # ---- MCP 工具 schema（name 必须与能力目录「工具」字段一致；params/required 对齐真实 schema）----
+#
+# 【参数取值域声明 param_enums / param_bools】（2026-09-22 通用化）
+# 目的：让生成器不再硬编码业务知识——新增系统只写本文件，_02 无需改动。
+# 机制：生成器按参数名查这两张表做「取值域收敛」，非法值回退首个合法值。
+#   param_enums: 参数名 → 合法枚举列表（大小写不敏感）
+#   param_bools: 必须传 true/false 的参数名列表
+# 说明：同名参数在不同工具语义不同时，用 tools 限定生效工具（见 type）。
+#   - 不写 tools → 全局生效
+#   - 写 tools    → 仅这些工具生效
+param_enums:
+  type:
+    - tools: [query_datax_menu_product_category_reports]
+      values: [Menu, Product, Category]
+    - values: [Normal, Preference, RechargeBenefit, PointExchange, MemberBenefit]
+  status: [Selling, Off, Active, InActive]
+  statuses: [Active, UnActive]
+  orderStatus: [Progressing, Completed, Cancelled, BeMerged, Returned, Pending,
+                Preparing, Ready, AwaitingCancel, AwaitingRefund]
+  orderType: [DineIn, Pickup, ToGo, Delivery, OnlineDineIn, OnlinePickup]
+  orderSourceType: [AutoMart, PocketStore, Deliverect, AiPhoneOrder,
+                    ScanCodeToOrder, MarketOnlineOrder, Kiosk]
+  paymentType: [Cash, CreditCard, DebitCard, Other]
+  paymentStatus: [Unpaid, PartiallyPaid, FullyPaid, Captured]
+  paymentTerminalType: [Physical, Virtual, None]
+  sortField: [Date, Amount, Quantity]
+  sortDirection: [Ascending, Descending]
+  resultMode: [Count]          # 仅 Count；缺省=Detail，非 Count 一律不传
+  relativePeriod: [Today, Yesterday, ThisWeek, LastWeek, ThisMonth, LastMonth]
+  saleChannel: [Pos, Delivery, Pickup, ToGo]
+param_bools:
+  - includeCategory
+  - includeSpecificationGroup
+  - includeMenu
+  - hasMember
+  - isEnabled
+
 mcp_tools:
   - name: query_companies
     description: 查询当前账号授权范围内的所有公司，返回公司ID、名称和下属店铺列表；支持按公司名称模糊搜索或指定公司ID列表筛选。

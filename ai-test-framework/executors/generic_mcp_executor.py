@@ -197,26 +197,80 @@ class _SysConfig:
         return self.merchant_id
 
 
+def _iter_json_objects(text):
+    """按括号配对扫描 text，依次 yield 每个「完整且能解析」的 JSON 对象。
+
+    为什么需要：原先用 text.index("{") + rindex("}") 取首尾，
+    对「裸片段」（如 '"tool":"x","toolParams":{...}'，LLM 忘了外层花括号）
+    会错位——首个 { 落在 toolParams 内部，截出 '{...toolParams...}' 且恰好
+    json.loads 成功，于是静默返回 {"status":"Active"} 这种残缺对象，
+    tool 字段丢失、LLM 的工具选择被无声忽略（比抛异常更危险）。
+    改为配对扫描后，取到的是「语义完整」的对象。
+    """
+    depth, start = 0, None
+    in_str, esc = False, False
+    for i, ch in enumerate(text):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            if depth > 0:
+                depth -= 1
+                if depth == 0 and start is not None:
+                    frag = text[start:i + 1]
+                    try:
+                        obj = json.loads(frag)
+                    except Exception:
+                        obj = None
+                    if isinstance(obj, dict):
+                        yield obj
+                    start = None
+
+
 def _parse_llm_call(text):
-    """解析 LLM 输出的工具调用 JSON，容错处理"""
+    """解析 LLM 输出的工具调用 JSON，容错处理。
+
+    策略（按可靠性降序）：
+      1) 配对扫描所有完整 JSON 对象，取「含 tool 字段」的第一个
+         （LLM 常先输出解释文本甚至示例 JSON，只认带 tool 的那个）
+      2) 都没有则退回正则抽取 tool/toolParams/intent
+      3) 仍失败抛 ValueError
+    """
+    text = text or ""
+
+    # 1) 优先：完整且含 tool 字段的对象
     try:
-        start = text.index("{")
-        end = text.rindex("}") + 1
-        return json.loads(text[start:end])
+        for obj in _iter_json_objects(text):
+            if obj.get("tool"):
+                return obj
     except Exception:
-        tool = re.search(r'"tool"\s*:\s*"([^"]+)"', text)
-        params = re.search(r'"toolParams"\s*:\s*(\{.*?\})', text, re.DOTALL)
-        intent = re.search(r'"intent"\s*:\s*"([^"]+)"', text)
-        if tool:
-            params_obj = {}
-            if params:
-                try:
-                    params_obj = json.loads(params.group(1))
-                except Exception:
-                    params_obj = {}
-            return {"tool": tool.group(1), "toolParams": params_obj,
-                    "intent": intent.group(1) if intent else ""}
-        raise ValueError(f"无法解析 LLM 工具调用: {text[:300]}")
+        pass
+
+    # 2) 兜底：正则抽取（LLM 输出可能被截断，非完整 JSON）
+    tool = re.search(r'"tool"\s*:\s*"([^"]+)"', text)
+    params = re.search(r'"toolParams"\s*:\s*(\{.*?\})', text, re.DOTALL)
+    intent = re.search(r'"intent"\s*:\s*"([^"]+)"', text)
+    if tool:
+        params_obj = {}
+        if params:
+            try:
+                params_obj = json.loads(params.group(1))
+            except Exception:
+                params_obj = {}
+        return {"tool": tool.group(1), "toolParams": params_obj,
+                "intent": intent.group(1) if intent else ""}
+    raise ValueError(f"无法解析 LLM 工具调用: {text[:300]}")
 
 
 def _extract_entity(user_input, capability):
@@ -593,22 +647,51 @@ class GenericMcpExecutor(BaseExecutor):
 
     @staticmethod
     def _field_value(d, field):
-        """从 dict 里按字段名取实际值，兼容中英文/大小写别名（不绑定任何业务字段名）。"""
+        """从 dict 里按字段名取实际值，兼容中英文/大小写别名（不绑定任何业务字段名）。
+
+        匹配优先级：精确 > 别名表 > 双向子串。
+        ⚠ 双向子串（2026-09-22 修复）：原先只判 `field in key`，
+        但实际返回的键常比 field 更具体——如 field='名称' 而键是
+        '商品名称'/'分类名称'，单向判定失配返回 None，导致
+        _compare_verify 判 missing_field、把正确结果判成失败。
+        故同时判 `key in field`（键更短时）。
+        """
         if not isinstance(d, dict):
             return None
         fl = str(field).lower()
+        # 1) 精确匹配（最可靠，优先）
         for k in d:
             if str(k).lower() == fl:
                 return d[k]
+        # 2) 别名表：把别名当「模糊模式」而非精确键。
+        #    ⚠ 历史 bug（2026-09-22）：原实现直接 d.get(别名) 精确取键，
+        #    但返回结构里的键常是更具体的复合名（'商品名称'/'分类名称'），
+        #    精确取键必然 miss → 返回 None → _compare_verify 判 missing_field
+        #    → 正确的业务结果被判成失败。故别名也走双向子串匹配。
+        aliases = []
         if fl in ("price", "价格", "prices"):
-            return d.get("price") or d.get("价格") or d.get("prices")
-        if fl in ("status", "状态"):
-            return d.get("status") or d.get("状态")
-        if fl in ("name", "名称", "nameen", "name_en", "英文名称"):
-            return d.get("name") or d.get("nameEn") or d.get("name_en") or d.get("名称")
+            aliases = ["price", "价格", "prices"]
+        elif fl in ("status", "状态"):
+            aliases = ["status", "状态"]
+        elif fl in ("name", "名称", "nameen", "name_en", "英文名称"):
+            aliases = ["name", "nameEn", "name_en", "名称"]
+        for alias in aliases:
+            al = alias.lower()
+            for k, v in d.items():
+                kl = str(k).lower()
+                if kl == al:
+                    return v
+        # 3) 双向子串：键比 field 长（'商品名称' ⊃ '名称'），或 field 比键长
+        #    取最短命中键，避免长键（如 'merchantNameRemark'）抢先命中
+        cands = []
         for k, v in d.items():
-            if fl in str(k).lower():
-                return v
+            kl = str(k).lower()
+            if not kl:
+                continue
+            if fl and (fl in kl or kl in fl):
+                cands.append((len(kl), k, v))
+        if cands:
+            return min(cands, key=lambda x: x[0])[2]
         return None
 
     # ---- LLM 解析 / 回复 ----

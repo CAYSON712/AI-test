@@ -8,7 +8,8 @@
 检查项:
   [F] 致命：文件无法解析 / 结构缺失 / 用例数不一致
   [E] 错误：字段缺失、非法值、ID 不连续、维度/能力/工具不合法、block 语义矛盾、
-             sample_extra 违反规则
+             意图-参数矛盾（期望正常执行却传非法参数）、sample_extra 违反规则
+             （注意：期望被拒绝 + 非法参数 = 正确的异常用例，不会误报）
   [W] 警告：覆盖偏少、重复输入、实体名可疑、分层比例偏差
   [I] 信息：各维度/能力/层用例数分布（帮快速概览全量数据）
 """
@@ -261,6 +262,164 @@ class Checker:
                                                    "回退", "参数错误", "畸形")):
                     self.warn(f"{uid}: block=false 且标签既非正常也非典型正向量，请确认")
 
+    # ---- 意图-参数一致性（防生成器「本意合法、实际产出非法」）----
+    # 背景事故（2026-09-17）：实体清单为「任意实体回退都能填出合法参数」把所有
+    #   字段冗余挂到每个实体上，生成器按参数名跨域取错值——商品工具的 type 取到
+    #   了支付方式 "CreditCard"。这类用例「期望正常执行（block=false）却传非法参数」，
+    #   意图与参数自相矛盾：既没测到异常处理（期望不是拒绝），也没测到正常调用
+    #   （参数非法），438 条被判失分，污染了整套结果。
+    #
+    # ⚠ 关键区分（勿混淆）：
+    #   - 期望 block=true + 非法参数  → ✅ 正确的异常场景用例，放行
+    #   - 期望 block=false + 合法参数 → ✅ 正确的正常场景用例，放行
+    #   - 期望 block=false + 非法参数 → ❌ 意图与参数矛盾（生成器 bug），报警
+    #   - 期望 block=true  + 合法参数 → ⚠️ 期望可能立错，提示复核
+    # 绝不能按「参数是否合法」一刀切去拦——那会把大量有意的异常用例误杀。
+    # 参数级枚举白名单（与生成器 _PARAM_ENUMS 保持一致；此处用于「反向判定」）
+    PARAM_ENUMS = {
+        "type": {"product": ("Normal", "Preference", "RechargeBenefit",
+                             "PointExchange", "MemberBenefit"),
+                 "menu_report": ("Menu", "Product", "Category")},
+        "status": ("Selling", "Off", "Active", "InActive"),
+        "orderstatus": ("Progressing", "Completed", "Cancelled", "BeMerged",
+                        "Returned", "Pending", "Preparing", "Ready",
+                        "AwaitingCancel", "AwaitingRefund"),
+        "ordertype": ("DineIn", "Pickup", "ToGo", "Delivery",
+                      "OnlineDineIn", "OnlinePickup"),
+        "ordersourcetype": ("AutoMart", "PocketStore", "Deliverect",
+                            "AiPhoneOrder", "ScanCodeToOrder",
+                            "MarketOnlineOrder", "SupplyChainCancelOrder", "Kiosk"),
+        "paymenttype": ("Cash", "CreditCard", "DebitCard", "Other"),
+        "paymentstatus": ("Unpaid", "PartiallyPaid", "FullyPaid", "Captured"),
+        "paymentterminaltype": ("Physical", "Virtual", "None"),
+        "sortfield": ("Date", "Amount", "Quantity"),
+        "sortdirection": ("Ascending", "Descending"),
+        "resultmode": ("Count",),
+        "relativeperiod": ("Today", "Yesterday", "ThisWeek", "LastWeek",
+                           "ThisMonth", "LastMonth"),
+        "operationsources": ("UnattendedModeEnabled", "UnattendedModeDisabled",
+                             "SystemAccount", "Member", "SystemAutoClose",
+                             "CompanyAccount"),
+    }
+    # 布尔型参数：值必须是 bool（否则意图为「正常执行」时即为矛盾）
+    PARAM_BOOL = {"includecategory", "includespecificationgroup", "includemenu",
+                  "hasmember", "isenabled"}
+
+    def _illegal_params(self, tool_name, params, dim, tags):
+        """返回该调用的「非法参数」说明列表（空 = 全部合法）。
+
+        只判定【值域/类型是否合法】，不判定业务是否存在——
+        故本函数用于识别「期望正常执行却传了非法参数」的矛盾用例。
+        """
+        bad = []
+        if not isinstance(params, dict):
+            return bad
+        tool = str(tool_name or "").lower()
+        for k, v in params.items():
+            kl = str(k).lower()
+            # 1) 布尔型参数：字符串/数字都非法（'1' / 0 / 'abc' 均非 bool）
+            if kl in self.PARAM_BOOL:
+                if not isinstance(v, bool):
+                    bad.append(f"{k}={v!r} 非布尔值")
+                continue
+            # 2) 枚举型参数：值必须在白名单内
+            spec = self.PARAM_ENUMS.get(kl)
+            if spec is None:
+                continue
+            if kl == "type":
+                if "menu_product_category" in tool:
+                    allowed = spec["menu_report"]
+                else:
+                    allowed = spec["product"]
+            else:
+                allowed = spec
+            vals = v if isinstance(v, list) else [v]
+            for x in vals:
+                if not isinstance(x, str) or x not in allowed:
+                    bad.append(f"{k}={x!r} 不在合法枚举 {list(allowed)[:4]}...")
+        return bad
+
+    # ID 类参数名（含 id/ids/_id 结尾），值形态：正整数构成的字符串
+    _ID_RE = re.compile(r"\d+$")
+
+    def _id_params_illegal(self, params):
+        """返回「ID 类参数值形态明显非法」的说明列表。
+
+        ⚠ 必须覆盖 ID 类，否则「越权/不存在的店铺 ID」这类正确异常用例会被
+        误判成「期望被拒绝但参数合法」。实测：A-L1-003 传 merchantIds=['0']、
+        A-L2-004 传 ['99999999999999']，都是刻意的非法 ID，期望被拒绝是正确的。
+        判定标准（只认「明显非法」，业务上不存在不算非法）：
+          - 空串
+          - 非正整数：'0' / '-1' / 'abc' / '1 OR 1=1'
+        """
+        bad = []
+        if not isinstance(params, dict):
+            return bad
+        for k, v in params.items():
+            kl = str(k).lower()
+            if not (kl.endswith("id") or kl.endswith("ids")):
+                continue
+            if kl in self.PARAM_BOOL:
+                continue
+            vals = v if isinstance(v, list) else [v]
+            for x in vals:
+                if not isinstance(x, str):
+                    bad.append(f"{k}={x!r} 非字符串")
+                    continue
+                s = x.strip()
+                if s == "":
+                    bad.append(f"{k} 为空串")
+                elif not self._ID_RE.match(s) or int(s) <= 0:
+                    bad.append(f"{k}={x!r} 非正整数 ID")
+        return bad
+
+    def check_intent_param_consistency(self):
+        """意图-参数一致性：拦住「期望正常执行却传非法参数」的矛盾用例。"""
+        for i, c in enumerate(self.cases, 1):
+            uid = c.get("用例ID", f"#{i}")
+            expect = c.get("期望") or {}
+            if not isinstance(expect, dict):
+                continue
+            block = expect.get("block")
+            inp = c.get("输入") or {}
+            if not isinstance(inp, dict):
+                continue
+            tool = inp.get("tool_name")
+            tp = inp.get("tool_params") or {}
+            if not tool or not isinstance(tp, dict):
+                continue
+            dim = c.get("维度") or ""
+            tags = c.get("标签") or []
+
+            # ⚠ 容错/异常维度：用例「故意」传非法输入，期望是「不崩溃 + 被友好处理」，
+            #   此时 block=false 是刻意的（不要求拒绝，只要求不崩）。这类必须放行，
+            #   否则会把有意的鲁棒性测试全打成矛盾用例。
+            #   实测误报源：A-L1-116「容错」传 merchantIds=['0'] + unknown_param_malformed；
+            #   D-L1-004「容错」传 _invalid:'' —— 都是正确的容错用例。
+            if any(k in dim for k in ("容错", "异常", "鲁棒", "健壮")) or \
+                    any(t in tags for t in ("容错", "鲁棒", "畸形", "参数缺失",
+                                            "注入对抗", "数值变异", "类型错配")):
+                continue
+            # 生成器专为「容错/畸形」注入的占位参数名，本身即非业务参数，跳过
+            if any(str(k).startswith("_") or "unknown_param" in str(k)
+                   or "malformed" in str(k) for k in tp):
+                continue
+
+            bad = self._illegal_params(tool, tp, dim, tags)
+            bad += self._id_params_illegal(tp)
+
+            # 情形 A：期望正常执行，却传了非法参数 → 意图与参数矛盾（必报错误）
+            if block is False and bad:
+                self.error(
+                    f"{uid}: 意图-参数矛盾 —— 期望正常执行(block=false)但参数非法: "
+                    f"{'; '.join(bad[:3])}（疑生成器跨域取错值）")
+            # 情形 B：期望被拒绝，但参数【完全合法】→ 期望可能立错（告警复核）
+            # 仅当参数非空且所有参数都通过合法性检查时才提示，避免噪音。
+            elif block is True and not bad and tp:
+                self.warn(
+                    f"{uid}: 期望被拒绝(block=true)但参数值域/形态均合法，"
+                    f"请确认该期望是否有依据（若靠业务不存在拒绝，可忽略）")
+
     def check_sample_extra(self):
         for i, c in enumerate(self.cases, 1):
             uid = c.get("用例ID", f"#{i}")
@@ -278,6 +437,81 @@ class Checker:
             elif dim in ("参数端到端准确率", "参数生成"):
                 if se != 3:
                     self.warn(f"{uid}: 参数端到端/参数生成 sample_extra 通常为 3，实际 {se}")
+
+    # ---- configs/ 与 ability/ 一致性（新增系统时最易出错的一环）----
+    # 背景（2026-09-22 通用化）：参数取值域已从 _02 硬编码迁到 configs/<系统>.yaml，
+    #   生成器按「能力目录的工具名」去 config 查 param_enums/param_bools。
+    #   若两者对不上（工具名拼写不同、config 缺该工具），收敛会静默失效——
+    #   不报错，只是非法参数又流回数据集。故此处做一致性前置检查。
+    def check_config_consistency(self, names, tools, tool_of):
+        cfg_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "configs")
+        if not os.path.isdir(cfg_dir):
+            self.warn("未找到 configs/ 目录，跳过配置一致性检查")
+            return
+
+        sys_name = self.dataset.get("系统") or ""
+
+        def norm(s):
+            return str(s or "").replace("_", "").replace(" ", "").replace("-", "").lower()
+
+        # 定位本系统的配置（按「系统」字段 → 文件名包含 → 需求类型）
+        cfg_path, cfg = None, {}
+        cands = []
+        for f in sorted(os.listdir(cfg_dir)):
+            if not f.endswith(".yaml"):
+                continue
+            p = os.path.join(cfg_dir, f)
+            try:
+                d = load_yaml(p) or {}
+            except Exception:
+                continue
+            if norm(d.get("系统")) == norm(sys_name):
+                cfg_path, cfg = p, d
+                break
+            fn = norm(os.path.splitext(f)[0])
+            if fn and sys_name and (fn in norm(sys_name) or norm(sys_name) in fn):
+                cands.append((len(os.path.splitext(f)[0]), p, d))
+        if not cfg_path and cands:
+            _, cfg_path, cfg = max(cands)
+
+        if not cfg_path:
+            self.warn(f"未找到系统「{sys_name}」对应的 configs/*.yaml"
+                      f"（参数取值域无法校验）")
+            return
+
+        self.info(f"  配置文件: {os.path.basename(cfg_path)}")
+        declared = {t.get("name") for t in (cfg.get("mcp_tools") or [])
+                    if isinstance(t, dict) and t.get("name")}
+
+        # 1) 能力目录引用的工具必须在 configs 声明
+        missing = sorted({tool_of[n] for n in names if tool_of.get(n)}
+                         - declared) if declared else []
+        for t in missing:
+            self.error(f"能力目录引用了 configs 未声明的工具「{t}」"
+                       f"（{os.path.basename(cfg_path)}）——"
+                       f"生成器查不到该工具的取值域，参数收敛会静默失效")
+
+        # 2) configs 声明的工具是否都被能力目录用到（信息级，可能是保留工具）
+        unused = sorted(declared - set(tools)) if declared else []
+        if unused:
+            self.info(f"  configs 声明但能力目录未使用: {', '.join(unused[:6])}"
+                      f"{' …' if len(unused) > 6 else ''}")
+
+        # 3) param_enums 的 tools 限定必须指向已声明工具
+        pe = cfg.get("param_enums") or {}
+        for pname, spec in pe.items():
+            rules = spec if isinstance(spec, list) and spec and isinstance(spec[0], dict) else []
+            for r in rules:
+                for t in (r.get("tools") or []):
+                    if declared and t not in declared:
+                        self.error(f"param_enums.{pname} 的 tools 指定了"
+                                   f"未声明工具「{t}」")
+
+        # 4) 取值域是否为空（配了但空 → 无声失效）
+        if not pe and not (cfg.get("param_bools") or []):
+            self.warn(f"{os.path.basename(cfg_path)} 未声明 param_enums/param_bools"
+                      f"——枚举参数不会做跨域收敛（新增系统建议补上）")
 
     def check_dup(self):
         # 判定键加入「维度」：不同维度考察点不同，属有效覆盖而非重复；
@@ -368,7 +602,9 @@ class Checker:
         self.check_top()
         self.check_ids()
         self.check_fields(names, tools, tool_of)
+        self.check_config_consistency(names, tools, tool_of)
         self.check_block_semantic()
+        self.check_intent_param_consistency()
         self.check_sample_extra()
         self.check_dup()
         self.check_coverage(names)
