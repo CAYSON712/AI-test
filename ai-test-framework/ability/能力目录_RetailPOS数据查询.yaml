@@ -559,18 +559,45 @@
             成功标准:
               - 模式: 拒绝
 
-      - 能力: "订单明细与销售报表交叉核对"
-        操作类型: "组合"
-        layer: "L2"
-        参数: [merchantId, orderIds, relativePeriod, startAt, endAt]
-        工具: query_order_details_by_ids
+      # ⚠ 原「订单明细与销售报表交叉核对」为组合能力（两步：报表取单号 → 查明细），
+      #    但 A 类执行器（direct_mcp_executor）只做【单次工具调用】，用例格式里只有
+      #    一个 tool_name，第二步根本不会被执行 —— 该"组合"名存实亡，实际只测了
+      #    绑定的那一个工具。且能力目录只能声明一个「工具」，把两步参数混写进
+      #    「参数」会被生成器全部塞给同一个工具（曾导致 startAt/endAt 被注入
+      #    query_order_details_by_ids，产出 7 条"参数不属于该工具"的必败用例）。
+      #    故拆分为两个单工具能力，各自参数与工具严格对应。
+      #    多步编排的测试应放在 C 类（Agent+MCP）：那里由 LLM 选工具、可多步，
+      #    才真正验证"编排是否正确"。
+      - 能力: "查询订单销售报表"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantId, relativePeriod, startAt, endAt]
+        工具: query_datax_order_sales_reports
         口语问法:
-          - "帮我用订单销售报表拿到订单号，再查这笔订单的商品明细"
+          - "帮我查一下「{实体}」这家店本月的订单销售报表"
+          - "看看「{实体}」这家店有哪些订单（含订单号）"
         成功标准:
           - 模式: 语义
-            期望: "先查订单销售报表取得 OrderId，再用 query_order_details_by_ids 查该订单商品明细，输出包含字段: orders、timeZoneId（报表侧含 records）；两步结果如实转述；订单号与明细金额口径差异如实说明，不编造"
+            期望: "按订单建立时间返回订单销售记录，输出包含字段: records、total、timeZoneId；每条记录的 orderId/orderSerial/orderStatus/netSales 如实展示（多来源片在 segments 返回，不合计、不给全局排名）"
         负向场景:
-          - 输入: "核对时直接伪造一个订单号去查明细并要求返回结果"
+          - 输入: "查询订单销售报表但不给任何时间范围"
+            成功标准:
+              - 模式: 语义
+                期望: "应澄清时间范围（今天/昨天/本月或具体区间）后再查询，不编造报表数据"
+
+      - 能力: "按订单号查询订单商品明细"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantId, orderIds, page, size]
+        工具: query_order_details_by_ids
+        口语问法:
+          - "帮我查一下「{实体}」这笔订单 26907187620613 的商品明细"
+          - "看看「{实体}」这单都点了哪些菜"
+        成功标准:
+          - 模式: 语义
+            期望: "按 merchantId + orderIds 返回该订单完整商品明细，输出包含字段: orders、timeZoneId（商品行在 orders.list 内）；未找到的 ID 通过 NotFoundOrderIds 如实告知，不编造"
+        负向场景:
+          - 输入: "用伪造的订单号去查明细并要求返回结果"
             成功标准:
               - 模式: 语义
                 期望: "如实告知该订单未找到，不编造明细数据"

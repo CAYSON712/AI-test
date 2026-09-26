@@ -1329,14 +1329,94 @@ def _gen_security(products, abilities, cap_by_name, rng):
     return cases
 
 
+# =====================================================================
+# 组合场景：报表取单号 → 查明细（两步编排）
+# ---------------------------------------------------------------------
+# 背景（2026-09-25）：A 类（直连工具）执行器只做单次调用，用例格式里只有一个
+#   tool_name，因此「跨工具/组合」类能力在 A 类里名存实亡；原 A 类目录里的
+#   「订单明细与销售报表交叉核对」组合能力已拆为两个单工具能力。
+#   真正的多步编排测试应落在 C 类（Agent+MCP）：输入自然语言，由 LLM 选工具、
+#   可多步，才真正验证「编排顺序是否正确」。
+#   本生成器按「上游能力的输出字段 = 下游能力的输入参数」自动配对，不写死
+#   任何业务字段名（如报表/明细），对任意系统通用。
+# =====================================================================
+
+def _output_param_links(abilities):
+    """找出「上游产出字段 → 下游入参」的能力对，用于构造两步编排场景。
+
+    通用规则（不绑定业务词）：
+      ① 上游能力的【输出描述】里出现某字段名（表示它会返回该字段）
+      ② 下游能力的参数列表里恰好需要同名字段
+      ③ 两者工具不同（否则不是跨工具编排）
+      ④ 上游宜为「产出型」能力（名单/列表/查询结果里自然带 id），
+         避免挑到「筛选型」能力（其 id 是输入而非产出）
+    返回 [(上游cap, 下游cap, 共享字段名), ...]；
+    排序：产出型优先 → 字段名更具体（更长）优先。
+    """
+    links, seen = [], set()
+    # 上游优先关键词：其能力名/描述体现"产出清单"语义（通用词，不绑业务）
+    PRODUCE_KW = ("\u5217\u8868", "\u67e5\u8be2", "\u641c\u7d22", "\u62a5\u8868", "\u660e\u7ec6",
+                  "\u8bb0\u5f55", "\u8be6\u60c5", "\u7edf\u8ba1")
+    for up in abilities:
+        sc = up.get("semantic_expect") or up.get("成功标准") or []
+        up_text = ""
+        if isinstance(sc, list):
+            for s in sc:
+                if isinstance(s, dict):
+                    up_text += " " + str(s.get("期望") or "")
+                else:
+                    up_text += " " + str(s)
+        elif isinstance(sc, dict):
+            up_text = str(sc.get("期望") or "")
+        if not up_text:
+            continue
+        up_tool = up.get("工具")
+        # 产出型加权：能力名/描述含"列表/查询/报表/明细"等 → 更可能是数据来源
+        up_name = str(up.get("能力") or "")
+        produce_score = sum(1 for k in PRODUCE_KW if k in up_name)
+        # 筛选型降权：名字含"筛选/按...过滤"的，其 id 通常是入参
+        if any(k in up_name for k in ("\u7b5b\u9009", "\u8fc7\u6ee4", "\u6309\u6761\u4ef6")):
+            produce_score -= 2
+        for down in abilities:
+            if down is up or not down.get("工具") or down.get("工具") == up_tool:
+                continue
+            for p in (down.get("参数") or []):
+                ps = str(p)
+                # 字段需在【上游输出描述】中出现，且是能“带过去”的标识类字段
+                if ps and ps in up_text and "id" in ps.lower():
+                    key = (up.get("能力"), down.get("能力"), ps)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    links.append((up, down, ps, produce_score))
+    # 产出型优先，其次字段名更具体（更长）优先
+    links.sort(key=lambda x: (-x[3], -len(str(x[2]))))
+    return [(a, b, c) for a, b, c, _ in links]
+
+
 def _gen_cross_tool(products, abilities, cap_by_name, rng):
     """跨工具编排正确性（集成）：多工具按正确顺序编排（先查后改）。
     rubric 判定：人工审核。
     """
     cases = []
     P = products
-    # 纯查询系统：跨工具编排 = 多查询工具按正确顺序（先定位实体再查明细）
+    # 纯查询系统：优先用「上游输出字段 = 下游入参」的真实两步链路
+    # （如 报表返回 orderId → 明细按 orderIds 查）。这类才是真正需要编排的场景。
     if not _has_write_ops(abilities):
+        for up, down, field in _output_param_links(abilities)[:2]:
+            e_up = _pick_entity_for(up, P)
+            e_down = _pick_entity_for(down, P, fallback_idx=1)
+            up_tool, down_tool = up.get("工具"), down.get("工具")
+            cases.append(_normal_case(
+                up, "跨工具编排正确性", f"{up.get('能力')} → {down.get('能力')}",
+                _fill_params(up, e_up),
+                f"先调用 {up_tool} 取其 {field}，再用该 {field} 调用 {down_tool}；"
+                f"顺序不可颠倒，且第二步入参须来自第一步结果（非编造）",
+                tags=["多工具", "编排", "数据依赖"],
+                user_input=(f"帮我先用{up.get('能力')}拿到 {field}，"
+                            f"再用这个 {field} 查{down.get('能力')}")))
+        if cases:
+            return cases
         q1, q2 = _confusable_query_pair(abilities)
         if q1 and q2:
             e = _pick_entity_for(q1, P)
@@ -1707,23 +1787,47 @@ def _bad_value(tp, params, mode="bad"):
     mode="bad" ：非法值（id→0、日期→9999-99-99、数值→-1、其他→INVALID）
     mode="over"：越界值（id→超大、日期→9999-99-99、数值→超大、其他→INVALID）
     无参数工具返回 None（调用方决定跳过或注入畸形参数）。
+
+    ⚠ 只对【该工具 schema 声明的参数】做变异（2026-09-25）：
+    历史缺陷——此处曾对实体上任意同名字段做变异，导致把 isEnabled（写工具
+    专属参数）注入到只读的 query_device_terminals，构造出"参数不属于该工具"
+    的用例并期望拒绝；服务端按 schema 忽略该字段是合理的，用例必失败且误报
+    "未按预期拦截"。现改为：变异目标必须同时满足
+      ① 出现在工具 schema 的 params 列表里（params 即该清单）
+      ② 出现在本次调用参数 tp 里（有值可变）
+    找不到合格目标时返回 None，由调用方跳过（不再强行注入畸形参数）。
     """
-    if not params:
+    if not params or not isinstance(tp, dict):
+        return None
+    # 只保留「既在 schema 声明、又在实际入参里」的参数作为变异候选
+    declared = [str(p) for p in params]
+    candidates = [p for p in declared if p in tp]
+    if not candidates:
         return None
     bad = dict(tp)
-    id_param = next((p for p in params if "id" in str(p).lower()), None)
+    id_param = next((p for p in candidates if "id" in p.lower()), None)
     if id_param:
-        bad[id_param] = ["9999999999999999"] if mode == "over" else ["0"]
+        v = bad.get(id_param)
+        bad[id_param] = (["9999999999999999"] if mode == "over" else ["0"]) \
+            if isinstance(v, list) else ("9999999999999999" if mode == "over" else "0")
         return bad
-    p0 = params[0]
-    pl = str(p0).lower()
+    p0 = candidates[0]
+    pl = p0.lower()
     if any(k in pl for k in ("date", "时间", "日期")):
         bad[p0] = "9999-99-99"
     elif any(k in pl for k in ("price", "amount", "qty", "count", "价", "金额", "数量")):
         bad[p0] = 9999999999999999 if mode == "over" else -1
+    elif any(k in pl for k in ("page", "size", "limit")):
+        bad[p0] = 99999999 if mode == "over" else -1
     else:
-        v = bad[p0]
-        bad[p0] = "INVALID" if not isinstance(v, list) else ["INVALID"]
+        v = bad.get(p0)
+        if isinstance(v, bool):
+            # 布尔参数：类型错配（字符串）作为非法值
+            bad[p0] = "INVALID"
+        elif isinstance(v, list):
+            bad[p0] = ["INVALID"]
+        else:
+            bad[p0] = "INVALID"
     return bad
 
 
@@ -2349,15 +2453,24 @@ def build_d_l2(abilities, l1_cases, target_share=0.30,
             nc["期望"] = build_expect(cap, intent=name, params=mtp,
                                       output="越界参数被拒绝/提示", block=True)
             _push(nc)
-        # C 未知参数注入
+        # C 未知参数注入：注入一个 schema 未声明的多余字段。
+        # ⚠ 期望语义修正（2026-09-25）：此类**不应期望被拒绝**。
+        #   服务端按 JSON Schema 默认（additionalProperties=true）忽略未知字段并
+        #   正常执行是合理行为；必填齐、值合法时"多加一个无害字段"不构成缺陷，
+        #   开发也不认可为 bug（实测 D 类 11 条因此被误判"未按预期拦截"→ 误报
+        #   "给开发"）。改为与「错误处理」同口径的宽容语义：忽略后正常返回
+        #   或给出结构化校验响应都算通过，仅当崩溃/挂起才低分。
         mtp = {**tp, "unknown_param": "x"}
         nc = copy.deepcopy(c)
         nc["输入"] = {"tool_name": tool, "tool_params": mtp}
         nc["层"] = "L2"
         nc["维度"] = dm["注入"]
-        nc["标签"] = ["参数注入"]
+        nc["标签"] = ["未知参数"]
         nc["期望"] = build_expect(cap, intent=name, params=mtp,
-                                  output="未知参数被拒绝/提示", block=True)
+                                  output="未知参数被忽略并正常执行（或结构化校验响应）",
+                                  block=False,
+                                  semantic={"contains": list(_TOLERANT_KW),
+                                            "any_of": True})
         _push(nc)
         # D 类型错配：数值参数改成字符串
         if num_keys:

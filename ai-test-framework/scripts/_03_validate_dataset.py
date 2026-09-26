@@ -508,6 +508,45 @@ class Checker:
                         self.error(f"param_enums.{pname} 的 tools 指定了"
                                    f"未声明工具「{t}」")
 
+        # 4) 生成的用例里，入参不得含「该工具 schema 未声明的字段」
+        #    背景（2026-09-25）：能力目录「先查终端再开启无人值守」曾把 isEnabled
+        #    写进 query_device_terminals 的参数清单，生成器据此给只读工具注入
+        #    isEnabled，造出 10 条"参数不属于该工具"的用例并期望拒绝——服务端按
+        #    schema 忽略该字段是合理的，用例必失败并误报"未拦截"。
+        #    仅豁免生成器刻意注入的占位参数（unknown_param*/下划线前缀）。
+        tool_params_decl = {}
+        for t in (cfg.get("mcp_tools") or []):
+            if isinstance(t, dict) and t.get("name"):
+                tool_params_decl[t["name"]] = set(t.get("params") or [])
+        if tool_params_decl and self.cases:
+            foreign_n = 0
+            samples = []
+            for c in self.cases:
+                inp = c.get("\u8f93\u5165") or {}
+                if not isinstance(inp, dict):
+                    continue
+                tname = inp.get("tool_name")
+                tp = inp.get("tool_params")
+                if tname not in tool_params_decl or not isinstance(tp, dict):
+                    continue
+                decl = tool_params_decl[tname]
+                for k in tp:
+                    ks = str(k)
+                    if ks in decl:
+                        continue
+                    # 刻意注入的占位参数豁免（脚本按 unknown_param/_xxx 注入）
+                    if "unknown_param" in ks or ks.startswith("_"):
+                        continue
+                    foreign_n += 1
+                    if len(samples) < 5:
+                        samples.append(f"{c.get('用例ID')}:{tname}.{ks}")
+            if foreign_n:
+                self.error(
+                    f"发现 {foreign_n} 处「参数不属于该工具」（该工具 schema 未声明）: "
+                    f"{'; '.join(samples)} —— 服务端按 JSON Schema 会忽略这类字段，"
+                    f"相关用例若期望拒绝必失败且误报。请修正能力目录「参数」清单"
+                    f"仅列该工具真正接受的字段")
+
         # 4) 取值域是否为空（配了但空 → 无声失效）
         if not pe and not (cfg.get("param_bools") or []):
             self.warn(f"{os.path.basename(cfg_path)} 未声明 param_enums/param_bools"

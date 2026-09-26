@@ -205,7 +205,15 @@
       - 能力: "先查终端再开启无人值守"
         操作类型: "组合"
         layer: "L2"
-        参数: [merchantId, isEnabled]
+        # ⚠ 参数必须【只列该工具（query_device_terminals）真正接受的字段】。
+        # 历史缺陷（2026-09-25）：此处曾写 [merchantId, isEnabled] —— 但
+        # query_device_terminals 只接受 merchantId，isEnabled 是写工具
+        # set_device_terminal_unattended_mode 的参数。生成器按"参数"清单从
+        # 实体取值，于是给只读工具注入了 isEnabled，产出 10 条"参数不属于该
+        # 工具"的用例并期望被拒绝——服务端按 schema 忽略该字段是合理的，
+        # 这些用例必失败且误报"未按预期拦截危险操作"（报告误判"给开发"）。
+        # 组合能力的第二步（开启无人值守）由 LLM 编排，不在本能力的工具参数里。
+        参数: [merchantId]
         工具: query_device_terminals
         口语问法:
           - "帮我看看「{实体}」的终端在线状态，再把无人值守模式打开"

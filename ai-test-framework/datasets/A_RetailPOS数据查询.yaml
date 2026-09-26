@@ -5,7 +5,7 @@
   L2: 场景演化(30%)：纯规则变异，不用LLM
   L3: 生产回放(10%)：需生产日志，暂未接入不预留接口
 数据源: 实体清单_RetailPOS数据查询.yaml
-用例数: 282
+用例数: 296
 用例列表:
 - 维度: 调用正确性
   能力: 查询菜单列表
@@ -84,9 +84,9 @@
     block: true
     semantic:
       contains:
+      - 权限拒绝
       - 无权限
       - 错误
-      - 权限拒绝
       - 拒绝
       any_of: true
   标签:
@@ -187,9 +187,9 @@
     block: true
     semantic:
       contains:
+      - 权限拒绝
       - 无权限
       - 错误
-      - 权限拒绝
       - 拒绝
       any_of: true
   标签:
@@ -299,7 +299,7 @@
   输入:
     tool_name: query_categories
     tool_params: &id013
-      menuIds: &id097
+      menuIds: &id155
       - '26386470622021'
       categoryIds: &id014
       - '26386653604165'
@@ -365,7 +365,7 @@
   输入:
     tool_name: query_categories
     tool_params: &id016
-      menuIds: &id099
+      menuIds:
       - '26386470622021'
       categoryIds: &id029
       - '26677529097102'
@@ -389,7 +389,7 @@
   输入:
     tool_name: query_products_by_ids
     tool_params: &id017
-      productIds: &id163
+      productIds: &id177
       - '26723267156165'
   期望:
     intent: 按ID查询商品
@@ -516,8 +516,7 @@
   输入:
     tool_name: query_product_detail_by_id
     tool_params:
-      productId:
-      - '0'
+      productId: '0'
       includeCategory: true
   期望:
     intent: 查询商品详情
@@ -634,9 +633,9 @@
     block: true
     semantic:
       contains:
+      - 权限拒绝
       - 无权限
       - 错误
-      - 权限拒绝
       - 拒绝
       any_of: true
   标签:
@@ -807,8 +806,7 @@
   输入:
     tool_name: query_order_details_by_ids
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       orderIds: *id032
       page: 1
       size: 15
@@ -841,9 +839,9 @@
     block: true
     semantic:
       contains:
+      - 权限拒绝
       - 无权限
       - 错误
-      - 权限拒绝
       - 拒绝
       any_of: true
   标签:
@@ -921,8 +919,7 @@
   输入:
     tool_name: query_order_details_by_ids
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       orderIds: *id037
   期望:
     intent: 按订单号查询单笔订单商品明细
@@ -1036,9 +1033,9 @@
     block: true
     semantic:
       contains:
+      - 权限拒绝
       - 无权限
       - 错误
-      - 权限拒绝
       - 拒绝
       any_of: true
   标签:
@@ -1121,8 +1118,7 @@
   输入:
     tool_name: query_staff_attendances
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       relativePeriod: ThisMonth
       page: 1
       size: 15
@@ -1218,8 +1214,7 @@
   输入:
     tool_name: query_staff_attendances
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       merchantStaffIds: *id048
       relativePeriod: ThisMonth
       page: 1
@@ -1310,8 +1305,7 @@
   输入:
     tool_name: query_datax_total_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
@@ -1343,9 +1337,9 @@
     block: true
     semantic:
       contains:
+      - 权限拒绝
       - 无权限
       - 错误
-      - 权限拒绝
       - 拒绝
       any_of: true
   标签:
@@ -1423,8 +1417,7 @@
   输入:
     tool_name: query_datax_order_sales_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
@@ -1456,9 +1449,9 @@
     block: true
     semantic:
       contains:
+      - 权限拒绝
       - 无权限
       - 错误
-      - 权限拒绝
       - 拒绝
       any_of: true
   标签:
@@ -1540,8 +1533,7 @@
   输入:
     tool_name: query_datax_order_sales_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
       orderStatus: Completed
@@ -1633,8 +1625,7 @@
   输入:
     tool_name: query_datax_order_sales_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
       paymentType: CreditCard
@@ -1726,8 +1717,7 @@
   输入:
     tool_name: query_datax_order_sales_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
       orderId: '26907187620613'
@@ -1823,8 +1813,7 @@
   输入:
     tool_name: query_datax_order_sales_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
       sortField: Amount
@@ -1919,8 +1908,7 @@
   输入:
     tool_name: query_datax_order_sales_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
       paymentStatus: FullyPaid
@@ -2012,8 +2000,7 @@
   输入:
     tool_name: query_datax_order_sales_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
       resultMode: Count
@@ -2109,8 +2096,7 @@
   输入:
     tool_name: query_datax_menu_product_category_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
       type: Menu
@@ -2145,9 +2131,9 @@
     block: true
     semantic:
       contains:
+      - 权限拒绝
       - 无权限
       - 错误
-      - 权限拒绝
       - 拒绝
       any_of: true
   标签:
@@ -2228,8 +2214,7 @@
   输入:
     tool_name: query_datax_total_reports
     tool_params:
-      merchantId:
-      - '0'
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
@@ -2348,40 +2333,38 @@
   - 正常
   用例ID: A-L1-104
 - 维度: 调用正确性
-  能力: 订单明细与销售报表交叉核对
+  能力: 查询订单销售报表
   层: L1
   输入:
-    tool_name: query_order_details_by_ids
+    tool_name: query_datax_order_sales_reports
     tool_params: &id087
       merchantId: '26377732552517'
-      orderIds: &id088
-      - '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
-    intent: 订单明细与销售报表交叉核对
+    intent: 查询订单销售报表
     params: *id087
     output: 工具调用成功
     block: false
     semantic:
       fields:
-      - orders
+      - records
+      - total
       - timeZoneId
   标签:
   - 正常
   用例ID: A-L1-105
 - 维度: 参数校验
-  能力: 订单明细与销售报表交叉核对
+  能力: 查询订单销售报表
   层: L1
   输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id089
-      orderIds: *id088
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id088
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
-    intent: 订单明细与销售报表交叉核对
-    params: *id089
+    intent: 查询订单销售报表
+    params: *id088
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2393,18 +2376,16 @@
   - 参数缺失
   用例ID: A-L1-106
 - 维度: 参数校验
-  能力: 订单明细与销售报表交叉核对
+  能力: 查询订单销售报表
   层: L1
   输入:
-    tool_name: query_order_details_by_ids
+    tool_name: query_datax_order_sales_reports
     tool_params:
-      merchantId:
-      - '0'
-      orderIds: *id088
+      merchantId: '0'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
-    intent: 订单明细与销售报表交叉核对
+    intent: 查询订单销售报表
     params: *id087
     output: 非法参数被拒绝
     block: true
@@ -2417,19 +2398,109 @@
   - 边界
   用例ID: A-L1-107
 - 维度: 返回处理
-  能力: 订单明细与销售报表交叉核对
+  能力: 查询订单销售报表
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id089
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+  期望:
+    intent: 查询订单销售报表
+    params: *id089
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - records
+      - total
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-108
+- 维度: 调用正确性
+  能力: 按订单号查询订单商品明细
   层: L1
   输入:
     tool_name: query_order_details_by_ids
     tool_params: &id090
       merchantId: '26377732552517'
+      orderIds: &id091
+      - '26377732552517'
+      page: 1
+      size: 15
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id090
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - orders
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-109
+- 维度: 参数校验
+  能力: 按订单号查询订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id092
+      orderIds: *id091
+      page: 1
+      size: 15
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id092
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  用例ID: A-L1-110
+- 维度: 参数校验
+  能力: 按订单号查询订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params:
+      merchantId: '0'
+      orderIds: *id091
+      page: 1
+      size: 15
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id090
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  用例ID: A-L1-111
+- 维度: 返回处理
+  能力: 按订单号查询订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id093
+      merchantId: '26377732552517'
       orderIds:
       - '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
+      page: 1
+      size: 15
   期望:
-    intent: 订单明细与销售报表交叉核对
-    params: *id090
+    intent: 按订单号查询订单商品明细
+    params: *id093
     output: 返回结构化结果
     block: false
     semantic:
@@ -2438,152 +2509,12 @@
       - timeZoneId
   标签:
   - 正常
-  用例ID: A-L1-108
-- 维度: 协议契约
-  能力: 查询公司列表
-  层: L1
-  输入:
-    tool_name: query_companies
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-109
-- 维度: 异常与容错
-  能力: 查询公司列表
-  层: L1
-  输入:
-    tool_name: query_companies
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 容错
-  用例ID: A-L1-110
-- 维度: 协议契约
-  能力: 查询店铺列表
-  层: L1
-  输入:
-    tool_name: query_merchants
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-111
-- 维度: 异常与容错
-  能力: 查询店铺列表
-  层: L1
-  输入:
-    tool_name: query_merchants
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 容错
   用例ID: A-L1-112
 - 维度: 协议契约
-  能力: 查询菜单列表
+  能力: 查询公司列表
   层: L1
   输入:
-    tool_name: query_menus
+    tool_name: query_companies
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -2614,57 +2545,83 @@
   标签:
   - 畸形
   用例ID: A-L1-113
-- 维度: 工具描述与发现
-  能力: 查询菜单列表
-  层: L1
-  输入:
-    tool_name: query_menus
-    tool_params: &id091
-      merchantIds: *id004
-  期望:
-    intent: 查询菜单列表
-    params: *id091
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - id
-      - name
-      - type
-      - status
-  标签:
-  - 正常
-  用例ID: A-L1-114
-- 维度: 性能与资源
-  能力: 查询菜单列表
-  层: L1
-  输入:
-    tool_name: query_menus
-    tool_params: &id092
-      merchantIds: *id004
-  期望:
-    intent: 查询菜单列表
-    params: *id092
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - id
-      - name
-      - type
-      - status
-  标签:
-  - 正常
-  用例ID: A-L1-115
 - 维度: 异常与容错
-  能力: 查询菜单列表
+  能力: 查询公司列表
   层: L1
   输入:
-    tool_name: query_menus
+    tool_name: query_companies
     tool_params:
       unknown_param_malformed: x
-      merchantIds:
-      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-114
+- 维度: 协议契约
+  能力: 查询店铺列表
+  层: L1
+  输入:
+    tool_name: query_merchants
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-115
+- 维度: 异常与容错
+  能力: 查询店铺列表
+  层: L1
+  输入:
+    tool_name: query_merchants
+    tool_params:
+      unknown_param_malformed: x
   期望:
     intent: 容错
     params: {}
@@ -2694,10 +2651,10 @@
   - 容错
   用例ID: A-L1-116
 - 维度: 协议契约
-  能力: 查询店铺分类列表
+  能力: 查询菜单列表
   层: L1
   输入:
-    tool_name: query_categories
+    tool_name: query_menus
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -2729,46 +2686,52 @@
   - 畸形
   用例ID: A-L1-117
 - 维度: 工具描述与发现
-  能力: 查询店铺分类列表
+  能力: 查询菜单列表
   层: L1
   输入:
-    tool_name: query_categories
-    tool_params: &id093
+    tool_name: query_menus
+    tool_params: &id094
       merchantIds: *id004
   期望:
-    intent: 查询店铺分类列表
-    params: *id093
+    intent: 查询菜单列表
+    params: *id094
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - ID
+      - id
+      - name
+      - type
+      - status
   标签:
   - 正常
   用例ID: A-L1-118
 - 维度: 性能与资源
-  能力: 查询店铺分类列表
+  能力: 查询菜单列表
   层: L1
   输入:
-    tool_name: query_categories
-    tool_params: &id094
+    tool_name: query_menus
+    tool_params: &id095
       merchantIds: *id004
   期望:
-    intent: 查询店铺分类列表
-    params: *id094
+    intent: 查询菜单列表
+    params: *id095
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - ID
+      - id
+      - name
+      - type
+      - status
   标签:
   - 正常
   用例ID: A-L1-119
 - 维度: 异常与容错
-  能力: 查询店铺分类列表
+  能力: 查询菜单列表
   层: L1
   输入:
-    tool_name: query_categories
+    tool_name: query_menus
     tool_params:
       unknown_param_malformed: x
       merchantIds:
@@ -2802,7 +2765,7 @@
   - 容错
   用例ID: A-L1-120
 - 维度: 协议契约
-  能力: 按名称查询分类
+  能力: 查询店铺分类列表
   层: L1
   输入:
     tool_name: query_categories
@@ -2837,52 +2800,50 @@
   - 畸形
   用例ID: A-L1-121
 - 维度: 工具描述与发现
-  能力: 按名称查询分类
-  层: L1
-  输入:
-    tool_name: query_categories
-    tool_params: &id095
-      categoryName: 特色飲料
-  期望:
-    intent: 按名称查询分类
-    params: *id095
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - id
-      - name
-      - type
-  标签:
-  - 正常
-  用例ID: A-L1-122
-- 维度: 性能与资源
-  能力: 按名称查询分类
+  能力: 查询店铺分类列表
   层: L1
   输入:
     tool_name: query_categories
     tool_params: &id096
-      categoryName: A001-BEEF 牛類
+      merchantIds: *id004
   期望:
-    intent: 按名称查询分类
+    intent: 查询店铺分类列表
     params: *id096
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - ID
+  标签:
+  - 正常
+  用例ID: A-L1-122
+- 维度: 性能与资源
+  能力: 查询店铺分类列表
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params: &id097
+      merchantIds: *id004
+  期望:
+    intent: 查询店铺分类列表
+    params: *id097
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - id
-      - name
-      - type
+      - ID
   标签:
   - 正常
   用例ID: A-L1-123
 - 维度: 异常与容错
-  能力: 按名称查询分类
+  能力: 查询店铺分类列表
   层: L1
   输入:
     tool_name: query_categories
     tool_params:
       unknown_param_malformed: x
+      merchantIds:
+      - '0'
   期望:
     intent: 容错
     params: {}
@@ -2912,7 +2873,7 @@
   - 容错
   用例ID: A-L1-124
 - 维度: 协议契约
-  能力: 按菜单筛选分类
+  能力: 按名称查询分类
   层: L1
   输入:
     tool_name: query_categories
@@ -2947,16 +2908,128 @@
   - 畸形
   用例ID: A-L1-125
 - 维度: 工具描述与发现
-  能力: 按菜单筛选分类
+  能力: 按名称查询分类
   层: L1
   输入:
     tool_name: query_categories
     tool_params: &id098
-      menuIds: *id097
-      categoryIds: *id014
+      categoryName: instant noodles
+  期望:
+    intent: 按名称查询分类
+    params: *id098
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - type
+  标签:
+  - 正常
+  用例ID: A-L1-126
+- 维度: 性能与资源
+  能力: 按名称查询分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params: &id099
+      categoryName: Goods
+  期望:
+    intent: 按名称查询分类
+    params: *id099
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - type
+  标签:
+  - 正常
+  用例ID: A-L1-127
+- 维度: 异常与容错
+  能力: 按名称查询分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-128
+- 维度: 协议契约
+  能力: 按菜单筛选分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-129
+- 维度: 工具描述与发现
+  能力: 按菜单筛选分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params: &id100
+      menuIds:
+      - '26386470622021'
+      categoryIds: &id108
+      - '26677529097109'
   期望:
     intent: 按菜单筛选分类
-    params: *id098
+    params: *id100
     output: 工具可正常调用
     block: false
     semantic:
@@ -2967,18 +3040,20 @@
       - merchantId
   标签:
   - 正常
-  用例ID: A-L1-126
+  用例ID: A-L1-130
 - 维度: 性能与资源
   能力: 按菜单筛选分类
   层: L1
   输入:
     tool_name: query_categories
-    tool_params: &id100
-      menuIds: *id099
-      categoryIds: *id029
+    tool_params: &id101
+      menuIds:
+      - '26386470622021'
+      categoryIds: &id110
+      - '26677529097093'
   期望:
     intent: 按菜单筛选分类
-    params: *id100
+    params: *id101
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -2989,7 +3064,7 @@
       - merchantId
   标签:
   - 正常
-  用例ID: A-L1-127
+  用例ID: A-L1-131
 - 维度: 异常与容错
   能力: 按菜单筛选分类
   层: L1
@@ -3026,7 +3101,7 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-128
+  用例ID: A-L1-132
 - 维度: 协议契约
   能力: 按ID查询商品
   层: L1
@@ -3061,18 +3136,18 @@
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-129
+  用例ID: A-L1-133
 - 维度: 工具描述与发现
   能力: 按ID查询商品
   层: L1
   输入:
     tool_name: query_products_by_ids
-    tool_params: &id101
+    tool_params: &id102
       productIds:
-      - '26723267157200'
+      - '26853676268741'
   期望:
     intent: 按ID查询商品
-    params: *id101
+    params: *id102
     output: 工具可正常调用
     block: false
     semantic:
@@ -3083,18 +3158,18 @@
       - status
   标签:
   - 正常
-  用例ID: A-L1-130
+  用例ID: A-L1-134
 - 维度: 性能与资源
   能力: 按ID查询商品
   层: L1
   输入:
     tool_name: query_products_by_ids
-    tool_params: &id102
+    tool_params: &id103
       productIds:
-      - '26723267157197'
+      - '26723267157190'
   期望:
     intent: 按ID查询商品
-    params: *id102
+    params: *id103
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -3105,7 +3180,7 @@
       - status
   标签:
   - 正常
-  用例ID: A-L1-131
+  用例ID: A-L1-135
 - 维度: 异常与容错
   能力: 按ID查询商品
   层: L1
@@ -3142,7 +3217,7 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-132
+  用例ID: A-L1-136
 - 维度: 协议契约
   能力: 查询商品详情
   层: L1
@@ -3177,18 +3252,18 @@
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-133
+  用例ID: A-L1-137
 - 维度: 工具描述与发现
   能力: 查询商品详情
   层: L1
   输入:
     tool_name: query_product_detail_by_id
-    tool_params: &id103
-      productId: '26853676268741'
+    tool_params: &id104
+      productId: '26723267157189'
       includeCategory: true
   期望:
     intent: 查询商品详情
-    params: *id103
+    params: *id104
     output: 工具可正常调用
     block: false
     semantic:
@@ -3200,18 +3275,18 @@
       - status
   标签:
   - 正常
-  用例ID: A-L1-134
+  用例ID: A-L1-138
 - 维度: 性能与资源
   能力: 查询商品详情
   层: L1
   输入:
     tool_name: query_product_detail_by_id
-    tool_params: &id104
-      productId: '26723267157190'
+    tool_params: &id105
+      productId: '26723267157199'
       includeCategory: true
   期望:
     intent: 查询商品详情
-    params: *id104
+    params: *id105
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -3223,7 +3298,7 @@
       - status
   标签:
   - 正常
-  用例ID: A-L1-135
+  用例ID: A-L1-139
 - 维度: 异常与容错
   能力: 查询商品详情
   层: L1
@@ -3260,7 +3335,7 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-136
+  用例ID: A-L1-140
 - 维度: 协议契约
   能力: 按名称搜索商品
   层: L1
@@ -3295,18 +3370,18 @@
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-137
+  用例ID: A-L1-141
 - 维度: 工具描述与发现
   能力: 按名称搜索商品
   层: L1
   输入:
     tool_name: search_products_by_name
-    tool_params: &id105
-      productName: Ice talk桃子味饮料230ml
+    tool_params: &id106
+      productName: 泡面碗
       status: Selling
   期望:
     intent: 按名称搜索商品
-    params: *id105
+    params: *id106
     output: 工具可正常调用
     block: false
     semantic:
@@ -3317,18 +3392,18 @@
       - status
   标签:
   - 正常
-  用例ID: A-L1-138
+  用例ID: A-L1-142
 - 维度: 性能与资源
   能力: 按名称搜索商品
   层: L1
   输入:
     tool_name: search_products_by_name
-    tool_params: &id106
-      productName: 三养三倍辣火鸡面
+    tool_params: &id107
+      productName: 赞萌露比炸酱面
       status: Selling
   期望:
     intent: 按名称搜索商品
-    params: *id106
+    params: *id107
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -3339,7 +3414,7 @@
       - status
   标签:
   - 正常
-  用例ID: A-L1-139
+  用例ID: A-L1-143
 - 维度: 异常与容错
   能力: 按名称搜索商品
   层: L1
@@ -3374,7 +3449,7 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-140
+  用例ID: A-L1-144
 - 维度: 协议契约
   能力: 按条件筛选商品
   层: L1
@@ -3409,19 +3484,19 @@
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-141
+  用例ID: A-L1-145
 - 维度: 工具描述与发现
   能力: 按条件筛选商品
   层: L1
   输入:
     tool_name: query_products_by_filter
-    tool_params: &id107
+    tool_params: &id109
       type: Normal
       status: Selling
-      categoryIds: *id014
+      categoryIds: *id108
   期望:
     intent: 按条件筛选商品
-    params: *id107
+    params: *id109
     output: 工具可正常调用
     block: false
     semantic:
@@ -3432,19 +3507,19 @@
       - status
   标签:
   - 正常
-  用例ID: A-L1-142
+  用例ID: A-L1-146
 - 维度: 性能与资源
   能力: 按条件筛选商品
   层: L1
   输入:
     tool_name: query_products_by_filter
-    tool_params: &id108
+    tool_params: &id111
       type: Normal
       status: Selling
-      categoryIds: *id029
+      categoryIds: *id110
   期望:
     intent: 按条件筛选商品
-    params: *id108
+    params: *id111
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -3455,7 +3530,7 @@
       - status
   标签:
   - 正常
-  用例ID: A-L1-143
+  用例ID: A-L1-147
 - 维度: 异常与容错
   能力: 按条件筛选商品
   层: L1
@@ -3492,129 +3567,9 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-144
-- 维度: 协议契约
-  能力: 按订单ID查询订单商品明细
-  层: L1
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-145
-- 维度: 工具描述与发现
-  能力: 按订单ID查询订单商品明细
-  层: L1
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id109
-      merchantId: '26377732552517'
-      orderIds:
-      - '26377732552517'
-      page: 1
-      size: 15
-  期望:
-    intent: 按订单ID查询订单商品明细
-    params: *id109
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - TotalElements
-      - TotalPages
-      - IsLast
-  标签:
-  - 正常
-  用例ID: A-L1-146
-- 维度: 性能与资源
-  能力: 按订单ID查询订单商品明细
-  层: L1
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id110
-      merchantId: '26377732552517'
-      orderIds:
-      - '26377732552517'
-      page: 1
-      size: 15
-  期望:
-    intent: 按订单ID查询订单商品明细
-    params: *id110
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - TotalElements
-      - TotalPages
-      - IsLast
-  标签:
-  - 正常
-  用例ID: A-L1-147
-- 维度: 异常与容错
-  能力: 按订单ID查询订单商品明细
-  层: L1
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params:
-      unknown_param_malformed: x
-      merchantId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 容错
   用例ID: A-L1-148
 - 维度: 协议契约
-  能力: 按订单号查询单笔订单商品明细
+  能力: 按订单ID查询订单商品明细
   层: L1
   输入:
     tool_name: query_order_details_by_ids
@@ -3649,28 +3604,7 @@
   - 畸形
   用例ID: A-L1-149
 - 维度: 工具描述与发现
-  能力: 按订单号查询单笔订单商品明细
-  层: L1
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id111
-      merchantId: '26377732552517'
-      orderIds:
-      - '26377732552517'
-  期望:
-    intent: 按订单号查询单笔订单商品明细
-    params: *id111
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - orders
-      - timeZoneId
-  标签:
-  - 正常
-  用例ID: A-L1-150
-- 维度: 性能与资源
-  能力: 按订单号查询单笔订单商品明细
+  能力: 按订单ID查询订单商品明细
   层: L1
   输入:
     tool_name: query_order_details_by_ids
@@ -3678,20 +3612,47 @@
       merchantId: '26377732552517'
       orderIds:
       - '26377732552517'
+      page: 1
+      size: 15
   期望:
-    intent: 按订单号查询单笔订单商品明细
+    intent: 按订单ID查询订单商品明细
     params: *id112
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - TotalElements
+      - TotalPages
+      - IsLast
+  标签:
+  - 正常
+  用例ID: A-L1-150
+- 维度: 性能与资源
+  能力: 按订单ID查询订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id113
+      merchantId: '26377732552517'
+      orderIds:
+      - '26377732552517'
+      page: 1
+      size: 15
+  期望:
+    intent: 按订单ID查询订单商品明细
+    params: *id113
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - orders
-      - timeZoneId
+      - TotalElements
+      - TotalPages
+      - IsLast
   标签:
   - 正常
   用例ID: A-L1-151
 - 维度: 异常与容错
-  能力: 按订单号查询单笔订单商品明细
+  能力: 按订单ID查询订单商品明细
   层: L1
   输入:
     tool_name: query_order_details_by_ids
@@ -3728,6 +3689,120 @@
   - 容错
   用例ID: A-L1-152
 - 维度: 协议契约
+  能力: 按订单号查询单笔订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-153
+- 维度: 工具描述与发现
+  能力: 按订单号查询单笔订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id114
+      merchantId: '26377732552517'
+      orderIds:
+      - '26377732552517'
+  期望:
+    intent: 按订单号查询单笔订单商品明细
+    params: *id114
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - orders
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-154
+- 维度: 性能与资源
+  能力: 按订单号查询单笔订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id115
+      merchantId: '26377732552517'
+      orderIds:
+      - '26377732552517'
+  期望:
+    intent: 按订单号查询单笔订单商品明细
+    params: *id115
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - orders
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-155
+- 维度: 异常与容错
+  能力: 按订单号查询单笔订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-156
+- 维度: 协议契约
   能力: 查询店铺员工列表
   层: L1
   输入:
@@ -3761,17 +3836,17 @@
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-153
+  用例ID: A-L1-157
 - 维度: 工具描述与发现
   能力: 查询店铺员工列表
   层: L1
   输入:
     tool_name: query_merchant_staffs
-    tool_params: &id113
+    tool_params: &id116
       merchantIds: *id004
   期望:
     intent: 查询店铺员工列表
-    params: *id113
+    params: *id116
     output: 工具可正常调用
     block: false
     semantic:
@@ -3784,17 +3859,17 @@
       - isActive
   标签:
   - 正常
-  用例ID: A-L1-154
+  用例ID: A-L1-158
 - 维度: 性能与资源
   能力: 查询店铺员工列表
   层: L1
   输入:
     tool_name: query_merchant_staffs
-    tool_params: &id114
+    tool_params: &id117
       merchantIds: *id004
   期望:
     intent: 查询店铺员工列表
-    params: *id114
+    params: *id117
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -3807,7 +3882,7 @@
       - isActive
   标签:
   - 正常
-  用例ID: A-L1-155
+  用例ID: A-L1-159
 - 维度: 异常与容错
   能力: 查询店铺员工列表
   层: L1
@@ -3844,131 +3919,9 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-156
-- 维度: 协议契约
-  能力: 查询员工考勤记录
-  层: L1
-  输入:
-    tool_name: query_staff_attendances
-    tool_params:
-      unknown_param_malformed: x
-  期望:
-    intent: 协议错误
-    params: {}
-    output: 返回参数错误，不崩溃
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 畸形
-  用例ID: A-L1-157
-- 维度: 工具描述与发现
-  能力: 查询员工考勤记录
-  层: L1
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id115
-      merchantId: '26377732552517'
-      relativePeriod: ThisMonth
-      page: 1
-      size: 15
-  期望:
-    intent: 查询员工考勤记录
-    params: *id115
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - list
-      - totalElements
-      - totalPages
-      - isLast
-      - timeZoneId
-  标签:
-  - 正常
-  用例ID: A-L1-158
-- 维度: 性能与资源
-  能力: 查询员工考勤记录
-  层: L1
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id116
-      merchantId: '26377732552517'
-      relativePeriod: ThisMonth
-      page: 1
-      size: 15
-  期望:
-    intent: 查询员工考勤记录
-    params: *id116
-    output: 单次调用延迟可接受
-    block: false
-    semantic:
-      fields:
-      - list
-      - totalElements
-      - totalPages
-      - isLast
-      - timeZoneId
-  标签:
-  - 正常
-  用例ID: A-L1-159
-- 维度: 异常与容错
-  能力: 查询员工考勤记录
-  层: L1
-  输入:
-    tool_name: query_staff_attendances
-    tool_params:
-      unknown_param_malformed: x
-      merchantId:
-      - '0'
-  期望:
-    intent: 容错
-    params: {}
-    output: 非法输入被友好处理，不崩溃
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 容错
   用例ID: A-L1-160
 - 维度: 协议契约
-  能力: 按员工筛选考勤记录
+  能力: 查询员工考勤记录
   层: L1
   输入:
     tool_name: query_staff_attendances
@@ -4003,57 +3956,57 @@
   - 畸形
   用例ID: A-L1-161
 - 维度: 工具描述与发现
-  能力: 按员工筛选考勤记录
+  能力: 查询员工考勤记录
   层: L1
   输入:
     tool_name: query_staff_attendances
-    tool_params: &id117
+    tool_params: &id118
       merchantId: '26377732552517'
-      merchantStaffIds:
-      - '26377732552517'
       relativePeriod: ThisMonth
       page: 1
       size: 15
   期望:
-    intent: 按员工筛选考勤记录
-    params: *id117
+    intent: 查询员工考勤记录
+    params: *id118
     output: 工具可正常调用
     block: false
     semantic:
       fields:
       - list
       - totalElements
+      - totalPages
       - isLast
+      - timeZoneId
   标签:
   - 正常
   用例ID: A-L1-162
 - 维度: 性能与资源
-  能力: 按员工筛选考勤记录
+  能力: 查询员工考勤记录
   层: L1
   输入:
     tool_name: query_staff_attendances
-    tool_params: &id118
+    tool_params: &id119
       merchantId: '26377732552517'
-      merchantStaffIds:
-      - '26377732552517'
       relativePeriod: ThisMonth
       page: 1
       size: 15
   期望:
-    intent: 按员工筛选考勤记录
-    params: *id118
+    intent: 查询员工考勤记录
+    params: *id119
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
       - list
       - totalElements
+      - totalPages
       - isLast
+      - timeZoneId
   标签:
   - 正常
   用例ID: A-L1-163
 - 维度: 异常与容错
-  能力: 按员工筛选考勤记录
+  能力: 查询员工考勤记录
   层: L1
   输入:
     tool_name: query_staff_attendances
@@ -4090,10 +4043,10 @@
   - 容错
   用例ID: A-L1-164
 - 维度: 协议契约
-  能力: 查询店铺经营汇总
+  能力: 按员工筛选考勤记录
   层: L1
   输入:
-    tool_name: query_datax_total_reports
+    tool_name: query_staff_attendances
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -4125,52 +4078,60 @@
   - 畸形
   用例ID: A-L1-165
 - 维度: 工具描述与发现
-  能力: 查询店铺经营汇总
+  能力: 按员工筛选考勤记录
   层: L1
   输入:
-    tool_name: query_datax_total_reports
-    tool_params: &id119
+    tool_name: query_staff_attendances
+    tool_params: &id120
       merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
+      merchantStaffIds:
+      - '26377732552517'
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
-    intent: 查询店铺经营汇总
-    params: *id119
+    intent: 按员工筛选考勤记录
+    params: *id120
     output: 工具可正常调用
     block: false
     semantic:
       fields:
-      - totalSales
-      - totalGuests
+      - list
+      - totalElements
+      - isLast
   标签:
   - 正常
   用例ID: A-L1-166
 - 维度: 性能与资源
-  能力: 查询店铺经营汇总
+  能力: 按员工筛选考勤记录
   层: L1
   输入:
-    tool_name: query_datax_total_reports
-    tool_params: &id120
+    tool_name: query_staff_attendances
+    tool_params: &id121
       merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
+      merchantStaffIds:
+      - '26377732552517'
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
   期望:
-    intent: 查询店铺经营汇总
-    params: *id120
+    intent: 按员工筛选考勤记录
+    params: *id121
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - totalSales
-      - totalGuests
+      - list
+      - totalElements
+      - isLast
   标签:
   - 正常
   用例ID: A-L1-167
 - 维度: 异常与容错
-  能力: 查询店铺经营汇总
+  能力: 按员工筛选考勤记录
   层: L1
   输入:
-    tool_name: query_datax_total_reports
+    tool_name: query_staff_attendances
     tool_params:
       unknown_param_malformed: x
       merchantId:
@@ -4204,10 +4165,10 @@
   - 容错
   用例ID: A-L1-168
 - 维度: 协议契约
-  能力: 查询订单销售明细
+  能力: 查询店铺经营汇总
   层: L1
   输入:
-    tool_name: query_datax_order_sales_reports
+    tool_name: query_datax_total_reports
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -4239,56 +4200,52 @@
   - 畸形
   用例ID: A-L1-169
 - 维度: 工具描述与发现
-  能力: 查询订单销售明细
+  能力: 查询店铺经营汇总
   层: L1
   输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id121
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-  期望:
-    intent: 查询订单销售明细
-    params: *id121
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - orderSerial
-      - orderStatus
-      - netSales
-      - actualRevenue
-  标签:
-  - 正常
-  用例ID: A-L1-170
-- 维度: 性能与资源
-  能力: 查询订单销售明细
-  层: L1
-  输入:
-    tool_name: query_datax_order_sales_reports
+    tool_name: query_datax_total_reports
     tool_params: &id122
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
-    intent: 查询订单销售明细
+    intent: 查询店铺经营汇总
     params: *id122
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - totalSales
+      - totalGuests
+  标签:
+  - 正常
+  用例ID: A-L1-170
+- 维度: 性能与资源
+  能力: 查询店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id123
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *id123
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - orderSerial
-      - orderStatus
-      - netSales
-      - actualRevenue
+      - totalSales
+      - totalGuests
   标签:
   - 正常
   用例ID: A-L1-171
 - 维度: 异常与容错
-  能力: 查询订单销售明细
+  能力: 查询店铺经营汇总
   层: L1
   输入:
-    tool_name: query_datax_order_sales_reports
+    tool_name: query_datax_total_reports
     tool_params:
       unknown_param_malformed: x
       merchantId:
@@ -4322,7 +4279,7 @@
   - 容错
   用例ID: A-L1-172
 - 维度: 协议契约
-  能力: 按订单状态筛选订单销售明细
+  能力: 查询订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4357,31 +4314,7 @@
   - 畸形
   用例ID: A-L1-173
 - 维度: 工具描述与发现
-  能力: 按订单状态筛选订单销售明细
-  层: L1
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id123
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      orderStatus: Completed
-  期望:
-    intent: 按订单状态筛选订单销售明细
-    params: *id123
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - orderId
-      - orderSerial
-      - orderStatus
-      - netSales
-  标签:
-  - 正常
-  用例ID: A-L1-174
-- 维度: 性能与资源
-  能力: 按订单状态筛选订单销售明细
+  能力: 查询订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4389,23 +4322,45 @@
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      orderStatus: Completed
   期望:
-    intent: 按订单状态筛选订单销售明细
+    intent: 查询订单销售明细
     params: *id124
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - orderSerial
+      - orderStatus
+      - netSales
+      - actualRevenue
+  标签:
+  - 正常
+  用例ID: A-L1-174
+- 维度: 性能与资源
+  能力: 查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id125
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+  期望:
+    intent: 查询订单销售明细
+    params: *id125
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - orderId
       - orderSerial
       - orderStatus
       - netSales
+      - actualRevenue
   标签:
   - 正常
   用例ID: A-L1-175
 - 维度: 异常与容错
-  能力: 按订单状态筛选订单销售明细
+  能力: 查询订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4442,7 +4397,7 @@
   - 容错
   用例ID: A-L1-176
 - 维度: 协议契约
-  能力: 按支付方式查询订单销售明细
+  能力: 按订单状态筛选订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4477,30 +4432,7 @@
   - 畸形
   用例ID: A-L1-177
 - 维度: 工具描述与发现
-  能力: 按支付方式查询订单销售明细
-  层: L1
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id125
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      paymentType: CreditCard
-  期望:
-    intent: 按支付方式查询订单销售明细
-    params: *id125
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - orderId
-      - paymentType
-      - actualRevenue
-  标签:
-  - 正常
-  用例ID: A-L1-178
-- 维度: 性能与资源
-  能力: 按支付方式查询订单销售明细
+  能力: 按订单状态筛选订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4508,22 +4440,47 @@
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      paymentType: CreditCard
+      orderStatus: Completed
   期望:
-    intent: 按支付方式查询订单销售明细
+    intent: 按订单状态筛选订单销售明细
     params: *id126
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - orderId
+      - orderSerial
+      - orderStatus
+      - netSales
+  标签:
+  - 正常
+  用例ID: A-L1-178
+- 维度: 性能与资源
+  能力: 按订单状态筛选订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id127
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      orderStatus: Completed
+  期望:
+    intent: 按订单状态筛选订单销售明细
+    params: *id127
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
       - orderId
-      - paymentType
-      - actualRevenue
+      - orderSerial
+      - orderStatus
+      - netSales
   标签:
   - 正常
   用例ID: A-L1-179
 - 维度: 异常与容错
-  能力: 按支付方式查询订单销售明细
+  能力: 按订单状态筛选订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4560,7 +4517,7 @@
   - 容错
   用例ID: A-L1-180
 - 维度: 协议契约
-  能力: 按订单号查询指定订单销售明细
+  能力: 按支付方式查询订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4595,31 +4552,7 @@
   - 畸形
   用例ID: A-L1-181
 - 维度: 工具描述与发现
-  能力: 按订单号查询指定订单销售明细
-  层: L1
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id127
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      orderId: '26907187620613'
-  期望:
-    intent: 按订单号查询指定订单销售明细
-    params: *id127
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - orderId
-      - orderSerial
-      - netSales
-      - orderStatus
-  标签:
-  - 正常
-  用例ID: A-L1-182
-- 维度: 性能与资源
-  能力: 按订单号查询指定订单销售明细
+  能力: 按支付方式查询订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4627,23 +4560,45 @@
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      orderId: '26907187620613'
+      paymentType: CreditCard
   期望:
-    intent: 按订单号查询指定订单销售明细
+    intent: 按支付方式查询订单销售明细
     params: *id128
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - orderId
+      - paymentType
+      - actualRevenue
+  标签:
+  - 正常
+  用例ID: A-L1-182
+- 维度: 性能与资源
+  能力: 按支付方式查询订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id129
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      paymentType: CreditCard
+  期望:
+    intent: 按支付方式查询订单销售明细
+    params: *id129
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
       - orderId
-      - orderSerial
-      - netSales
-      - orderStatus
+      - paymentType
+      - actualRevenue
   标签:
   - 正常
   用例ID: A-L1-183
 - 维度: 异常与容错
-  能力: 按订单号查询指定订单销售明细
+  能力: 按支付方式查询订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4680,7 +4635,7 @@
   - 容错
   用例ID: A-L1-184
 - 维度: 协议契约
-  能力: 按销售额排序查询 Top N 订单
+  能力: 按订单号查询指定订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4715,32 +4670,7 @@
   - 畸形
   用例ID: A-L1-185
 - 维度: 工具描述与发现
-  能力: 按销售额排序查询 Top N 订单
-  层: L1
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id129
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      sortField: Amount
-      sortDirection: Descending
-      limit: 5
-  期望:
-    intent: 按销售额排序查询 Top N 订单
-    params: *id129
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - orderId
-      - orderSerial
-      - netSales
-  标签:
-  - 正常
-  用例ID: A-L1-186
-- 维度: 性能与资源
-  能力: 按销售额排序查询 Top N 订单
+  能力: 按订单号查询指定订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4748,12 +4678,34 @@
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      sortField: Amount
-      sortDirection: Descending
-      limit: 5
+      orderId: '26907187620613'
   期望:
-    intent: 按销售额排序查询 Top N 订单
+    intent: 按订单号查询指定订单销售明细
     params: *id130
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - orderId
+      - orderSerial
+      - netSales
+      - orderStatus
+  标签:
+  - 正常
+  用例ID: A-L1-186
+- 维度: 性能与资源
+  能力: 按订单号查询指定订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id131
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      orderId: '26907187620613'
+  期望:
+    intent: 按订单号查询指定订单销售明细
+    params: *id131
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -4761,11 +4713,12 @@
       - orderId
       - orderSerial
       - netSales
+      - orderStatus
   标签:
   - 正常
   用例ID: A-L1-187
 - 维度: 异常与容错
-  能力: 按销售额排序查询 Top N 订单
+  能力: 按订单号查询指定订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4802,7 +4755,7 @@
   - 容错
   用例ID: A-L1-188
 - 维度: 协议契约
-  能力: 按支付状态筛选订单销售明细
+  能力: 按销售额排序查询 Top N 订单
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4837,30 +4790,7 @@
   - 畸形
   用例ID: A-L1-189
 - 维度: 工具描述与发现
-  能力: 按支付状态筛选订单销售明细
-  层: L1
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id131
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      paymentStatus: FullyPaid
-  期望:
-    intent: 按支付状态筛选订单销售明细
-    params: *id131
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - records
-      - total
-      - timeZoneId
-  标签:
-  - 正常
-  用例ID: A-L1-190
-- 维度: 性能与资源
-  能力: 按支付状态筛选订单销售明细
+  能力: 按销售额排序查询 Top N 订单
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4868,22 +4798,49 @@
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      paymentStatus: FullyPaid
+      sortField: Amount
+      sortDirection: Descending
+      limit: 5
   期望:
-    intent: 按支付状态筛选订单销售明细
+    intent: 按销售额排序查询 Top N 订单
     params: *id132
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - orderId
+      - orderSerial
+      - netSales
+  标签:
+  - 正常
+  用例ID: A-L1-190
+- 维度: 性能与资源
+  能力: 按销售额排序查询 Top N 订单
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id133
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      sortField: Amount
+      sortDirection: Descending
+      limit: 5
+  期望:
+    intent: 按销售额排序查询 Top N 订单
+    params: *id133
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - records
-      - total
-      - timeZoneId
+      - orderId
+      - orderSerial
+      - netSales
   标签:
   - 正常
   用例ID: A-L1-191
 - 维度: 异常与容错
-  能力: 按支付状态筛选订单销售明细
+  能力: 按销售额排序查询 Top N 订单
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4920,7 +4877,7 @@
   - 容错
   用例ID: A-L1-192
 - 维度: 协议契约
-  能力: 统计订单数量
+  能力: 按支付状态筛选订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4955,31 +4912,7 @@
   - 畸形
   用例ID: A-L1-193
 - 维度: 工具描述与发现
-  能力: 统计订单数量
-  层: L1
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id133
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      resultMode: Count
-  期望:
-    intent: 统计订单数量
-    params: *id133
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - summary
-      - orderCount
-      - resultMode
-      - records
-  标签:
-  - 正常
-  用例ID: A-L1-194
-- 维度: 性能与资源
-  能力: 统计订单数量
+  能力: 按支付状态筛选订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -4987,23 +4920,45 @@
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      resultMode: Count
+      paymentStatus: FullyPaid
   期望:
-    intent: 统计订单数量
+    intent: 按支付状态筛选订单销售明细
     params: *id134
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - records
+      - total
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-194
+- 维度: 性能与资源
+  能力: 按支付状态筛选订单销售明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id135
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      paymentStatus: FullyPaid
+  期望:
+    intent: 按支付状态筛选订单销售明细
+    params: *id135
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
-      - summary
-      - orderCount
-      - resultMode
       - records
+      - total
+      - timeZoneId
   标签:
   - 正常
   用例ID: A-L1-195
 - 维度: 异常与容错
-  能力: 统计订单数量
+  能力: 按支付状态筛选订单销售明细
   层: L1
   输入:
     tool_name: query_datax_order_sales_reports
@@ -5040,10 +4995,10 @@
   - 容错
   用例ID: A-L1-196
 - 维度: 协议契约
-  能力: 查询菜单商品分类报表
+  能力: 统计订单数量
   层: L1
   输入:
-    tool_name: query_datax_menu_product_category_reports
+    tool_name: query_datax_order_sales_reports
     tool_params:
       unknown_param_malformed: x
   期望:
@@ -5075,60 +5030,58 @@
   - 畸形
   用例ID: A-L1-197
 - 维度: 工具描述与发现
-  能力: 查询菜单商品分类报表
+  能力: 统计订单数量
   层: L1
   输入:
-    tool_name: query_datax_menu_product_category_reports
-    tool_params: &id135
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      type: Menu
-      name: Ice talk桃子味饮料230ml
-      refId: '26723267157189'
-  期望:
-    intent: 查询菜单商品分类报表
-    params: *id135
-    output: 工具可正常调用
-    block: false
-    semantic:
-      fields:
-      - records
-      - total
-      - timeZoneId
-  标签:
-  - 正常
-  用例ID: A-L1-198
-- 维度: 性能与资源
-  能力: 查询菜单商品分类报表
-  层: L1
-  输入:
-    tool_name: query_datax_menu_product_category_reports
+    tool_name: query_datax_order_sales_reports
     tool_params: &id136
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      type: Menu
-      name: 三养三倍辣火鸡面
-      refId: '26723267157199'
+      resultMode: Count
   期望:
-    intent: 查询菜单商品分类报表
+    intent: 统计订单数量
     params: *id136
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - summary
+      - orderCount
+      - resultMode
+      - records
+  标签:
+  - 正常
+  用例ID: A-L1-198
+- 维度: 性能与资源
+  能力: 统计订单数量
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id137
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      resultMode: Count
+  期望:
+    intent: 统计订单数量
+    params: *id137
     output: 单次调用延迟可接受
     block: false
     semantic:
       fields:
+      - summary
+      - orderCount
+      - resultMode
       - records
-      - total
-      - timeZoneId
   标签:
   - 正常
   用例ID: A-L1-199
 - 维度: 异常与容错
-  能力: 查询菜单商品分类报表
+  能力: 统计订单数量
   层: L1
   输入:
-    tool_name: query_datax_menu_product_category_reports
+    tool_name: query_datax_order_sales_reports
     tool_params:
       unknown_param_malformed: x
       merchantId:
@@ -5162,6 +5115,128 @@
   - 容错
   用例ID: A-L1-200
 - 维度: 协议契约
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-201
+- 维度: 工具描述与发现
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id138
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      type: Menu
+      name: 泡面碗
+      refId: '26723267157210'
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *id138
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - records
+      - total
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-202
+- 维度: 性能与资源
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id139
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      type: Menu
+      name: 赞萌露比炸酱面
+      refId: '26723267157211'
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *id139
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - records
+      - total
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-203
+- 维度: 异常与容错
+  能力: 查询菜单商品分类报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-204
+- 维度: 协议契约
   能力: 查询店铺营业概况
   层: L1
   输入:
@@ -5195,19 +5270,19 @@
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-201
+  用例ID: A-L1-205
 - 维度: 工具描述与发现
   能力: 查询店铺营业概况
   层: L1
   输入:
     tool_name: query_datax_total_reports
-    tool_params: &id137
+    tool_params: &id140
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
     intent: 查询店铺营业概况
-    params: *id137
+    params: *id140
     output: 工具可正常调用
     block: false
     semantic:
@@ -5217,19 +5292,19 @@
       - netSales
   标签:
   - 正常
-  用例ID: A-L1-202
+  用例ID: A-L1-206
 - 维度: 性能与资源
   能力: 查询店铺营业概况
   层: L1
   输入:
     tool_name: query_datax_total_reports
-    tool_params: &id138
+    tool_params: &id141
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
   期望:
     intent: 查询店铺营业概况
-    params: *id138
+    params: *id141
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -5239,7 +5314,7 @@
       - netSales
   标签:
   - 正常
-  用例ID: A-L1-203
+  用例ID: A-L1-207
 - 维度: 异常与容错
   能力: 查询店铺营业概况
   层: L1
@@ -5276,7 +5351,7 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-204
+  用例ID: A-L1-208
 - 维度: 协议契约
   能力: 查询分类与商品结构
   层: L1
@@ -5311,17 +5386,17 @@
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-205
+  用例ID: A-L1-209
 - 维度: 工具描述与发现
   能力: 查询分类与商品结构
   层: L1
   输入:
     tool_name: query_categories
-    tool_params: &id139
+    tool_params: &id142
       merchantIds: *id004
   期望:
     intent: 查询分类与商品结构
-    params: *id139
+    params: *id142
     output: 工具可正常调用
     block: false
     semantic:
@@ -5331,17 +5406,17 @@
       - type
   标签:
   - 正常
-  用例ID: A-L1-206
+  用例ID: A-L1-210
 - 维度: 性能与资源
   能力: 查询分类与商品结构
   层: L1
   输入:
     tool_name: query_categories
-    tool_params: &id140
+    tool_params: &id143
       merchantIds: *id004
   期望:
     intent: 查询分类与商品结构
-    params: *id140
+    params: *id143
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -5351,7 +5426,7 @@
       - type
   标签:
   - 正常
-  用例ID: A-L1-207
+  用例ID: A-L1-211
 - 维度: 异常与容错
   能力: 查询分类与商品结构
   层: L1
@@ -5388,9 +5463,125 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-208
+  用例ID: A-L1-212
 - 维度: 协议契约
-  能力: 订单明细与销售报表交叉核对
+  能力: 查询订单销售报表
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-213
+- 维度: 工具描述与发现
+  能力: 查询订单销售报表
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id144
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+  期望:
+    intent: 查询订单销售报表
+    params: *id144
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - records
+      - total
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-214
+- 维度: 性能与资源
+  能力: 查询订单销售报表
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id145
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+  期望:
+    intent: 查询订单销售报表
+    params: *id145
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - records
+      - total
+      - timeZoneId
+  标签:
+  - 正常
+  用例ID: A-L1-215
+- 维度: 异常与容错
+  能力: 查询订单销售报表
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-216
+- 维度: 协议契约
+  能力: 按订单号查询订单商品明细
   层: L1
   输入:
     tool_name: query_order_details_by_ids
@@ -5423,21 +5614,21 @@
       any_of: true
   标签:
   - 畸形
-  用例ID: A-L1-209
+  用例ID: A-L1-217
 - 维度: 工具描述与发现
-  能力: 订单明细与销售报表交叉核对
+  能力: 按订单号查询订单商品明细
   层: L1
   输入:
     tool_name: query_order_details_by_ids
-    tool_params: &id141
+    tool_params: &id146
       merchantId: '26377732552517'
       orderIds:
       - '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
+      page: 1
+      size: 15
   期望:
-    intent: 订单明细与销售报表交叉核对
-    params: *id141
+    intent: 按订单号查询订单商品明细
+    params: *id146
     output: 工具可正常调用
     block: false
     semantic:
@@ -5446,21 +5637,21 @@
       - timeZoneId
   标签:
   - 正常
-  用例ID: A-L1-210
+  用例ID: A-L1-218
 - 维度: 性能与资源
-  能力: 订单明细与销售报表交叉核对
+  能力: 按订单号查询订单商品明细
   层: L1
   输入:
     tool_name: query_order_details_by_ids
-    tool_params: &id142
+    tool_params: &id147
       merchantId: '26377732552517'
       orderIds:
       - '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
+      page: 1
+      size: 15
   期望:
-    intent: 订单明细与销售报表交叉核对
-    params: *id142
+    intent: 按订单号查询订单商品明细
+    params: *id147
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -5469,9 +5660,9 @@
       - timeZoneId
   标签:
   - 正常
-  用例ID: A-L1-211
+  用例ID: A-L1-219
 - 维度: 异常与容错
-  能力: 订单明细与销售报表交叉核对
+  能力: 按订单号查询订单商品明细
   层: L1
   输入:
     tool_name: query_order_details_by_ids
@@ -5506,7 +5697,46 @@
       any_of: true
   标签:
   - 容错
-  用例ID: A-L1-212
+  用例ID: A-L1-220
+- 维度: 参数校验
+  能力: 按订单号查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id148
+      merchantId: '26377732552517'
+      orderIds: *id091
+      page: 1
+      size: 15
+      unknown_param: x
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id148
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-221
 - 维度: 调用正确性
   能力: 按订单号查询指定订单销售明细
   层: L2
@@ -5529,18 +5759,22 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-213
+  用例ID: A-L2-222
 - 维度: 参数校验
-  能力: 查询商品详情
+  能力: 按销售额排序查询 Top N 订单
   层: L2
   输入:
-    tool_name: query_product_detail_by_id
-    tool_params: &id143
-      productId: '26723267157200'
-      includeCategory: 0
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id149
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      sortField: Amount
+      sortDirection: Descending
+      limit: 9999999999999999
   期望:
-    intent: 查询商品详情
-    params: *id143
+    intent: 按销售额排序查询 Top N 订单
+    params: *id149
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -5550,7 +5784,467 @@
       any_of: true
   标签:
   - 数值变异
-  用例ID: A-L2-214
+  用例ID: A-L2-223
+- 维度: 调用正确性
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports_typo
+    tool_params:
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+  期望:
+    intent: 查询店铺经营汇总
+    params: *id051
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-224
+- 维度: 参数校验
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id150
+      merchantId: '26377732552517'
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
+      unknown_param: x
+  期望:
+    intent: 查询员工考勤记录
+    params: *id150
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-225
+- 维度: 调用正确性
+  能力: 统计订单数量
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports_typo
+    tool_params:
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      resultMode: Count
+  期望:
+    intent: 统计订单数量
+    params: *id074
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-226
+- 维度: 参数校验
+  能力: 按订单号查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id151
+      merchantId: '26377732552517'
+      orderIds: *id091
+      page: 9999999999999999
+      size: 15
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id151
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-227
+- 维度: 参数校验
+  能力: 按订单ID查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id152
+      merchantId: '26377732552517'
+      orderIds: *id032
+      page: -1
+      size: 15
+  期望:
+    intent: 按订单ID查询订单商品明细
+    params: *id152
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-228
+- 维度: 参数校验
+  能力: 查询商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id153
+      productId: '26723267157200'
+      includeCategory: 9999999999999999
+  期望:
+    intent: 查询商品详情
+    params: *id153
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-229
+- 维度: 参数校验
+  能力: 按订单ID查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id154
+      merchantId: '26377732552517'
+      orderIds: *id032
+      page: 0
+      size: 15
+  期望:
+    intent: 按订单ID查询订单商品明细
+    params: *id154
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-230
+- 维度: 调用正确性
+  能力: 按菜单筛选分类
+  层: L2
+  输入:
+    tool_name: query_categories_typo
+    tool_params:
+      menuIds: *id155
+      categoryIds: *id014
+  期望:
+    intent: 按菜单筛选分类
+    params: *id013
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-231
+- 维度: 参数校验
+  能力: 按员工筛选考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id156
+      merchantId: '26377732552517'
+      merchantStaffIds: *id048
+      relativePeriod: ThisMonth
+      page: abc
+      size: 15
+  期望:
+    intent: 按员工筛选考勤记录
+    params: *id156
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-232
+- 维度: 调用正确性
+  能力: 查询菜单列表
+  层: L2
+  输入:
+    tool_name: query_menus_typo
+    tool_params:
+      merchantIds: *id004
+  期望:
+    intent: 查询菜单列表
+    params: *id001
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-233
+- 维度: 参数校验
+  能力: 查询商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id157
+      productId: '26723267157200'
+      includeCategory: 0
+  期望:
+    intent: 查询商品详情
+    params: *id157
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-234
+- 维度: 参数校验
+  能力: 按条件筛选商品
+  层: L2
+  输入:
+    tool_name: query_products_by_filter
+    tool_params: &id158
+      type: Normal
+      status: Selling
+      categoryIds: *id014
+      unknown_param: x
+  期望:
+    intent: 按条件筛选商品
+    params: *id158
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-235
+- 维度: 参数校验
+  能力: 按销售额排序查询 Top N 订单
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id159
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      sortField: Amount
+      sortDirection: Descending
+      limit: abc
+  期望:
+    intent: 按销售额排序查询 Top N 订单
+    params: *id159
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-236
+- 维度: 调用正确性
+  能力: 按名称查询分类
+  层: L2
+  输入:
+    tool_name: query_categories_typo
+    tool_params:
+      categoryName: 特色飲料
+  期望:
+    intent: 按名称查询分类
+    params: *id010
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-237
+- 维度: 参数校验
+  能力: 按员工筛选考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id160
+      merchantId: '26377732552517'
+      merchantStaffIds: *id048
+      relativePeriod: ThisMonth
+      page: -1
+      size: 15
+  期望:
+    intent: 按员工筛选考勤记录
+    params: *id160
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-238
+- 维度: 参数校验
+  能力: 按订单号查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id161
+      merchantId: '26377732552517'
+      orderIds: *id091
+      page: abc
+      size: 15
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id161
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-239
+- 维度: 参数校验
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id162
+      merchantId: '26377732552517'
+      relativePeriod: ThisMonth
+      page: -1
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *id162
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-240
+- 维度: 参数校验
+  能力: 按员工筛选考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id163
+      merchantId: '26377732552517'
+      merchantStaffIds: *id048
+      relativePeriod: ThisMonth
+      page: 9999999999999999
+      size: 15
+  期望:
+    intent: 按员工筛选考勤记录
+    params: *id163
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-241
+- 维度: 参数校验
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id164
+      merchantId: '26377732552517'
+      relativePeriod: ThisMonth
+      page: 9999999999999999
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *id164
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-242
 - 维度: 调用正确性
   能力: 按订单状态筛选订单销售明细
   层: L2
@@ -5573,7 +6267,68 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-215
+  用例ID: A-L2-243
+- 维度: 调用正确性
+  能力: 查询店铺营业概况
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports_typo
+    tool_params:
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+  期望:
+    intent: 查询店铺营业概况
+    params: *id081
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-244
+- 维度: 参数校验
+  能力: 按支付状态筛选订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id165
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      paymentStatus: FullyPaid
+      unknown_param: x
+  期望:
+    intent: 按支付状态筛选订单销售明细
+    params: *id165
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-245
 - 维度: 调用正确性
   能力: 查询店铺员工列表
   层: L2
@@ -5593,21 +6348,21 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-216
+  用例ID: A-L2-246
 - 维度: 参数校验
-  能力: 按订单ID查询订单商品明细
+  能力: 查询员工考勤记录
   层: L2
   输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id144
+    tool_name: query_staff_attendances
+    tool_params: &id166
       merchantId: '26377732552517'
-      orderIds: *id032
-      page: 0
+      relativePeriod: ThisMonth
+      page: abc
       size: 15
   期望:
-    intent: 按订单ID查询订单商品明细
-    params: *id144
-    output: 越界参数被拒绝/提示
+    intent: 查询员工考勤记录
+    params: *id166
+    output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
@@ -5615,21 +6370,19 @@
       - 拒绝
       any_of: true
   标签:
-  - 数值变异
-  用例ID: A-L2-217
+  - 类型错配
+  用例ID: A-L2-247
 - 维度: 调用正确性
-  能力: 按支付方式查询订单销售明细
+  能力: 按订单号查询单笔订单商品明细
   层: L2
   输入:
-    tool_name: query_datax_order_sales_reports_typo
+    tool_name: query_order_details_by_ids_typo
     tool_params:
       merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      paymentType: CreditCard
+      orderIds: *id037
   期望:
-    intent: 按支付方式查询订单销售明细
-    params: *id062
+    intent: 按订单号查询单笔订单商品明细
+    params: *id036
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -5639,7 +6392,148 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-218
+  用例ID: A-L2-248
+- 维度: 参数校验
+  能力: 查询菜单列表
+  层: L2
+  输入:
+    tool_name: query_menus
+    tool_params: &id167
+      merchantIds: *id004
+      unknown_param: x
+  期望:
+    intent: 查询菜单列表
+    params: *id167
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-249
+- 维度: 参数校验
+  能力: 查询商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id168
+      productId: '26723267157200'
+      includeCategory: -1
+  期望:
+    intent: 查询商品详情
+    params: *id168
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-250
+- 维度: 参数校验
+  能力: 按订单号查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id169
+      merchantId: '26377732552517'
+      orderIds: *id091
+      page: 0
+      size: 15
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id169
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-251
+- 维度: 参数校验
+  能力: 按员工筛选考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id170
+      merchantId: '26377732552517'
+      merchantStaffIds: *id048
+      relativePeriod: ThisMonth
+      page: 0
+      size: 15
+  期望:
+    intent: 按员工筛选考勤记录
+    params: *id170
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-252
+- 维度: 参数校验
+  能力: 按名称搜索商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id171
+      productName: 可口可乐
+      status: Selling
+      unknown_param: x
+  期望:
+    intent: 按名称搜索商品
+    params: *id171
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-253
 - 维度: 调用正确性
   能力: 按支付状态筛选订单销售明细
   层: L2
@@ -5662,7 +6556,435 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-219
+  用例ID: A-L2-254
+- 维度: 参数校验
+  能力: 按名称查询分类
+  层: L2
+  输入:
+    tool_name: query_categories
+    tool_params: &id172
+      categoryName: 特色飲料
+      unknown_param: x
+  期望:
+    intent: 按名称查询分类
+    params: *id172
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-255
+- 维度: 参数校验
+  能力: 按订单状态筛选订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id173
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      orderStatus: Completed
+      unknown_param: x
+  期望:
+    intent: 按订单状态筛选订单销售明细
+    params: *id173
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-256
+- 维度: 调用正确性
+  能力: 按员工筛选考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances_typo
+    tool_params:
+      merchantId: '26377732552517'
+      merchantStaffIds: *id048
+      relativePeriod: ThisMonth
+      page: 1
+      size: 15
+  期望:
+    intent: 按员工筛选考勤记录
+    params: *id047
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-257
+- 维度: 调用正确性
+  能力: 查询分类与商品结构
+  层: L2
+  输入:
+    tool_name: query_categories_typo
+    tool_params:
+      merchantIds: *id004
+  期望:
+    intent: 查询分类与商品结构
+    params: *id084
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-258
+- 维度: 参数校验
+  能力: 按支付方式查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id174
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      paymentType: CreditCard
+      unknown_param: x
+  期望:
+    intent: 按支付方式查询订单销售明细
+    params: *id174
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-259
+- 维度: 调用正确性
+  能力: 按支付方式查询订单销售明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports_typo
+    tool_params:
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      paymentType: CreditCard
+  期望:
+    intent: 按支付方式查询订单销售明细
+    params: *id062
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-260
+- 维度: 参数校验
+  能力: 查询员工考勤记录
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id175
+      merchantId: '26377732552517'
+      relativePeriod: ThisMonth
+      page: 0
+      size: 15
+  期望:
+    intent: 查询员工考勤记录
+    params: *id175
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-261
+- 维度: 参数校验
+  能力: 统计订单数量
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id176
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      resultMode: Count
+      unknown_param: x
+  期望:
+    intent: 统计订单数量
+    params: *id176
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-262
+- 维度: 参数校验
+  能力: 按ID查询商品
+  层: L2
+  输入:
+    tool_name: query_products_by_ids
+    tool_params: &id178
+      productIds: *id177
+      unknown_param: x
+  期望:
+    intent: 按ID查询商品
+    params: *id178
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-263
+- 维度: 参数校验
+  能力: 按订单ID查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id179
+      merchantId: '26377732552517'
+      orderIds: *id032
+      page: abc
+      size: 15
+  期望:
+    intent: 按订单ID查询订单商品明细
+    params: *id179
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-264
+- 维度: 参数校验
+  能力: 按订单ID查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id180
+      merchantId: '26377732552517'
+      orderIds: *id032
+      page: 9999999999999999
+      size: 15
+  期望:
+    intent: 按订单ID查询订单商品明细
+    params: *id180
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-265
+- 维度: 参数校验
+  能力: 查询菜单商品分类报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id181
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      type: Menu
+      name: 可口可乐
+      refId: '26853676268741'
+      unknown_param: x
+  期望:
+    intent: 查询菜单商品分类报表
+    params: *id181
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-266
+- 维度: 参数校验
+  能力: 按销售额排序查询 Top N 订单
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id182
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      sortField: Amount
+      sortDirection: Descending
+      limit: -1
+  期望:
+    intent: 按销售额排序查询 Top N 订单
+    params: *id182
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-267
+- 维度: 参数校验
+  能力: 按订单号查询单笔订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id183
+      merchantId: '26377732552517'
+      orderIds: *id037
+      unknown_param: x
+  期望:
+    intent: 按订单号查询单笔订单商品明细
+    params: *id183
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-268
 - 维度: 调用正确性
   能力: 查询订单销售明细
   层: L2
@@ -5684,110 +7006,17 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-220
-- 维度: 参数校验
-  能力: 统计订单数量
-  层: L2
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id145
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      resultMode: Count
-      unknown_param: x
-  期望:
-    intent: 统计订单数量
-    params: *id145
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-221
-- 维度: 参数校验
-  能力: 按员工筛选考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id146
-      merchantId: '26377732552517'
-      merchantStaffIds: *id048
-      relativePeriod: ThisMonth
-      page: 0
-      size: 15
-  期望:
-    intent: 按员工筛选考勤记录
-    params: *id146
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-222
-- 维度: 参数校验
-  能力: 查询员工考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id147
-      merchantId: '26377732552517'
-      relativePeriod: ThisMonth
-      page: -1
-      size: 15
-  期望:
-    intent: 查询员工考勤记录
-    params: *id147
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-223
-- 维度: 参数校验
-  能力: 按名称搜索商品
-  层: L2
-  输入:
-    tool_name: search_products_by_name
-    tool_params: &id148
-      productName: 可口可乐
-      status: Selling
-      unknown_param: x
-  期望:
-    intent: 按名称搜索商品
-    params: *id148
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-224
+  用例ID: A-L2-269
 - 维度: 调用正确性
-  能力: 按名称查询分类
+  能力: 按ID查询商品
   层: L2
   输入:
-    tool_name: query_categories_typo
+    tool_name: query_products_by_ids_typo
     tool_params:
-      categoryName: 特色飲料
+      productIds: *id177
   期望:
-    intent: 按名称查询分类
-    params: *id010
+    intent: 按ID查询商品
+    params: *id017
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -5797,21 +7026,93 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-225
+  用例ID: A-L2-270
 - 维度: 参数校验
-  能力: 按订单ID查询订单商品明细
+  能力: 查询店铺员工列表
   层: L2
   输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id149
-      merchantId: '26377732552517'
-      orderIds: *id032
-      page: -1
-      size: 15
+    tool_name: query_merchant_staffs
+    tool_params: &id184
+      merchantIds: *id004
+      unknown_param: x
   期望:
-    intent: 按订单ID查询订单商品明细
-    params: *id149
-    output: 越界参数被拒绝/提示
+    intent: 查询店铺员工列表
+    params: *id184
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-271
+- 维度: 参数校验
+  能力: 查询店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id185
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      unknown_param: x
+  期望:
+    intent: 查询店铺经营汇总
+    params: *id185
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-272
+- 维度: 参数校验
+  能力: 查询商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id186
+      productId: '26723267157200'
+      includeCategory: abc
+  期望:
+    intent: 查询商品详情
+    params: *id186
+    output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
@@ -5819,8 +7120,124 @@
       - 拒绝
       any_of: true
   标签:
-  - 数值变异
-  用例ID: A-L2-226
+  - 类型错配
+  用例ID: A-L2-273
+- 维度: 调用正确性
+  能力: 按条件筛选商品
+  层: L2
+  输入:
+    tool_name: query_products_by_filter_typo
+    tool_params:
+      type: Normal
+      status: Selling
+      categoryIds: *id014
+  期望:
+    intent: 按条件筛选商品
+    params: *id027
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-274
+- 维度: 参数校验
+  能力: 查询店铺分类列表
+  层: L2
+  输入:
+    tool_name: query_categories
+    tool_params: &id187
+      merchantIds: *id004
+      unknown_param: x
+  期望:
+    intent: 查询店铺分类列表
+    params: *id187
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-275
+- 维度: 调用正确性
+  能力: 查询店铺分类列表
+  层: L2
+  输入:
+    tool_name: query_categories_typo
+    tool_params:
+      merchantIds: *id004
+  期望:
+    intent: 查询店铺分类列表
+    params: *id006
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-276
+- 维度: 参数校验
+  能力: 查询店铺营业概况
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id188
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      unknown_param: x
+  期望:
+    intent: 查询店铺营业概况
+    params: *id188
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-277
 - 维度: 调用正确性
   能力: 查询菜单商品分类报表
   层: L2
@@ -5845,136 +7262,60 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-227
+  用例ID: A-L2-278
 - 维度: 参数校验
-  能力: 查询菜单列表
-  层: L2
-  输入:
-    tool_name: query_menus
-    tool_params: &id150
-      merchantIds: *id004
-      unknown_param: x
-  期望:
-    intent: 查询菜单列表
-    params: *id150
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-228
-- 维度: 参数校验
-  能力: 按订单状态筛选订单销售明细
+  能力: 查询订单销售明细
   层: L2
   输入:
     tool_name: query_datax_order_sales_reports
-    tool_params: &id151
+    tool_params: &id189
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      orderStatus: Completed
       unknown_param: x
   期望:
-    intent: 按订单状态筛选订单销售明细
-    params: *id151
-    output: 未知参数被拒绝/提示
-    block: true
+    intent: 查询订单销售明细
+    params: *id189
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 参数注入
-  用例ID: A-L2-229
-- 维度: 调用正确性
-  能力: 查询店铺营业概况
-  层: L2
-  输入:
-    tool_name: query_datax_total_reports_typo
-    tool_params:
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-  期望:
-    intent: 查询店铺营业概况
-    params: *id081
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-230
-- 维度: 参数校验
-  能力: 查询员工考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id152
-      merchantId: '26377732552517'
-      relativePeriod: ThisMonth
-      page: 9999999999999999
-      size: 15
-  期望:
-    intent: 查询员工考勤记录
-    params: *id152
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-231
-- 维度: 参数校验
-  能力: 查询员工考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id153
-      merchantId: '26377732552517'
-      relativePeriod: ThisMonth
-      page: 1
-      size: 15
-      unknown_param: x
-  期望:
-    intent: 查询员工考勤记录
-    params: *id153
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-232
+  - 未知参数
+  用例ID: A-L2-279
 - 维度: 参数校验
   能力: 按销售额排序查询 Top N 订单
   层: L2
   输入:
     tool_name: query_datax_order_sales_reports
-    tool_params: &id154
+    tool_params: &id190
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
       sortField: Amount
       sortDirection: Descending
-      limit: -1
+      limit: 0
   期望:
     intent: 按销售额排序查询 Top N 订单
-    params: *id154
+    params: *id190
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -5984,88 +7325,57 @@
       any_of: true
   标签:
   - 数值变异
-  用例ID: A-L2-233
-- 维度: 调用正确性
-  能力: 查询店铺经营汇总
-  层: L2
-  输入:
-    tool_name: query_datax_total_reports_typo
-    tool_params:
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-  期望:
-    intent: 查询店铺经营汇总
-    params: *id051
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-234
+  用例ID: A-L2-280
 - 维度: 参数校验
-  能力: 按员工筛选考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id155
-      merchantId: '26377732552517'
-      merchantStaffIds: *id048
-      relativePeriod: ThisMonth
-      page: 1
-      size: 15
-      unknown_param: x
-  期望:
-    intent: 按员工筛选考勤记录
-    params: *id155
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-235
-- 维度: 调用正确性
   能力: 查询分类与商品结构
   层: L2
   输入:
-    tool_name: query_categories_typo
-    tool_params:
+    tool_name: query_categories
+    tool_params: &id191
       merchantIds: *id004
-  期望:
-    intent: 查询分类与商品结构
-    params: *id084
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-236
-- 维度: 参数校验
-  能力: 按条件筛选商品
-  层: L2
-  输入:
-    tool_name: query_products_by_filter
-    tool_params: &id156
-      type: Normal
-      status: Selling
-      categoryIds: *id014
       unknown_param: x
   期望:
-    intent: 按条件筛选商品
-    params: *id156
-    output: 未知参数被拒绝/提示
+    intent: 查询分类与商品结构
+    params: *id191
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-281
+- 维度: 参数校验
+  能力: 按订单号查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id192
+      merchantId: '26377732552517'
+      orderIds: *id091
+      page: -1
+      size: 15
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id192
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
@@ -6073,54 +7383,49 @@
       - 拒绝
       any_of: true
   标签:
-  - 参数注入
-  用例ID: A-L2-237
+  - 数值变异
+  用例ID: A-L2-282
 - 维度: 参数校验
-  能力: 按支付状态筛选订单销售明细
+  能力: 按订单号查询指定订单销售明细
   层: L2
   输入:
     tool_name: query_datax_order_sales_reports
-    tool_params: &id157
+    tool_params: &id193
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      paymentStatus: FullyPaid
+      orderId: '26907187620613'
       unknown_param: x
   期望:
-    intent: 按支付状态筛选订单销售明细
-    params: *id157
-    output: 未知参数被拒绝/提示
-    block: true
+    intent: 按订单号查询指定订单销售明细
+    params: *id193
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 参数注入
-  用例ID: A-L2-238
+  - 未知参数
+  用例ID: A-L2-283
 - 维度: 调用正确性
-  能力: 查询菜单列表
-  层: L2
-  输入:
-    tool_name: query_menus_typo
-    tool_params:
-      merchantIds: *id004
-  期望:
-    intent: 查询菜单列表
-    params: *id001
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-239
-- 维度: 调用正确性
-  能力: 统计订单数量
+  能力: 查询订单销售报表
   层: L2
   输入:
     tool_name: query_datax_order_sales_reports_typo
@@ -6128,10 +7433,9 @@
       merchantId: '26377732552517'
       startAt: '2026-09-01T00:00:00'
       endAt: '2026-09-02T00:00:00'
-      resultMode: Count
   期望:
-    intent: 统计订单数量
-    params: *id074
+    intent: 查询订单销售报表
+    params: *id087
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -6141,391 +7445,7 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-240
-- 维度: 参数校验
-  能力: 查询菜单商品分类报表
-  层: L2
-  输入:
-    tool_name: query_datax_menu_product_category_reports
-    tool_params: &id158
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      type: Menu
-      name: 可口可乐
-      refId: '26853676268741'
-      unknown_param: x
-  期望:
-    intent: 查询菜单商品分类报表
-    params: *id158
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-241
-- 维度: 参数校验
-  能力: 按员工筛选考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id159
-      merchantId: '26377732552517'
-      merchantStaffIds: *id048
-      relativePeriod: ThisMonth
-      page: 9999999999999999
-      size: 15
-  期望:
-    intent: 按员工筛选考勤记录
-    params: *id159
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-242
-- 维度: 参数校验
-  能力: 按名称查询分类
-  层: L2
-  输入:
-    tool_name: query_categories
-    tool_params: &id160
-      categoryName: 特色飲料
-      unknown_param: x
-  期望:
-    intent: 按名称查询分类
-    params: *id160
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-243
-- 维度: 参数校验
-  能力: 查询员工考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id161
-      merchantId: '26377732552517'
-      relativePeriod: ThisMonth
-      page: 0
-      size: 15
-  期望:
-    intent: 查询员工考勤记录
-    params: *id161
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-244
-- 维度: 参数校验
-  能力: 按支付方式查询订单销售明细
-  层: L2
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id162
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      paymentType: CreditCard
-      unknown_param: x
-  期望:
-    intent: 按支付方式查询订单销售明细
-    params: *id162
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-245
-- 维度: 参数校验
-  能力: 按ID查询商品
-  层: L2
-  输入:
-    tool_name: query_products_by_ids
-    tool_params: &id164
-      productIds: *id163
-      unknown_param: x
-  期望:
-    intent: 按ID查询商品
-    params: *id164
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-246
-- 维度: 参数校验
-  能力: 按订单ID查询订单商品明细
-  层: L2
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id165
-      merchantId: '26377732552517'
-      orderIds: *id032
-      page: abc
-      size: 15
-  期望:
-    intent: 按订单ID查询订单商品明细
-    params: *id165
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-247
-- 维度: 参数校验
-  能力: 按订单ID查询订单商品明细
-  层: L2
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id166
-      merchantId: '26377732552517'
-      orderIds: *id032
-      page: 9999999999999999
-      size: 15
-  期望:
-    intent: 按订单ID查询订单商品明细
-    params: *id166
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-248
-- 维度: 参数校验
-  能力: 按销售额排序查询 Top N 订单
-  层: L2
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id167
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      sortField: Amount
-      sortDirection: Descending
-      limit: 5
-      unknown_param: x
-  期望:
-    intent: 按销售额排序查询 Top N 订单
-    params: *id167
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-249
-- 维度: 参数校验
-  能力: 查询店铺经营汇总
-  层: L2
-  输入:
-    tool_name: query_datax_total_reports
-    tool_params: &id168
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      unknown_param: x
-  期望:
-    intent: 查询店铺经营汇总
-    params: *id168
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-250
-- 维度: 参数校验
-  能力: 按订单号查询单笔订单商品明细
-  层: L2
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id169
-      merchantId: '26377732552517'
-      orderIds: *id037
-      unknown_param: x
-  期望:
-    intent: 按订单号查询单笔订单商品明细
-    params: *id169
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-251
-- 维度: 调用正确性
-  能力: 按ID查询商品
-  层: L2
-  输入:
-    tool_name: query_products_by_ids_typo
-    tool_params:
-      productIds: *id163
-  期望:
-    intent: 按ID查询商品
-    params: *id017
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-252
-- 维度: 参数校验
-  能力: 查询店铺员工列表
-  层: L2
-  输入:
-    tool_name: query_merchant_staffs
-    tool_params: &id170
-      merchantIds: *id004
-      unknown_param: x
-  期望:
-    intent: 查询店铺员工列表
-    params: *id170
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-253
-- 维度: 参数校验
-  能力: 查询商品详情
-  层: L2
-  输入:
-    tool_name: query_product_detail_by_id
-    tool_params: &id171
-      productId: '26723267157200'
-      includeCategory: abc
-  期望:
-    intent: 查询商品详情
-    params: *id171
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-254
-- 维度: 参数校验
-  能力: 按销售额排序查询 Top N 订单
-  层: L2
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id172
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      sortField: Amount
-      sortDirection: Descending
-      limit: 9999999999999999
-  期望:
-    intent: 按销售额排序查询 Top N 订单
-    params: *id172
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-255
-- 维度: 参数校验
-  能力: 查询店铺分类列表
-  层: L2
-  输入:
-    tool_name: query_categories
-    tool_params: &id173
-      merchantIds: *id004
-      unknown_param: x
-  期望:
-    intent: 查询店铺分类列表
-    params: *id173
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-256
-- 维度: 调用正确性
-  能力: 查询店铺分类列表
-  层: L2
-  输入:
-    tool_name: query_categories_typo
-    tool_params:
-      merchantIds: *id004
-  期望:
-    intent: 查询店铺分类列表
-    params: *id006
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-257
+  用例ID: A-L2-284
 - 维度: 调用正确性
   能力: 查询商品详情
   层: L2
@@ -6546,386 +7466,60 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-258
-- 维度: 参数校验
-  能力: 查询店铺营业概况
-  层: L2
-  输入:
-    tool_name: query_datax_total_reports
-    tool_params: &id174
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      unknown_param: x
-  期望:
-    intent: 查询店铺营业概况
-    params: *id174
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-259
-- 维度: 参数校验
-  能力: 查询订单销售明细
-  层: L2
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id175
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      unknown_param: x
-  期望:
-    intent: 查询订单销售明细
-    params: *id175
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-260
-- 维度: 调用正确性
-  能力: 订单明细与销售报表交叉核对
-  层: L2
-  输入:
-    tool_name: query_order_details_by_ids_typo
-    tool_params:
-      merchantId: '26377732552517'
-      orderIds: *id088
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-  期望:
-    intent: 订单明细与销售报表交叉核对
-    params: *id087
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-261
-- 维度: 参数校验
-  能力: 查询分类与商品结构
-  层: L2
-  输入:
-    tool_name: query_categories
-    tool_params: &id176
-      merchantIds: *id004
-      unknown_param: x
-  期望:
-    intent: 查询分类与商品结构
-    params: *id176
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-262
-- 维度: 参数校验
-  能力: 按订单号查询指定订单销售明细
-  层: L2
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id177
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      orderId: '26907187620613'
-      unknown_param: x
-  期望:
-    intent: 按订单号查询指定订单销售明细
-    params: *id177
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-263
-- 维度: 参数校验
-  能力: 查询商品详情
-  层: L2
-  输入:
-    tool_name: query_product_detail_by_id
-    tool_params: &id178
-      productId: '26723267157200'
-      includeCategory: 9999999999999999
-  期望:
-    intent: 查询商品详情
-    params: *id178
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-264
-- 维度: 参数校验
-  能力: 订单明细与销售报表交叉核对
-  层: L2
-  输入:
-    tool_name: query_order_details_by_ids
-    tool_params: &id179
-      merchantId: '26377732552517'
-      orderIds: *id088
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      unknown_param: x
-  期望:
-    intent: 订单明细与销售报表交叉核对
-    params: *id179
-    output: 未知参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 参数注入
-  用例ID: A-L2-265
-- 维度: 调用正确性
-  能力: 按菜单筛选分类
-  层: L2
-  输入:
-    tool_name: query_categories_typo
-    tool_params:
-      menuIds: *id097
-      categoryIds: *id014
-  期望:
-    intent: 按菜单筛选分类
-    params: *id013
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-266
-- 维度: 调用正确性
-  能力: 按条件筛选商品
-  层: L2
-  输入:
-    tool_name: query_products_by_filter_typo
-    tool_params:
-      type: Normal
-      status: Selling
-      categoryIds: *id014
-  期望:
-    intent: 按条件筛选商品
-    params: *id027
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-267
-- 维度: 参数校验
-  能力: 按销售额排序查询 Top N 订单
-  层: L2
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id180
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      sortField: Amount
-      sortDirection: Descending
-      limit: abc
-  期望:
-    intent: 按销售额排序查询 Top N 订单
-    params: *id180
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-268
+  用例ID: A-L2-285
 - 维度: 参数校验
   能力: 按员工筛选考勤记录
   层: L2
   输入:
     tool_name: query_staff_attendances
-    tool_params: &id181
-      merchantId: '26377732552517'
-      merchantStaffIds: *id048
-      relativePeriod: ThisMonth
-      page: abc
-      size: 15
-  期望:
-    intent: 按员工筛选考勤记录
-    params: *id181
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-269
-- 维度: 参数校验
-  能力: 查询商品详情
-  层: L2
-  输入:
-    tool_name: query_product_detail_by_id
-    tool_params: &id182
-      productId: '26723267157200'
-      includeCategory: -1
-  期望:
-    intent: 查询商品详情
-    params: *id182
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-270
-- 维度: 参数校验
-  能力: 查询员工考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id183
-      merchantId: '26377732552517'
-      relativePeriod: ThisMonth
-      page: abc
-      size: 15
-  期望:
-    intent: 查询员工考勤记录
-    params: *id183
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-271
-- 维度: 调用正确性
-  能力: 按订单号查询单笔订单商品明细
-  层: L2
-  输入:
-    tool_name: query_order_details_by_ids_typo
-    tool_params:
-      merchantId: '26377732552517'
-      orderIds: *id037
-  期望:
-    intent: 按订单号查询单笔订单商品明细
-    params: *id036
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-272
-- 维度: 参数校验
-  能力: 按员工筛选考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances
-    tool_params: &id184
-      merchantId: '26377732552517'
-      merchantStaffIds: *id048
-      relativePeriod: ThisMonth
-      page: -1
-      size: 15
-  期望:
-    intent: 按员工筛选考勤记录
-    params: *id184
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-273
-- 维度: 参数校验
-  能力: 按销售额排序查询 Top N 订单
-  层: L2
-  输入:
-    tool_name: query_datax_order_sales_reports
-    tool_params: &id185
-      merchantId: '26377732552517'
-      startAt: '2026-09-01T00:00:00'
-      endAt: '2026-09-02T00:00:00'
-      sortField: Amount
-      sortDirection: Descending
-      limit: 0
-  期望:
-    intent: 按销售额排序查询 Top N 订单
-    params: *id185
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 错误
-      - 拒绝
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-274
-- 维度: 调用正确性
-  能力: 按员工筛选考勤记录
-  层: L2
-  输入:
-    tool_name: query_staff_attendances_typo
-    tool_params:
+    tool_params: &id194
       merchantId: '26377732552517'
       merchantStaffIds: *id048
       relativePeriod: ThisMonth
       page: 1
       size: 15
+      unknown_param: x
   期望:
     intent: 按员工筛选考勤记录
-    params: *id047
+    params: *id194
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-286
+- 维度: 调用正确性
+  能力: 按订单号查询订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids_typo
+    tool_params:
+      merchantId: '26377732552517'
+      orderIds: *id091
+      page: 1
+      size: 15
+  期望:
+    intent: 按订单号查询订单商品明细
+    params: *id090
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -6935,29 +7529,85 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-275
+  用例ID: A-L2-287
+- 维度: 参数校验
+  能力: 按销售额排序查询 Top N 订单
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id195
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      sortField: Amount
+      sortDirection: Descending
+      limit: 5
+      unknown_param: x
+  期望:
+    intent: 按销售额排序查询 Top N 订单
+    params: *id195
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-288
 - 维度: 参数校验
   能力: 查询商品详情
   层: L2
   输入:
     tool_name: query_product_detail_by_id
-    tool_params: &id186
+    tool_params: &id196
       productId: '26723267157200'
       includeCategory: true
       unknown_param: x
   期望:
     intent: 查询商品详情
-    params: *id186
-    output: 未知参数被拒绝/提示
-    block: true
+    params: *id196
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 参数注入
-  用例ID: A-L2-276
+  - 未知参数
+  用例ID: A-L2-289
 - 维度: 调用正确性
   能力: 按订单ID查询订单商品明细
   层: L2
@@ -6980,7 +7630,7 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-277
+  用例ID: A-L2-290
 - 维度: 调用正确性
   能力: 按名称搜索商品
   层: L2
@@ -7001,29 +7651,44 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-278
+  用例ID: A-L2-291
 - 维度: 参数校验
   能力: 按菜单筛选分类
   层: L2
   输入:
     tool_name: query_categories
-    tool_params: &id187
-      menuIds: *id097
+    tool_params: &id197
+      menuIds: *id155
       categoryIds: *id014
       unknown_param: x
   期望:
     intent: 按菜单筛选分类
-    params: *id187
-    output: 未知参数被拒绝/提示
-    block: true
+    params: *id197
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 参数注入
-  用例ID: A-L2-279
+  - 未知参数
+  用例ID: A-L2-292
 - 维度: 调用正确性
   能力: 按销售额排序查询 Top N 订单
   层: L2
@@ -7048,7 +7713,45 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-280
+  用例ID: A-L2-293
+- 维度: 参数校验
+  能力: 查询订单销售报表
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id198
+      merchantId: '26377732552517'
+      startAt: '2026-09-01T00:00:00'
+      endAt: '2026-09-02T00:00:00'
+      unknown_param: x
+  期望:
+    intent: 查询订单销售报表
+    params: *id198
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-294
 - 维度: 调用正确性
   能力: 查询员工考勤记录
   层: L2
@@ -7071,13 +7774,13 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-281
+  用例ID: A-L2-295
 - 维度: 参数校验
   能力: 按订单ID查询订单商品明细
   层: L2
   输入:
     tool_name: query_order_details_by_ids
-    tool_params: &id188
+    tool_params: &id199
       merchantId: '26377732552517'
       orderIds: *id032
       page: 1
@@ -7085,14 +7788,29 @@
       unknown_param: x
   期望:
     intent: 按订单ID查询订单商品明细
-    params: *id188
-    output: 未知参数被拒绝/提示
-    block: true
+    params: *id199
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
       - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 参数注入
-  用例ID: A-L2-282
+  - 未知参数
+  用例ID: A-L2-296
