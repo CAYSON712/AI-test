@@ -186,6 +186,10 @@ class DirectMcpExecutor(GenericMcpExecutor):
             "steps": steps,
             "tool": tool_name,
             "output": text,
+            # 回传实际入参：评分器需据此判断「期望拦截是否成立」
+            # （如"仅多了 schema 未声明的字段"→ 期望立错，属数据集问题，
+            #  而非安全缺口）。此前不回传 params，评分器只能一律判 AI 系统问题。
+            "params": tool_params,
             "tool_correct": True,   # 直连模式无 LLM 选择，视为工具匹配
             "level": level,
             "block": True if level == "WARNING" else None,

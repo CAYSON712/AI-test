@@ -674,9 +674,21 @@ function renderNode(n) {
   if (n._tokens_in !== undefined || n._tokens_out !== undefined) metaBits.push(`⇄ ${n._tokens_in||0}/${n._tokens_out||0} tok`);
   const tooltip = escAttr(n.input || '') + '\\n⇊\\n' + escAttr(n.output || '');
   // 直接渲染 input/output 文本（不折叠、不悬停），截断过长内容避免行超高
+  // 若内容是 JSON（如 MCP 返回 {"code":0,"msg":"\u67E5..."}），先解析再重序列化：
+  // 否则会把 Unicode 转义串（\u67E5\u8BE2...）原样显示，中文不可读。
   function truncStr(v, max) {
     if (v === undefined || v === null) return '';
     var s = String(v);
+    // 尝试按 JSON 解析并重排（中文正常显示）；非 JSON 文本原样保留
+    var t = s.trim();
+    if (t && (t[0] === '{' || t[0] === '[')) {
+      try {
+        var o = JSON.parse(t);
+        if (o && typeof o === 'object') {
+          s = JSON.stringify(o);   // 紧凑单行，保持现有排版
+        }
+      } catch (e) { /* 非合法 JSON，按原文本显示 */ }
+    }
     return s.length > max ? s.slice(0, max) + '…' : s;
   }
   const ioIn = escHtml(truncStr(n.input, 400));

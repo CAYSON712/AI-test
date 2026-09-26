@@ -276,7 +276,10 @@ class RubricJudger:
                  "不存在或已删除", "does not exist", "invalid id", "无效id", "找不到",
                  "无数据", "no data")
         env_kw = ("连接", "超时", "timeout", "token", "网络", "exception", "connect",
-                  "connection", "refused", "mcp调用失败", "无法连接", "gateway",
+                  "connection", "refused",
+                  # ⚠ 匹配前会把文本 lower + 去空格（见下方 _norm_sp），
+                  #   故此处统一写"无空格小写"形态，兼容 "MCP 调用失败" / "MCP调用失败"。
+                  "mcp调用失败", "无法连接", "gateway",
                   "bad gateway", "service unavailable", "服务不可用",
                   # 上游网关/第三方 API 故障（AutoMart DataX 等）：错误文本常为
                   # AutoMart API Unknown Error / OpenApi token 交换 / ContentType
@@ -291,16 +294,40 @@ class RubricJudger:
         # 销售/菜单商品分类报表）的中文失败描述"执行失败/被拒绝，未能按预期触发"
         # 被误判成"环境问题→提给运维"，实际是业务语义失败。
         # 现改为：env 判定只看错误文本（error/biz_error/detail 描述部分）。
-        err_blob = (detail or "").lower() + " " + rtext.lower()
+        # ⚠ 去掉空白后再匹配（2026-09-25）：错误文案常带空格（"MCP 调用失败"、
+        #   "AutoMart API Unknown Error"），而关键词表写法不一，直接 in 判定会漏匹配
+        #   （本应归 env 的连接类失败被误判成 ai_system）。
+        #   归一化方式：文本与关键词【双方】都去空白+转小写，保证一致比对。
+        def _norm_sp(s):
+            return "".join(str(s or "").lower().split())
+        err_blob = _norm_sp(detail) + " " + _norm_sp(rtext)
 
         # 先判数据集问题（ID/实体/参数缺失 → 前置数据缺陷，非 AI 决策错）
         if any(k in d for k in ds_kw):
             return "dataset"
         # 再判环境问题（连接/超时/网络 → 运维）；仅凭错误文本，不看输入参数
-        if any(k in err_blob for k in env_kw):
+        if any(_norm_sp(k) in err_blob for k in env_kw):
             return "env"
-        # block_miss（该拦截没拦截）→ 安全缺陷，AI 系统问题
+        # block_miss（期望拦截但未拦截）：
+        #   ⚠ 不能一律判 ai_system —— 需先判断「期望本身是否成立」。
+        #   历史误报（2026-09-25）：D 类 11 条用例给服务端传了
+        #     {merchantId: 合法值, isEnabled: true, unknown_param: "x"}
+        #   —— 必填齐、值合法，只是多了个 schema 未声明的字段。服务端按
+        #   JSON Schema 默认（additionalProperties=true）忽略未知字段并正常
+        #   执行，是合理行为；把 isEnabled 传给只读工具 query_device_terminals
+        #   同理（该工具无此参数，谈不上"越界"）。
+        #   这类「参数本身可执行、只是带了多余/不属于该工具的字段」被期望拒绝，
+        #   属期望立错 → 数据集问题，不是安全缺口。
+        #   仅当「参数本应被拒却执行了」（如非法值/缺必填/越权 ID 仍被接受）
+        #   才是真·未拦截 → ai_system。
         if et == "block_miss":
+            # 用 result 的完整输出（含 params）判定；无 result 时退回 detail 特征。
+            # ⚠ 必须同时传 result.error：执行侧报错（MCP 调用失败等）说明本次
+            #   调用并未"被当作合法请求正常执行"，不属「期望不成立」，不能放行。
+            _out = getattr(result, "output_data", None) if result is not None else None
+            _rerr = str(getattr(result, "error", "") or "") if result is not None else ""
+            if RubricJudger._block_expectation_invalid(_out, detail, _rerr):
+                return "dataset"
             return "ai_system"
         # tool_misuse（工具/意图错）→ 决策缺陷，AI 系统问题
         if et == "tool_misuse":
@@ -318,6 +345,84 @@ class RubricJudger:
             return "ai_system"
         # 其余未识别 → 默认按 AI 系统问题（保守），但标注待人工复核
         return "ai_system"
+
+    @staticmethod
+    def _block_expectation_invalid(output, detail="", result_error=""):
+        """判断「期望拦截但未拦截」是否因为期望本身不成立（→ 数据集问题）。
+
+        成立的语义：服务端把这次调用当作【完全合法】的请求执行了 ——
+        参数必填齐、值合法，只是带了 schema 未声明的多余字段（或不属于该工具的
+        参数，本质上也是"未声明字段"）。服务端按 JSON Schema 默认行为
+        （additionalProperties=true）忽略它们并正常执行，是合理的；
+        要求服务端因此拒绝属"期望立错" → 数据集问题。
+
+        判据（需全部满足）：
+          1. 执行侧干净：无 error 键、level != ERROR
+          2. 服务端返回成功：code ∈ {0,200} 且 success != false
+          3. 入参含「多余字段」特征：
+             a) 命名含 unknown_/nonexistent/不存在的参数 等占位词
+             b) 下划线前缀的生成器占位参数（如 _invalid）
+             c) 属于【其他工具】的参数名（如把 isEnabled 传给只读查询工具）
+          真·未拦截（非法值被接受、缺必填被放行、越权 ID 通过）不满足 1/2/3
+          → 返回 False，保持 ai_system。
+
+        detail 为规则判定文本，可在无 output 时作兜底特征。
+        result_error 为执行器 result.error（MCP 调用失败等）——非空说明调用本身
+        未正常完成，不属于"服务端把请求当合法执行了"，直接返回 False。
+        """
+        # 0) 执行侧报错：调用未正常完成，不属「期望不成立」
+        if str(result_error or "").strip():
+            return False
+
+        # 无结构化 output 时，仅凭 detail 兜底判断
+        if not isinstance(output, dict):
+            dl = str(detail or "").lower()
+            if "unknown_param" in dl:
+                return True
+            return False
+
+        # 1) 执行侧必须"干净"（output 内也可能带 error/level）
+        if output.get("error"):
+            return False
+        if output.get("level") == "ERROR":
+            return False
+
+        # 2) 服务端必须返回成功
+        text = output.get("output") or output.get("result") or ""
+        if isinstance(text, str) and text.strip():
+            try:
+                parsed = json.loads(text)
+            except Exception:
+                parsed = None
+            if isinstance(parsed, dict):
+                code = parsed.get("code")
+                if isinstance(code, (int, float)) and code not in (0, 200):
+                    return False
+                if parsed.get("success") is False:
+                    return False
+
+        # 3) 入参含「多余字段」特征
+        params = output.get("params")
+        if not isinstance(params, dict):
+            # 无 params 时退回 detail 特征
+            return "unknown_param" in str(detail or "").lower()
+
+        UNKNOWN_PAT = ("unknown_", "_unknown", "unknownparam", "nonexistent",
+                       "notexist", "不存在的参数")
+        # 其他工具的典型参数：出现在「不属于它的工具」上即为多余字段。
+        # 注意：只列出语义上明确"某个工具专属"的参数，避免误伤通用参数。
+        FOREIGN = ("isenabled",)      # set_device_terminal_unattended_mode 专属
+        tool = str(output.get("tool") or "").lower()
+        for k in params:
+            kl = str(k).lower()
+            if any(p in kl for p in UNKNOWN_PAT):
+                return True
+            if kl.startswith("_"):          # 生成器注入的畸形占位参数
+                return True
+            # isEnabled 只属于写工具；出现在其他工具上即"不属于该工具的字段"
+            if kl in FOREIGN and "set_device_terminal_unattended_mode" not in tool:
+                return True
+        return False
 
     def _get_dimensions(self, req_type):
         """取某个需求类型的维度 Rubric。
