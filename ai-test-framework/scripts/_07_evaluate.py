@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-评估入口：加载维度表 + Rubric + 对数据集跑评分
+评分库：加载维度表（供 _06_run_test.py 调用）
 =================================================
-用法：
-  cd ai-test-framework/scripts
-  python _07_evaluate.py --req-type C --dataset ../datasets/xxx.yaml
+⚠ 这不是独立入口。本模块对外只提供 load_dimension_tables()，
+  真正的"跑测试 + 评分"请用 _06_run_test.py。
+
+  直接 `python _07_evaluate.py` 会进入 main() 的 **mock 假评分演示**
+  （_mock_result 是硬编码假数据），结果不代表真实系统表现，勿用于评估。
+
+用法（作为库）：
+  from scripts._07_evaluate import load_dimension_tables
+  tables = load_dimension_tables()
 """
 import argparse
 import os
@@ -112,8 +118,11 @@ def main():
     dims = judger._get_dimensions(args.req_type)
     print(f"评测维度数: {len(dims)}")
 
-    # 模拟执行（占位：真实执行后续接入执行器）
-    # 这里先用 demo 结果演示评分流程
+    # ⚠ 演示模式：用 _mock_result 硬编码假数据演示评分流程。
+    #   产物字段也是旧口径（avg_score/pass_rate/n/ci），已无 pass@k / pass^k /
+    #   metric_mode / stdev —— 不要把这个输出当评估结果。
+    #   真实评估请用：python _06_run_test.py --dataset ... --report
+    print("⚠ 这是 _07 的 mock 演示模式，结果为假数据；真实评估请用 _06_run_test.py")
     all_runs = []  # 所有用例 × 多次运行 的 {维度: score}
     for c in cases:
         for _ in range(args.runs):

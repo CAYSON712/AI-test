@@ -71,22 +71,23 @@ ai-test-framework/
 > ⚠️ **`--trace` 为默认标配，不要省略**：所有执行命令都加 `--trace`，把多层链路上报 trace_platform（trace_platform 离线时自动跳过并提醒，不影响执行，所以无脑加即可）。漏跑会**无法事后补报**（结果 YAML 只存 trace_id、不存完整链路），只能重跑。
 
 ```powershell
+cd ai-test-framework
+
+# ★ 推荐：跑测主入口（自动带 硬校验门禁 + 软 review，中文路径用别名规避）
+python scripts/_09_pipeline.py --job <retailpos|unattended> --executor real --trace
+
+# 单点执行（要精细控制时用；同样建议加 --report 出报告）
 cd ai-test-framework/scripts
-
-# Mock 执行器（测 B/D：Agent/Skill 决策层，不连真实系统，零配置）
 python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor mock --trace
-
-# 真实 MCP 执行器（测 C：E2E 层，需系统配置 + .env token）
-python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --trace
-
-# 统计判定（每条跑 5 次，计算通过率 + 置信区间）
 python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --runs 5 --trace
-
-# 显式指定系统（通常自动从数据集识别，也可手动指定）
-python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yaml --executor real --system <系统名> --trace
 ```
 
+**执行器选择**：
+- `mock` —— 测 B/D（Agent/Skill 决策层），不连真实系统，零配置
+- `real` —— 测 C（E2E 层），需系统配置 + `.env` token
+
 系统名会自动从数据集「系统」字段读取，无需手动传（避免中文路径乱码）。
+`--job` 别名见 `_09_pipeline.py` 的 `JOB_ALIASES`（底层复用 `_10_maintain.SYSTEMS`，新增系统只加一处）。
 
 ## Trace 上报（可视化链路）
 
@@ -137,12 +138,36 @@ python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yam
 
 - **Rubric 5 分制**（5=优秀...1=严重缺陷），每个维度有判定标准
 - **统计判定**：每条用例跑 ≥5 次，计算通过率 + Wilson 95% 置信区间
+- **多口径评估**（runs>1 时）：按维度「指标口径」分别聚合
+  - **一致性**（功能类维度，默认）：看 **`pass^k`**（k 次全对）；5 次里 1 次错即说明有缺陷
+  - **分布**（性能类维度，维度表标 `指标口径: 分布`）：看 **平均分 + `stdev`**；性能受网络/负载影响天然波动，`pass^k` 会把正常抖动误判成不稳定，故该类维度不展示 `pass^k`
+  - 同时保留 **`pass@k`**（至少一次达标，能力上界）——它与 `pass^k` 的**落差**才是"时对时错"的信号
 - **操作后实时校验**（E2E）：操作后调真实查询接口拉实时状态核对
 - **确定性语义校验**（`semantic_verify.py`）：能力目录「成功标准:语义」的期望自动解析为可校验项（字段/关键词），评分时自动评分（免费/稳定/可解释，via=rule）
 - **评分优先级**：规则判定 → 确定性语义校验 → 主观维度用 LLM-as-Judge（`--llm-judge`）；`--llm-detail` 让 LLM 输出详细评分理由（更耗 token）
 - **错误归因**（`attribution`）：每条失分标注「数据集问题 / AI 系统问题 / 环境问题 / 测试通过」，结合执行器真实 `biz_error` 判定，报告据此分组（开发看系统问题、测试修数据）
 
-## 输出
+## 输出（文件命名规范）
 
-- 执行结果 YAML：`ai-test-framework/results/result_<类型>.yaml`
-- 之后交给「报告复盘」skill 生成评估报告
+**执行结果 YAML** 统一放 `ai-test-framework/results/`，命名：
+
+```
+result_<类型>_<时间戳>.yaml
+```
+
+- `<类型>`：A / B / C / D / E
+- `<时间戳>`：`YYYYMMDD`（同一天多次跑用 `YYYYMMDD_HHMMSS` 区分）
+- 例：`result_A_20260927.yaml`、`result_D_20260927_203402.yaml`
+
+> 为什么带时间戳：同名会互相覆盖。**不同 runs 采样、不同维度子集、限流后重跑**都会产出多份结果，
+> 带时间戳可保留历史、便于对比（如 runs=1 与 runs=5 的性能波动差异）。
+
+**只跑部分维度**（多次采样成本高时的推荐做法，先用小样本验证再全量）：
+
+```powershell
+python _06_run_test.py --dataset ../datasets/A_某系统.yaml --executor real --runs 5 --dims 性能
+```
+
+`--dims` 支持逗号分隔的子串匹配（如 `--dims 性能,调用正确性`）。
+
+之后交给「报告复盘」skill 生成评估报告。

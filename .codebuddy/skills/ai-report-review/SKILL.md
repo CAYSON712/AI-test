@@ -17,24 +17,29 @@ description: AI 测试「报告复盘」专用入口。当用户需要对测试�
 
 | 前置条件 | 是否必须 | 说明 |
 |---|---|---|
-| **执行结果** | ✅ 必须 | 先由「测试执行」skill 产出 `result_<类型>.yaml` |
+| **执行结果** | ✅ 必须 | 先由「测试执行」skill 产出 `result_<类型>_<时间戳>.yaml`（见该 skill 的「输出」命名规范） |
 | **数据集信息** | ⚠️ 建议 | 结果里若缺系统名，报告会显示为空 |
 
-**操作指引**：确认存在 `ai-test-framework/results/result_<类型>.yaml` 后再跑，否则报告无数据可读。
+**操作指引**：确认 `ai-test-framework/results/` 下存在对应的 `result_<类型>_<时间戳>.yaml` 后再跑，否则报告无数据可读。
+同名会有多份（不同 runs / 维度子集 / 重跑），**取最新的那份**，或显式传路径。
 
 ## 报告流程
 
 ```powershell
 cd ai-test-framework/scripts
 
-# 生成评估报告（读执行结果 result_<类型>.yaml）
-python _08_report.py --result ../results/result_<类型>.yaml --out ../report/<报告名>.md
+# 生成评估报告（读指定结果）
+python _08_report.py --result ../results/result_A_20260927.yaml --out ../report/<报告名>.md
 
 # 或只传 result（自动按 评估报告_<时间戳>_<类型>_<数据集名>.md 命名并落到 report/）
-python _08_report.py --result ../results/result_<类型>.yaml
+python _08_report.py --result ../results/result_A_20260927.yaml
 ```
 
-> ⚠️ 中文路径/文件名在 PowerShell 下易乱码，建议用 Python 直接调用 `_08_report.generate_report(result_path, out_path)` 生成（可参考 `scripts/_gen_report.py`）。
+> ⚠️ 中文路径/文件名在 PowerShell 下易乱码，建议在 Python 内直接调用
+> `from scripts._08_report import generate_report; generate_report(result_path, out_path)`
+> 生成；或干脆用 `python _06_run_test.py ... --report` 一步出结果+报告（推荐）。
+>
+> 报告命名规则（与执行侧一致）：`评估报告_<时间戳>_<类型>_<数据集名>.md`。
 
 ## 报告内容
 
@@ -76,7 +81,8 @@ python _08_report.py --result ../results/result_<类型>.yaml
 
 ## 产出
 
-- 评估报告：`ai-test-framework/report/<名称>.md`
+- 评估报告：`ai-test-framework/report/评估报告_<时间戳>_<类型>_<数据集名>.md`
+  （与上文「报告流程」的自动命名一致；例：`评估报告_20260927_203402_D_小韩面无人值守门禁.md`）
 - 反哺建议 → 回到「需求分析」skill 补充数据集用例
 
 ## 闭环

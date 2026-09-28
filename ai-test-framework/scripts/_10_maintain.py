@@ -5,6 +5,7 @@
     python scripts/_10_maintain.py status
     python scripts/_10_maintain.py regen    <sys> [type...]   # 生成 datasets/*.new.yaml
     python scripts/_10_maintain.py validate <sys> [type...]   # 校验正式版 + 报告
+    python scripts/_10_maintain.py review   <sys> [type...]   # 软review：分布/覆盖/重复/期望健康度
     python scripts/_10_maintain.py install                     # 备份并安装所有 *.new.yaml
     python scripts/_10_maintain.py export   <sys> [type...]   # 刷新 excel
     python scripts/_10_maintain.py selftest [name]             # 跑框架回归自测（离线，改完代码先跑这个）
@@ -113,6 +114,151 @@ def cmd_validate(args):
     return rc
 
 
+def _review_load(path):
+    import yaml
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def _review_sem_empty(exp):
+    """期望里的 semantic 是否为空（无可用的 fields/contains）。"""
+    sem = (exp or {}).get("semantic")
+    if not sem:
+        return True
+    return not (sem.get("fields") or sem.get("contains"))
+
+
+def _review_one(doc, ability_path=None, name=""):
+    """软 review 单数据集：分布/覆盖/重复/期望健康度（只打印，不改数据）。
+
+    检查项：层分布、维度分布、能力覆盖均衡、期望健康度（缺 intent/output/
+    semantic、block 却无 semantic）、标签分布、真重复、头部用例数一致性。
+    """
+    from collections import Counter, defaultdict
+    cases = doc.get("用例列表") or []
+    n = len(cases)
+    print("== %s ==" % name)
+    print("系统: %s | 类型: %s | 用例: %d"
+          % (doc.get("系统", "?"), doc.get("需求类型", "?"), n))
+
+    hdr = doc.get("用例数")
+    if hdr is not None and hdr != n:
+        print("  [!] 头部「用例数」声明 %d，实际 %d，不一致" % (hdr, n))
+
+    layer_cnt = Counter(c.get("层") for c in cases)
+    print("  层分布: " + ", ".join("%s=%d" % (k, v) for k, v in sorted(layer_cnt.items())))
+
+    dim_cnt = Counter(c.get("维度") for c in cases)
+    print("  维度(共%d): " % len(dim_cnt)
+          + ", ".join("%s(%d)" % (k, v) for k, v in dim_cnt.most_common()))
+
+    cap_cnt = Counter(c.get("能力") for c in cases)
+    if cap_cnt:
+        vals = list(cap_cnt.values())
+        flag = "  [!] 覆盖不均衡" if max(vals) > min(vals) * 3 else ""
+        print("  能力(共%d): 每能力用例 min=%d max=%d avg=%.1f%s"
+              % (len(cap_cnt), min(vals), max(vals), sum(vals) / len(vals), flag))
+
+    no_intent = [c.get("用例ID") for c in cases if not (c.get("期望") or {}).get("intent")]
+    no_output = [c.get("用例ID") for c in cases if not (c.get("期望") or {}).get("output")]
+    no_sem = [c.get("用例ID") for c in cases if _review_sem_empty(c.get("期望"))]
+    block_no_sem = [c.get("用例ID") for c in cases
+                    if (c.get("期望") or {}).get("block") and _review_sem_empty(c.get("期望"))]
+    if no_intent or no_output or no_sem or block_no_sem:
+        print("  期望健康度:")
+        if no_intent:
+            print("    [!] 缺 intent: %d %s" % (len(no_intent), no_intent[:5]))
+        if no_output:
+            print("    [!] 缺 output: %d %s" % (len(no_output), no_output[:5]))
+        if no_sem:
+            print("    [!] 缺 semantic(空fields/contains): %d %s" % (len(no_sem), no_sem[:5]))
+        if block_no_sem:
+            print("    [!] block=true 却无 semantic: %d %s" % (len(block_no_sem), block_no_sem[:5]))
+    else:
+        print("  期望健康度: intent/output/semantic 全部就绪")
+
+    tag_cnt = Counter(t for c in cases for t in (c.get("标签") or []))
+    if tag_cnt:
+        print("  标签分布: " + ", ".join("%s=%d" % (k, v) for k, v in tag_cnt.most_common()))
+
+    # 同输入跨维度是设计使然（C 测不同维度、D 测同一工具调用的不同契约面），
+    # 只有「同能力+同维度+同输入」才算真重复。
+    groups = defaultdict(list)
+    for c in cases:
+        exp = c.get("期望") or {}
+        key = (c.get("能力"), c.get("维度"), str(c.get("输入")),
+               exp.get("intent"), bool(exp.get("block")))
+        groups[key].append(c.get("用例ID"))
+    dups = {k: v for k, v in groups.items() if len(v) > 1}
+    if dups:
+        print("  [!] 真重复(同能力+维度+输入): %d 组" % len(dups))
+        for k, v in list(dups.items())[:5]:
+            print("    %s 能力=%s 维度=%s" % (v, k[0], k[1]))
+    else:
+        print("  真重复: 无")
+
+    if ability_path and os.path.exists(ability_path):
+        ab = _review_load(ability_path)
+        ab_caps = []
+        for grp in ab.get("能力分组") or []:
+            for cap in grp.get("能力列表") or []:
+                ab_caps.append(cap.get("能力"))
+        ds_caps = set(cap_cnt)
+        ab_set = set(ab_caps)
+        missing = ab_set - ds_caps
+        extra = ds_caps - ab_set
+        print("  能力目录对照(目录%d个):" % len(ab_set))
+        if missing:
+            print("    [!] 目录有、数据集未覆盖: %s" % sorted(missing))
+        else:
+            print("    目录能力全部有覆盖")
+        if extra:
+            print("    [!] 数据集有、目录未声明: %s" % sorted(extra))
+    print()
+
+
+def _sys_of(dataset_path):
+    """由数据集文件名反查所属系统元数据（用于附带能力目录对照）。"""
+    base = os.path.basename(dataset_path)
+    for cfg in SYSTEMS.values():
+        if cfg["cn"] in base:
+            return cfg
+    return {"cn": "", "ability": ""}
+
+
+def cmd_review(args):
+    """软 review：层/维度/覆盖/重复/期望健康度（区别于 validate 的硬校验）。
+
+    原 _04_review_dataset.py 为孤儿脚本（无人调用），现收拢进本入口。
+    与 validate 的分工：
+      validate（硬）：能不能跑 —— 数据结构 vs 能力目录，PASS/FAIL
+      review （软）：好不好   —— 分布均衡/覆盖/重复/期望完备性，辅助人工评审
+    """
+    files = []
+    if args and args[0] in SYSTEMS:
+        cfg = SYSTEMS[args[0]]
+        files = [_out_name(cfg, rt) for rt in _types(cfg, args[1:])]
+    else:  # 全部
+        for cfg in SYSTEMS.values():
+            files += [_out_name(cfg, rt) for rt in cfg["types"]]
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        for f in files:
+            if not os.path.exists(f):
+                print("跳过（不存在）: %s\n" % os.path.basename(f))
+                continue
+            ab, _ent = _ability_files(_sys_of(f))
+            _review_one(_review_load(f), ab, name=os.path.basename(f))
+    report = out.getvalue()
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    path = os.path.join(RESULTS_DIR, "maintain_review.txt")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(report)
+    print(report[-4000:])
+    print(f"完整 review 报告: {path}")
+    return 0
+
+
 def cmd_install(_):
     today = datetime.date.today().strftime("%Y%m%d")
     news = sorted(glob.glob(os.path.join(DATASETS_DIR, "*.new.yaml")))
@@ -153,12 +299,21 @@ def cmd_export(args):
 # ---------------------------------------------------------------------
 # 定位：把「已修过的 bug」锁成用例，防止改代码时被改回来。
 # 约定：全部用 assert 断言（不是打印），失败即非零退出码，可接 CI。
-# 覆盖（对应 2026-09 修过的 4 个 bug）：
+#   用例必须能「单独跑通过」（不依赖别的用例先执行过）——
+#   每个用例自己补 sys.path，避免顺序依赖造成假绿/假红。
+#
+# 覆盖（2026-09 修过的 bug）：
 #   1. semantic_verify._is_empty_result  —— 合法空结果不再误判「缺字段」
 #   2. rubric._derive_attribution        —— 环境关键词不误伤含 datax 的工具名
 #   3. _06_run_test._wilson_ci           —— 置信区间不再硬编码 (0,0)
 #   4. _02_generate_dataset._coerce_param —— 参数跨域污染被枚举白名单拦住
 #   5. rubric._rule_judge 写入安全边界    —— 存在性对账（原 _04_rubric_selftest）
+#   6. _06._load_dataset_type            —— 类型以数据集为准（防用错维度表评分）
+#   7. _06._strip_type_prefix            —— 剥类型前缀（防 _D_D_xxx 重复命名）
+#   8. _06._build_out_path               —— 结果名带时间戳（防同天重跑覆盖）
+#
+# 维护提示：改「命名/路径/类型解析」相关代码后，务必跑 selftest。
+#   这三个函数被 _06 / _08 / _09 三处共用，改一处会影响整条链路的产物命名。
 # =====================================================================
 
 _PASS = []
@@ -563,6 +718,9 @@ def _t_block_expectation():
     被误判成数据集问题，是反向错误。
     """
     import json
+    # 补齐 rubric 包所在路径（与其它自测用例一致；此前漏写导致本用例
+    # ModuleNotFoundError，等于这条回归保护一直是空的）
+    sys.path.insert(0, ROOT)
     from rubric.rubric import RubricJudger
 
     J = RubricJudger({})
@@ -634,6 +792,95 @@ def _t_block_expectation():
         "", "MCP 调用失败"), "result_error 非空却判为期望不成立"
 
 
+def _t_dataset_type_authority():
+    """bug8：--req-type 与数据集「需求类型」不一致时，必须以数据集为准。
+
+    背景（2026-09-27）：用 --req-type C 去跑 D 类数据集时，框架静默接受，
+    后果有三：① 用 C 的维度表去评 D 的用例（评分口径错乱）；② 执行器按错
+    类型加载；③ 结果/报告命名撞车（出现 _C_D_xxx 这种畸形组合）。
+    修法：校正为数据集的类型，并打印警告。
+    """
+    import tempfile
+    import yaml as _y
+
+    # 显式补包路径：scripts 包需其父目录（ROOT）在 sys.path 上，
+    # 否则单独跑本用例会 ModuleNotFoundError（不依赖别的用例先跑过）。
+    sys.path.insert(0, ROOT)
+    from scripts._06_run_test import _load_dataset_type
+
+    # 临时造一个「需求类型: D」的数据集
+    with tempfile.NamedTemporaryFile(
+            "w", suffix=".yaml", delete=False, encoding="utf-8") as f:
+        _y.safe_dump({"需求类型": "D", "系统": "X",
+                      "用例列表": []}, f, allow_unicode=True)
+        tmp = f.name
+    try:
+        # 显式传 C，但数据集是 D → 必须校正为 D
+        assert _load_dataset_type(tmp, "C") == "D", "未以数据集类型为准"
+        # 显式传 D（一致）→ 保持 D
+        assert _load_dataset_type(tmp, "D") == "D", "一致时被改动"
+        # 不传 → 用数据集的值
+        assert _load_dataset_type(tmp, None) == "D", "缺省时未取数据集类型"
+    finally:
+        os.remove(tmp)
+
+    # 读不到/结构异常时回退到传入值（不抛异常，保证健壮）
+    assert _load_dataset_type("不存在的文件.yaml", "C") == "C", "异常时未回退"
+    assert _load_dataset_type("不存在的文件.yaml", None) == "C", "异常且缺省时未回退 C"
+
+
+def _t_result_report_naming_consistent():
+    """bug9：result 与 report 的类型命名必须一致，且不重复类型前缀。
+
+    背景（2026-09-27）：同一次运行曾出现 result 叫 C、report 叫 D 的自相矛盾
+    （类型校正在 run_dataset 内部、而 out 路径在调用方已算好）；
+    另有数据集名本身带类型前缀时产生 ..._D_D_小韩面... 的重复。
+    """
+    sys.path.insert(0, ROOT)   # 同上：保证单独跑也能 import scripts 包
+    from scripts._06_run_test import _strip_type_prefix
+
+    # 数据集名带类型前缀 → 剥掉（避免 _D_D_xxx）
+    assert _strip_type_prefix("D_小韩面无人值守门禁", "D") == "小韩面无人值守门禁", \
+        "类型前缀未剥离"
+    # 不带前缀 → 原样返回
+    assert _strip_type_prefix("小韩面无人值守门禁", "D") == "小韩面无人值守门禁", \
+        "无前缀被误改"
+    # 前缀与类型不符 → 不动（可能系统名本身以该字母开头）
+    assert _strip_type_prefix("A_某系统", "D") == "A_某系统", "不匹配前缀被误剥"
+    # 空值安全
+    assert _strip_type_prefix("", "D") == "", "空串异常"
+    assert _strip_type_prefix("D_x", "") == "D_x", "空类型异常"
+
+
+def _t_output_path_timestamped():
+    """bug10：result 输出名必须带时间戳，且同天重跑不覆盖。
+
+    背景（2026-09-27）：默认输出曾写死 result_<类型>.yaml，多次跑互相覆盖，
+    历史结果丢失。修法：result_<类型>_<YYYYMMDD>.yaml，同名时追加 _HHMMSS。
+    """
+    import re as _re
+    import tempfile
+
+    sys.path.insert(0, ROOT)   # 同上：保证单独跑也能 import scripts 包
+    from scripts._06_run_test import _build_out_path
+
+    with tempfile.TemporaryDirectory() as d:
+        # 首次：基础名（result_<类型>_<YYYYMMDD>.yaml）
+        p1 = _build_out_path(d, "D")
+        assert _re.fullmatch(r"result_D_\d{8}\.yaml", os.path.basename(p1)), \
+            f"首次命名不合规: {p1}"
+        # 造一个同名文件 → 第二次应追加时分秒，不覆盖
+        open(p1, "w").close()
+        p2 = _build_out_path(d, "D")
+        assert p2 != p1, "同天重跑会覆盖（未追加时间戳）"
+        assert _re.fullmatch(r"result_D_\d{8}_\d{6}\.yaml", os.path.basename(p2)), \
+            f"重跑命名不合规: {p2}"
+        # 不同类型互不干扰
+        p3 = _build_out_path(d, "A")
+        assert _re.fullmatch(r"result_A_\d{8}\.yaml", os.path.basename(p3)), \
+            f"A 类型命名受影响: {p3}"
+
+
 SELFTEST_CASES = [
     ("bug7 block_miss \u5f52\u56e0\uff08\u533a\u5206\u671f\u671b\u4e0d\u6210\u7acb\u4e0e\u771f\u672a\u62e6\u622a\uff09",
      _t_block_expectation),
@@ -646,6 +893,12 @@ SELFTEST_CASES = [
     ("bug3 Wilson CI \u975e\u786c\u7f16\u7801", _t_wilson_ci),
     ("bug4 \u679a\u4e3e\u767d\u540d\u5355\u963b\u6b62\u53c2\u6570\u8de8\u57df\u6c61\u67d3", _t_coerce_param),
     ("bug5 \u5199\u5165\u5b89\u5168\u8fb9\u754c\u5b58\u5728\u6027\u5bf9\u8d26", _t_rule_judge_boundary),
+    ("bug8 \u7c7b\u578b\u4ee5\u6570\u636e\u96c6\u4e3a\u51c6\uff08--req-type \u4e0d\u4e00\u81f4\u65f6\u6821\u6b63\uff09",
+     _t_dataset_type_authority),
+    ("bug9 result/report \u547d\u540d\u4e00\u81f4\uff08\u4e0d\u91cd\u590d\u7c7b\u578b\u524d\u7f00\uff09",
+     _t_result_report_naming_consistent),
+    ("bug10 result \u8f93\u51fa\u5e26\u65f6\u95f4\u6233\uff08\u540c\u5929\u91cd\u8dd1\u4e0d\u8986\u76d6\uff09",
+     _t_output_path_timestamped),
 ]
 
 
@@ -711,6 +964,7 @@ def main():
         "status": (cmd_status, 0),
         "regen": (cmd_regen, 1),
         "validate": (cmd_validate, 0),
+        "review": (cmd_review, 0),
         "install": (cmd_install, 0),
         "export": (cmd_export, 0),
         "selftest": (cmd_selftest, 0),
@@ -718,7 +972,7 @@ def main():
     }
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         print("用法: python scripts/_10_maintain.py "
-              "<status|regen|validate|install|export|selftest|help> [sys] [type...] [name]")
+              "<status|regen|validate|review|install|export|selftest|help> [sys] [type...] [name]")
         return 1
     fn, _min = cmds[sys.argv[1]]
     args = sys.argv[2:]

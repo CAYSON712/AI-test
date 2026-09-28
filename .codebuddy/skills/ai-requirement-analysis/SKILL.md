@@ -12,7 +12,8 @@ description: AI 测试「需求分析 + 数据集生成」专用入口。当用�
 - **框架**：`ai-test-framework/`
 - **维度表**：`ai-test-framework/dimensions/*.yaml`（A-E 五类，严格对齐手册）
 - **Rubric**：`ai-test-framework/rubric/`（5 分制 + 阈值 + 统计）
-- **生成脚本**：`ai-test-framework/scripts/generate_dataset.py`
+- **生成脚本**：`ai-test-framework/scripts/_02_generate_dataset.py`
+- **维护入口**：`ai-test-framework/scripts/_10_maintain.py`（regen / validate / review / install / export / selftest）
 
 ## 第一步：判断需求类型
 
@@ -88,10 +89,17 @@ description: AI 测试「需求分析 + 数据集生成」专用入口。当用�
 ## 执行命令
 
 ```powershell
-cd ai-test-framework/scripts
+cd ai-test-framework
 
-# 完整版（推荐）：指定 需求类型 + 能力目录 + 实体清单
-python generate_dataset.py ^
+# 方式一（推荐）：维护入口一键 regen（自动发现能力目录/实体清单，产出 *.new.yaml）
+python scripts/_10_maintain.py regen    <sys> [type...]   # sys = retailpos / unattended
+python scripts/_10_maintain.py validate <sys> [type...]   # 硬校验（FAIL 则不许进执行）
+python scripts/_10_maintain.py review   <sys> [type...]   # 软 review（人工扫一眼）
+python scripts/_10_maintain.py install                     # 备份旧版并装正式版
+
+# 方式二：直接调生成器（细粒度控制时用）
+cd ai-test-framework/scripts
+python _02_generate_dataset.py ^
   --req-type <A|B|C|D|E> ^
   --ability <能力目录.yaml> ^
   --products <实体清单.yaml> ^
@@ -99,7 +107,7 @@ python generate_dataset.py ^
 
 # 降级版：只传 req-type + system（自动发现能力目录，实体清单缺失时降级为结构骨架）
 # 注意：Windows 终端直接传中文路径可能乱码，推荐用 --system 触发自动发现
-python generate_dataset.py --req-type <A|B|C|D|E> --system <系统名> --out ../datasets/<类型>_<系统>.yaml
+python _02_generate_dataset.py --req-type <A|B|C|D|E> --system <系统名> --out ../datasets/<类型>_<系统>.yaml
 ```
 
 参数说明：
@@ -131,25 +139,46 @@ python generate_dataset.py --req-type <A|B|C|D|E> --system <系统名> --out ../
 > **校验机制**：评分时优先用「确定性语义校验器」(`rubric/semantic_verify.py`) 自动评分
 > （文本包含/字段齐全/值相等，不依赖 LLM，via=rule）；规则判不了的主观维度才下沉到 LLM-as-Judge。
 
-## 生成后检查（内容 review + Excel 导出）
+## 生成后检查（**验收清单，必须逐项跑完**）
 
-生成/校验完成后做两步人工可读检查：`review_dataset.py` 出**内容体检报告**（暴露覆盖/期望/重复问题），`export_to_excel.py` 出**逐条明细 Excel**（人眼浏览核对）。两者都是纯规则、不依赖 LLM：
+> **为什么这节是强制的**：生成器产出「矛盾用例 / 真重复 / 缺 semantic」不会报错，
+> 但会在执行阶段浪费真实 MCP 调用，或让评分判不出来。
+> 本清单的目的是**把问题暴露在执行之前**，不是事后补救。
+
+### ① 硬校验（门禁，FAIL 不许进执行）
 
 ```powershell
-cd ai-test-framework/scripts
-
-# 1) 内容体检：层/维度/能力分布、期望健康度、真重复、能力目录对照
-python review_dataset.py                               # 全部数据集
-python review_dataset.py -a ../ability/<能力目录.yaml> ../datasets/<数据集>.yaml
-
-# 2) 导出 Excel：每条用例一行 + 覆盖矩阵 + 汇总
-python export_to_excel.py                              # 导出 datasets/ 下全部 yaml
-python export_to_excel.py ../datasets/<数据集>.yaml    # 只导出指定数据集
+python scripts/_10_maintain.py validate <sys> [type...]
 ```
 
-`review_dataset.py` 检查项：头部「用例数」一致性 / 层分布 / 维度分布 / 能力覆盖均衡（max > min×3 告警）/ 期望健康度（缺 intent/output/semantic、block 却无 semantic）/ 标签分布 / 真重复（同能力+维度+输入）/ 能力目录覆盖对照。
+判定：**PASS 才往下走**；FAIL 说明用例与能力目录矛盾（如引用不存在的工具），必须先修。
 
-`export_to_excel.py` 输出到 `datasets/excel/<数据集名>.xlsx`，每个文件含 3 个 sheet：
+### ② 软 review（人工扫一眼，找"会白跑"的问题）
+
+```powershell
+python scripts/_10_maintain.py review <sys> [type...]
+```
+
+**重点看这两项**（其余可略过）：
+
+| 看什么 | 为什么 |
+|---|---|
+| **真重复（同能力+维度+输入）** | 重复的每条都会真实执行一遍 = **白烧调用**，必须合并或删掉 |
+| **能力覆盖均衡（min / max）** | `max > min×3` 时结论有偏：某能力测 14 次、某能力只测 3 次 |
+
+其余检查项（层分布 / 维度分布 / 期望健康度 / 标签分布 / 能力目录对照）作为参考。
+
+> ⚠ **「缺 semantic」要分辨**：`block=true` 的**拒绝类用例本就不需要 semantic**
+> （期望是"被拒绝"，不是"输出含某字段"），这类计入统计是正常的，**不必修**。
+> 只有 `block=false` 的正常用例缺 semantic 才需要补。
+
+### ③ 导出 Excel（人眼抽检，可选）
+
+```powershell
+python scripts/_10_maintain.py export <sys> [type...]
+```
+
+输出到 `datasets/excel/<数据集名>.xlsx`，每个文件含 3 个 sheet：
 
 | Sheet | 用途 |
 |---|---|
@@ -157,7 +186,18 @@ python export_to_excel.py ../datasets/<数据集>.yaml    # 只导出指定数�
 | **覆盖矩阵** | 能力 × 维度 用例数矩阵，缺口(0)红底高亮，右侧合计 |
 | **汇总** | 用例总数 / L1/L2/L3 分布 / Block 占比（COUNTIF 公式动态统计） |
 
-依赖 `openpyxl`（`pip install openpyxl`）。两个脚本都通用、不绑定具体系统；典型用法：review 确认质量门槛通过 → 打开 Excel 抽查覆盖均衡、核对边界能力用例是否补足。
+依赖 `openpyxl`（`pip install openpyxl`）。全部通用、不绑定具体系统。
+
+### ④ 一键跑完整条流水线（含上面的①②门禁）
+
+```powershell
+python scripts/_09_pipeline.py --req-type <A|B|C|D|E> [--system <系统名>] --executor auto
+```
+
+流水线顺序：**⓪ 框架自测 → ① 生成/复用数据集 → ①.5 硬校验（门禁，FAIL 中止）
+→ ①.6 软 review（提醒，不阻断）→ ② 执行+评分+报告**。
+
+`①.6` 会把「真重复 / 覆盖不均衡」直接打印在**执行之前**，避免白烧 MCP 调用——这是跑测时的主入口。
 
 ## 破坏性/写入类工具的安全测试（写入安全边界）
 
@@ -220,8 +260,11 @@ python export_to_excel.py ../datasets/<数据集>.yaml    # 只导出指定数�
   `search_xxx_by_name` 导致基线恒为 0）；
 - 没有可用探针时自动退化为「仅总数对账」，不会生成无法判定的用例。
 
-**回归自测**：`python scripts/_04_rubric_selftest.py`（覆盖 6 个分支：真实实体被删 / 基线 0 但实体仍在 /
-基线正常 Δ 合法 / 基线正常 Δ 爆炸 / 探针失败无证据 / 无 impact）。
+**回归自测**：`python scripts/_10_maintain.py selftest`（**改完框架代码先跑这个**，离线、不连 MCP）。
+覆盖 11 个框架用例 + 5 个生成器用例，其中与本 skill 相关的是：
+「bug5 写入安全边界存在性对账」（6 个分支：真实实体被删 / 基线 0 但实体仍在 / 基线正常 Δ 合法 /
+基线正常 Δ 爆炸 / 探针失败无证据 / 无 impact）、
+「bug4 枚举白名单阻止参数跨域污染」、「bug8/9/10 类型解析与产物命名」。
 
 ## 真实业务实体清单
 

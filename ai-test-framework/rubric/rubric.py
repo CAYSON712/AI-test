@@ -72,10 +72,17 @@ def grade_info(score):
 class Rubric:
     """一个维度的 Rubric 判定标准"""
 
-    def __init__(self, dimension, rubric_map, threshold=None):
+    def __init__(self, dimension, rubric_map, threshold=None, metric_mode="一致性"):
         self.dimension = dimension          # 维度名
         self.rubric_map = rubric_map         # {5:描述, 4:..., ...}
         self.threshold = threshold           # 阈值（如 ">=0.98"），用于自动断言
+        # 指标口径：决定该维度在多次采样（runs>1）时怎么聚合与展示。
+        #   "一致性"（默认）：功能类维度。多次结果应当一致，pass^k（每次都对）
+        #       是关键指标——5 次里 1 次错即说明有缺陷。
+        #   "分布"：性能类维度。响应时间/资源受网络与负载影响天然波动，
+        #       单次慢不构成缺陷；用 avg + stdev 看分布，不展示 pass^k
+        #       （否则会把正常抖动误判成"不稳定"）。
+        self.metric_mode = metric_mode
 
     @staticmethod
     def from_yaml(dim_node):
@@ -84,6 +91,7 @@ class Rubric:
             dimension=dim_node.get("维度", ""),
             rubric_map=dim_node.get("rubric", {}),
             threshold=dim_node.get("通过标准"),
+            metric_mode=dim_node.get("指标口径") or "一致性",
         )
 
     def judge_by_label(self, matched_label):

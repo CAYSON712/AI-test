@@ -44,10 +44,61 @@ def _wilson_ci(passed, total, z=1.96):
     return (round(max(0.0, center - margin), 3), round(min(1.0, center + margin), 3))
 
 
+def _load_dataset_type(dataset_path, req_type):
+    """读取数据集里的「需求类型」，作为权威类型。
+
+    为什么要它：显式传的 --req-type 可能与数据集不符（如用 C 去跑 D 数据集），
+    静默接受会导致「用错维度表评分 + 执行器加载错类型 + 结果/报告命名撞车」。
+    这里以数据集为准；读不到或结构异常时回退到传入值（再兜底 "C"），不抛异常。
+    """
+    try:
+        with open(dataset_path, encoding="utf-8") as f:
+            d = yaml.safe_load(f) or {}
+    except Exception:
+        return req_type or "C"
+    if not isinstance(d, dict):
+        return req_type or "C"
+    ds_type = str(d.get("需求类型") or "").strip()
+    if ds_type:
+        return ds_type
+    return req_type or "C"
+
+
+def _strip_type_prefix(name, req_type):
+    """剥掉数据集名开头的「类型_」前缀，避免拼出 ..._D_D_小韩面... 的重复。
+
+    只剥与 req_type 完全一致的前缀；否则原样返回（系统名可能本身以该字母开头）。
+    """
+    if not name or not req_type:
+        return name or ""
+    p = f"{req_type}_"
+    return name[len(p):] if name.startswith(p) else name
+
+
+def _build_out_path(out_dir, req_type):
+    """默认结果名带时间戳：result_<类型>_<YYYYMMDD>.yaml。
+
+    同一天再次生成时追加 _HHMMSS，避免互相覆盖（不同 runs / 维度子集 / 重跑
+    都会产出多份结果，覆盖会丢历史）。
+    """
+    import time as _t
+    base = os.path.join(out_dir, f"result_{req_type}_{_t.strftime('%Y%m%d')}.yaml")
+    if not os.path.exists(base):
+        return base
+    return os.path.join(
+        out_dir, f"result_{req_type}_{_t.strftime('%Y%m%d_%H%M%S')}.yaml")
+
+
 def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=None,
                 report_trace=False, use_llm_judge=False, llm_detail=False,
-                auto_report=False):
-    """执行数据集 + Rubric 评分"""
+                auto_report=False, only_dims=None):
+    """执行数据集 + Rubric 评分
+
+    only_dims: 可选，只跑指定维度（list[str]，支持子串匹配）。
+      用途：多次采样（runs>1）成本随数据量线性增长，全量跑易触发限流且耗时长；
+      先用小样本维度验证口径/观察波动，再决定是否全量，可显著降低试错成本。
+      例：only_dims=["性能"] → 只跑「性能」/「性能与资源」等含该子串的维度。
+    """
     # 加载维度表 + Rubric
     tables = load_dimension_tables()
     judger = RubricJudger(tables)
@@ -64,11 +115,27 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     if isinstance(data, dict) and "用例列表" in data:
         cases = data["用例列表"]
         system = system or data.get("系统", "")
-        req_type = req_type or data.get("需求类型", "C")
+        # 数据集的「需求类型」是权威值：显式传的不符时以数据集为准（否则会用错
+        # 维度表评分、执行器加载错类型、结果/报告命名撞车）
+        ds_type = _load_dataset_type(dataset_path, req_type)
+        if req_type and ds_type and req_type != ds_type:
+            print(f"⚠ 警告：--req-type {req_type} 与数据集「需求类型」{ds_type} 不一致，"
+                  f"以数据集为准（{ds_type}）")
+        req_type = ds_type
     elif isinstance(data, list):
         cases = data
     else:
         raise ValueError(f"无法识别的数据集结构: {dataset_path}")
+
+    # 维度筛选（可选）：只跑指定维度，降低多次采样的试错成本
+    if only_dims:
+        keys = [str(d) for d in only_dims]
+        before = len(cases)
+        cases = [c for c in cases
+                 if any(k in str(c.get("维度") or "") for k in keys)]
+        print("维度筛选 {}: {} → {} 条".format(keys, before, len(cases)))
+        if not cases:
+            raise ValueError("维度筛选后无用例，请检查 only_dims: {}".format(keys))
 
     # 执行器（按需求类型 + 系统名加载配置驱动的执行器）
     registry = get_registry(executor_mode, system=system, req_type=req_type)
@@ -185,11 +252,13 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
             if dim in _dims:
                 dim_rubric = _dims[dim]
                 break
-        # 按用例聚合：每个用例取 "是否达标"（judgeable 的 run 里至少一次 score>=3）
+        # 按用例聚合：区分「至少一次对」(pass@k) 与「每次都对」(pass^k)
         case_rows = dim_case_all.get(dim, {})   # {用例ID: [(judgeable, passed, score), ...]}
         judgeable_cases = 0
-        passed_cases = 0
+        passed_cases = 0        # pass@k：至少一次通过
+        all_pass_cases = 0      # pass^k：每次采样都通过（稳定性指标）
         max_k = 0
+        case_stdevs = []        # 该维度各用例的分数标准差（波动性）
         for _uid, run_rows in case_rows.items():
             # 该用例实际采样次数（可能因 sample_extra 而异）
             max_k = max(max_k, len(run_rows))
@@ -197,38 +266,75 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
             if not any(j for j, p, s in run_rows):
                 continue
             judgeable_cases += 1
-            # pass@k：任意一次 run (judgeable 且 passed) → 该用例通过
-            if any(j and p for j, p, s in run_rows):
+            # 只统计 judgeable 的 run，避免未判定项污染稳定性统计
+            jrows = [(p, s) for j, p, s in run_rows if j]
+            passed_flags = [1 if p else 0 for p, s in jrows]
+            # pass@k：任意一次 run passed → 该用例通过（能力上界）
+            if any(passed_flags):
                 passed_cases += 1
-        final_score = None
-        score_type = "avg"
+            # pass^k：全部 run 都 passed → 该用例稳定通过（可靠性）
+            # ⚠ 与 pass@k 的区别：pass@k=100% 但 pass^k=20% 说明「能做到但很不稳」，
+            #   旧口径只看 pass@k 时这种情况与「稳定正确」完全同分，掩盖了波动。
+            if passed_flags and all(passed_flags):
+                all_pass_cases += 1
+            # 每用例标准差（样本>=2 才有意义）
+            svals = [s for p, s in jrows if isinstance(s, (int, float))]
+            if len(svals) >= 2:
+                m = sum(svals) / len(svals)
+                var = sum((x - m) ** 2 for x in svals) / (len(svals) - 1)
+                case_stdevs.append(var ** 0.5)
+
+        # ⚠ 评分口径修正（2026-09-27）：
+        # 旧实现 final_score = max(rate映射分, avg) 有两处硬伤：
+        #   ① max 是「择优选一个报」= 主动隐藏不利信息（选择性报告），无统计依据；
+        #   ② rate_score 是通过率查表的离散分、avg 是逐用例均值，量纲不同，
+        #      直接比大小数学上不成立。
+        # 三者（pass@k 宽松 + 阈值偏松 + max 取高）叠加后系统性偏乐观：
+        #   如 5 次错 4 次仍算通过(rate=100%) → rate_score=5，把 avg 2.x 盖掉 → 报告满分。
+        # 现改为【并列展示，不合并为单一分】：score 置 None，由 score_rate /
+        # score_avg 分别表达「达标率口径」与「平均质量口径」，报告侧同时呈现。
+        score_rate = None
+        score_avg = round(avg, 2)
         rate = None
         if judgeable_cases:
             rate = passed_cases / judgeable_cases
-            rate_score = dim_rubric.score_from_rate(rate) if dim_rubric else None
-            if rate_score is not None:
-                # 评分修复：score = max(rate映射分, avg)。
-                # 通过率查 rubric 表可能比实际平均分更严（如 31.6% 通过率→1 分，
-                # 但 avg 2.95 接近可接受）。用 avg 兜底，避免严重低估。
-                # score 反映"平均质量"，pass_rate 反映"完全正确比例"，两者结合看。
-                final_score = max(rate_score, round(avg, 2))
-                score_type = "rate" if rate_score >= round(avg, 2) else "avg"
-        if final_score is None:
-            final_score = round(avg, 2)
+            if dim_rubric:
+                score_rate = dim_rubric.score_from_rate(rate)
+        # 指标口径决定聚合方式（来自维度表「指标口径」字段）：
+        #   "分布"（性能类）：看 avg + stdev，不用 pass^k 判稳定性
+        #     —— 性能受网络/负载影响天然波动，单次慢不构成缺陷。
+        #   "一致性"（默认，功能类）：pass^k 是关键指标。
+        metric_mode = getattr(dim_rubric, "metric_mode", None) or "一致性"
+        # 分布类维度：pass^k 不参与判定，报告侧也不展示（避免误判正常抖动）
+        pass_all_k_effective = None if metric_mode == "分布" else (
+            round(all_pass_cases / judgeable_cases, 3) if judgeable_cases else 0)
+        # 兼容字段：旧报告/脚本可能读 score。保留但语义变为「达标率口径分」，
+        # 不再用 max 合并（无 rate 可算时回退到 avg）。
+        final_score = score_rate if score_rate is not None else score_avg
+        score_type = "rate" if score_rate is not None else "avg"
         # Wilson 95% 置信区间：小样本 + 极端通过率(0/1)下比正态近似稳健。
-        # 历史问题：此处曾硬编码 (0,0)，报告里所有维度都显示 [0.00, 0.00]，
-        # 掩盖了"样本量是否足够、结果是否稳定"这一复盘要点。
+        # 注意：该 CI 基于 pass@k，本身偏乐观，需与 pass^k 一并解读。
         ci = _wilson_ci(passed_cases, judgeable_cases)
-        # pass@k 通过率（以用例计）；k 为该维度实际采样次数（可能受 sample_extra 提升）
+        all_ci = _wilson_ci(all_pass_cases, judgeable_cases)
+        stdev = (sum(case_stdevs) / len(case_stdevs)) if case_stdevs else None
         dimensions[dim] = {
-            "avg_score": round(avg, 2),
-            "score": final_score,           # 最终得分 = max(rate映射分, avg)，反映平均质量
-            "score_type": score_type,       # rate=程序化统计 / avg=逐用例均值
+            "avg_score": score_avg,          # 平均质量口径（逐用例均值）
+            "score": final_score,            # 兼容字段=达标率口径分（不再与 avg 取 max）
+            "score_rate": score_rate,        # 达标率口径分（通过率查表）
+            "score_avg": score_avg,          # 平均质量口径分
+            "score_type": score_type,
             "pass_rate": round(passed_cases / judgeable_cases, 3) if judgeable_cases else 0,
-            "rate": round(rate, 3) if rate is not None else None,  # 原始通过率（完全正确比例）
-            "n": judgeable_cases,           # 可程序化判定的用例数
-            "runs": max_k,                  # 该维度用例实际采样次数（pass@k 的 k）
-            "ci": ci,                       # Wilson 95% CI (low, high)，n=0 时为 (0, 0)
+            "rate": round(rate, 3) if rate is not None else None,          # pass@k（宽松）
+            "pass_at_k": round(passed_cases / judgeable_cases, 3) if judgeable_cases else 0,
+            # pass_all_k：仅「一致性」口径维度有意义；「分布」口径（性能类）置 None，
+            # 因为性能天然波动，用它判稳定性会把正常抖动误判成缺陷。
+            "pass_all_k": pass_all_k_effective,
+            "metric_mode": metric_mode,      # 一致性 / 分布
+            "stdev": round(stdev, 3) if stdev is not None else None,       # 用例分数平均标准差
+            "n": judgeable_cases,
+            "runs": max_k,
+            "ci": ci,                        # pass@k 的 Wilson 95% CI
+            "ci_all": all_ci if metric_mode != "分布" else None,
         }
 
     # 组装失分用例明细（供报告"错误类型分布 + 失分用例明细"）
@@ -276,17 +382,19 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
           f" | 已拦截(符合预期): {len(blocked_cases)} 条")
 
     # 可选：跑完自动生成评估报告（--report）
-    # 报告命名 = 时间戳 + 数据集文件名 → 评估报告_<时间>_<数据集名>.md
-    # 好处：同一数据集多次执行不互相覆盖，一眼能看出哪天跑、跑的是哪个数据集
+    # 报告命名 = 评估报告_<时间戳>_<类型>_<数据集名>.md
+    # 与 _08_report.py 手动运行的默认命名保持一致（两处对齐，避免半截名）
+    # ⚠ 数据集文件名本身常已带类型前缀（如 D_小韩面无人值守门禁），
+    #   故先剥掉再拼，否则会出现 ..._D_D_小韩面... 的重复类型。
     if auto_report:
         try:
             from scripts._08_report import generate_report
             ts = time.strftime("%Y%m%d_%H%M%S")
-            dataset_stem = os.path.splitext(dataset_name)[0]  # e.g. A_RetailPOS数据查询
+            dataset_stem = os.path.splitext(dataset_name)[0]  # e.g. D_小韩面无人值守门禁
+            dataset_stem = _strip_type_prefix(dataset_stem, req_type)
             report_path = os.path.join(_ROOT, "report",
-                                       f"评估报告_{ts}_{dataset_stem}.md")
+                                       f"评估报告_{ts}_{req_type}_{dataset_stem}.md")
             generate_report(out_path, report_path)
-            print(f"报告已自动生成: {report_path}")
         except Exception as e:
             print(f"⚠ 自动生成报告失败（{e}），可稍后手动运行 _08_report.py")
 
@@ -303,17 +411,26 @@ def main():
     parser.add_argument("--trace", action="store_true",
                         help="上报 trace 到 trace_platform（需先启动该服务）")
     parser.add_argument("--report", action="store_true",
-                        help="跑完自动生成评估报告（report/评估报告_<时间戳>_<数据集名>.md）")
+                        help="跑完自动生成评估报告（report/评估报告_<时间戳>_<类型>_<数据集名>.md）")
     parser.add_argument("--llm-judge", action="store_true",
                         help="启用 LLM-as-Judge：对规则判不了的主观维度由 LLM 打分（更慢、耗 token）")
     parser.add_argument("--llm-detail", action="store_true",
                         help="LLM 打分时输出详细评分理由（需配合 --llm-judge，更耗 token）")
+    parser.add_argument("--dims", default=None,
+                        help="只跑指定维度，逗号分隔的子串（如 --dims 性能,调用正确性）。"
+                             "多次采样(runs>1)成本高，可先小样本验证再用此参数。")
     args = parser.parse_args()
 
-    out = args.out or os.path.join(_ROOT, "results", f"result_{args.req_type}.yaml")
+    # 默认输出名带时间戳：result_<类型>_<YYYYMMDD>.yaml
+    # ⚠ 类型以「数据集里的需求类型」为准 —— 与 run_dataset 内部校正保持一致，
+    #   否则会出现 result 叫 C、报告却叫 D 的自相矛盾命名。
+    _eff_type = _load_dataset_type(args.dataset, args.req_type)
+    out = args.out or _build_out_path(os.path.join(_ROOT, "results"), _eff_type)
+    only_dims = [s.strip() for s in args.dims.split(",") if s.strip()] if args.dims else None
     run_dataset(args.req_type, args.dataset, args.executor, args.runs, out,
                 args.system, report_trace=args.trace, use_llm_judge=args.llm_judge,
-                llm_detail=args.llm_detail, auto_report=args.report)
+                llm_detail=args.llm_detail, auto_report=args.report,
+                only_dims=only_dims)
 
 
 if __name__ == "__main__":

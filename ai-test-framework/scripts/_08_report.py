@@ -10,7 +10,8 @@
 
 用法：
   cd ai-test-framework/scripts
-  python _08_report.py --result results.yaml --out ../report/C_某系统.md
+  python _08_report.py --result ../results/result_C_20260927.yaml
+  # 不传 --out 时自动命名：report/评估报告_<时间戳>_<类型>_<数据集名>.md
 """
 import argparse
 import os
@@ -65,28 +66,61 @@ def generate_report(result_path, out_path):
     lines.append(f"- **被测系统**: {system}")
     lines.append(f"- **采样次数**: 每条 {runs} 次\n")
 
-    # 1. 维度得分表（score = max(rate映射分, avg)，反映「平均质量」）
+    # 1. 维度得分表
+    #    ⚠ 口径说明（2026-09-27 修正，勿按旧注释理解）：
+    #    旧实现 score = max(rate映射分, avg) 已废弃，两处硬伤：
+    #      ① max 是"择优选一个报"= 主动隐藏不利信息，无统计依据；
+    #      ② rate映射分（通过率查表的离散分）与 avg（逐用例均值）量纲不同，比大小不成立。
+    #    现 score = score_rate（达标率口径分，无 rate 时回退 avg），与 avg 并列展示、不再合并。
     #    通过率以「用例」为统计单位；每条用例跑 k 次（k 由全局 runs 与用例 sample_extra 取大），
     #    ≥1 次达标即判通过（pass@k）。
-    #    说明：score 反映"平均质量"，pass_rate(rate) 反映"完全正确比例"，需结合看——
-    #          通过率低但平均分高 = 多数用例基本对、但完全正确的不多。
     max_k = max((d.get("runs", 1) or 1) for d in dims.values()) if dims else 1
     lines.append("## 维度得分（5 分制 Rubric）\n")
-    lines.append(f"> 通过率统计口径：**pass@{max_k}**（每条用例跑 {max_k} 次、≥1 次达标即判过；关键用例 sample_extra 自动多跑，见「采样k」列）\n")
-    lines.append("> 得分=平均质量，通过率=完全正确比例，两者结合看\n")
-    lines.append("| 维度 | 得分 | 平均分 | 通过率 | 评分方式 | 等级 | 发布建议 | 用例数 | 采样k | 95%CI |")
-    lines.append("|------|------|--------|--------|----------|------|----------|--------|-------|-------|")
+    lines.append(f"> 采样：每条用例跑 {max_k} 次（关键用例 sample_extra 自动多跑，见「采样k」列）\n")
+    lines.append("> **指标口径**决定多次采样怎么看，分两类：")
+    lines.append("> - **一致性**（功能类维度）：多次结果应当一致，看 **pass^k**"
+                 "（k 次全对）；5 次里 1 次错即说明有缺陷。")
+    lines.append("> - **分布**（性能类维度）：响应受网络/负载影响天然波动，"
+                 "看 **平均分 + stdev**；pass^k 会把正常抖动误判成不稳定，故不展示。\n")
+    lines.append("> 定义：`pass@k` = 至少一次达标（能力上界）；"
+                 "`pass^k` = 每次都达标（可靠性）；`stdev` = 各用例分数的平均标准差\n")
+    lines.append("| 维度 | 得分 | 平均分 | 通过率(pass@k) | pass^k | stdev | 口径 | 等级 | 发布建议 | 用例数 | 95%CI |")
+    lines.append("|------|------|--------|----------------|--------|-------|------|------|----------|--------|-------|")
     for dim, d in sorted(dims.items(), key=lambda x: x[1].get("score", x[1].get("avg_score", 0))):
         score = d.get("score", d.get("avg_score", 0))
         avg = d.get("avg_score", 0)
-        stype = "程序化" if d.get("score_type") == "rate" else "逐用例"
         g = grade_info(score)
         rate = d.get("rate", d.get("pass_rate", 0)) or 0
         n = d.get("n", 0)
-        rk = d.get("runs", 1) or 1
         ci = d.get("ci", (0, 0))
-        lines.append(f"| {dim} | {score:.2f} | {avg:.2f} | {rate:.0%} | {stype} | {g['label']} | {g['verdict']} | "
-                     f"{n} | pass@{rk} | [{ci[0]:.2f}, {ci[1]:.2f}] |")
+        mode = d.get("metric_mode") or "一致性"
+        pak = d.get("pass_at_k")
+        pk = d.get("pass_all_k")
+        sd = d.get("stdev")
+        # 分布口径（性能类）不展示 pass^k（性能天然波动，展示会误导）
+        pk_txt = "—" if pk is None else f"{pk:.0%}"
+        sd_txt = "—" if sd is None else f"{sd:.2f}"
+        ci_txt = "—" if (not ci or (ci[0] == 0 and ci[1] == 0)) else f"[{ci[0]:.2f}, {ci[1]:.2f}]"
+        lines.append(f"| {dim} | {score:.2f} | {avg:.2f} | {rate:.0%} | {pk_txt} | {sd_txt} | "
+                     f"{mode} | {g['label']} | {g['verdict']} | {n} | {ci_txt} |")
+
+    # 1.5 稳定性提示：一致性口径下 pass@k 高但 pass^k 明显低 → 时对时错
+    unstable = []
+    for dim, d in dims.items():
+        if (d.get("metric_mode") or "一致性") != "一致性":
+            continue
+        pak2, pk2 = d.get("pass_at_k"), d.get("pass_all_k")
+        if isinstance(pak2, (int, float)) and isinstance(pk2, (int, float)) \
+                and pak2 - pk2 >= 0.1:
+            unstable.append((dim, pak2, pk2, d.get("stdev")))
+    if unstable:
+        lines.append("\n### ⚠️ 稳定性提示（pass@k 高但 pass^k 低 = 时对时错）\n")
+        lines.append("| 维度 | pass@k | pass^k | 落差 | stdev | 含义 |")
+        lines.append("|------|--------|--------|------|-------|------|")
+        for dim, pak2, pk2, sd2 in sorted(unstable, key=lambda x: x[2] - x[1]):
+            lines.append(f"| {dim} | {pak2:.0%} | {pk2:.0%} | {pak2 - pk2:.0%} | "
+                         f"{'—' if sd2 is None else f'{sd2:.2f}'} | "
+                         f"能做到但不够稳定，需排查偶发失败原因 |")
 
     # 2. 总体通过率
     total_rate = sum(d.get("pass_rate", 0) for d in dims.values()) / len(dims) if dims else 0
@@ -264,6 +298,7 @@ def generate_report(result_path, out_path):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
+    # 统一出口打印（调用方无需再打印一次，避免 _06 --report 出现两行重复提示）
     print(f"报告已生成: {out_path}")
 
 
@@ -273,8 +308,33 @@ def main():
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
     import time
-    out = args.out or os.path.join(_ROOT, "report",
-                                   f"评估报告_{time.strftime('%Y%m%d_%H%M%S')}.md")
+    # 默认命名与 _06_run_test.py --report 保持一致：
+    #   评估报告_<时间戳>_<类型>_<数据集名>.md
+    # 之前只写 时间戳 会产出「评估报告_20260927_203402.md」这种半截名，
+    # 多个数据集混在一起时分不清谁是谁。
+    if args.out:
+        out = args.out
+    else:
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        result_stem = os.path.splitext(os.path.basename(args.result))[0]  # e.g. result_D_20260927
+        # 从 result_<类型>_<时间戳> 里解出类型；解不出则整个 stem 当类型占位
+        parts = result_stem.split("_")
+        req_type = parts[1] if len(parts) > 1 and len(parts[1]) == 1 else ""
+        # 数据集名：优先从结果 yaml 的 system 字段推，取不到就用 result 文件名
+        dataset_stem = ""
+        try:
+            import yaml as _yaml
+            with open(args.result, encoding="utf-8") as _f:
+                _d = _yaml.safe_load(_f) or {}
+            dataset_stem = str(_d.get("system") or "").strip()
+        except Exception:
+            pass
+        # 数据集名常已带类型前缀（system 字段一般不含，但保险起见剥一次）。
+        # 复用 _06 的实现，保证三处命名逻辑只有一份。
+        from scripts._06_run_test import _strip_type_prefix
+        dataset_stem = _strip_type_prefix(dataset_stem, req_type)
+        tag = "_".join(x for x in [req_type, dataset_stem] if x) or result_stem
+        out = os.path.join(_ROOT, "report", f"评估报告_{ts}_{tag}.md")
     generate_report(args.result, out)
 
 
