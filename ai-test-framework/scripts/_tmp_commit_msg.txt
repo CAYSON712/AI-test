@@ -1,0 +1,11 @@
+修复评分器成功判定 + 结果存原始响应
+
+- rubric._preview_ok 改为「统一信号」判定：code in (0,200) 且 success!=false 即成功。
+  不再列举 isPreview/isNoOp 等业务特征（枚举必漏，PocketStore 首轮因漏 isNoOp 误判成功为失败）。
+- _06_run_test 失分明细新增 raw_response：存服务端原始响应，供离线诊断/评分口径核对。
+- _02 生成器：_allowed_for 工具限定枚举不匹配时不回退其他工具枚举（避免 status 跨工具污染）；
+  _coerce_param/_default_param_value 支持 schema 按工具声明的 boolean/enum；
+  load_param_descriptions 过滤 nullable 占位 'None'。
+- _03 校验器：_illegal_params 优先用 schema 按工具 enum；新增 _schema_enums()；Checker 补 dataset 类级默认。
+- configs/PocketStore.yaml status 改为按工具收敛；实体清单移除全零占位员工。
+- 全量校验 16/16 PASS，selftest 全绿。

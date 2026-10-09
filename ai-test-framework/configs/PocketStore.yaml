@@ -34,7 +34,12 @@
 # 这里按【字符串枚举】收敛（覆盖内置 POS 的 Selling/Off，避免误判），
 # 整数型 status 由生成器按 schema type=integer 处理。
 param_enums:
-  status: [OnSale, OffSale]
+  # status 必须【按工具】区分（同名不同义）：
+  #   batch_item_status → OnSale/OffSale；set_store_open_status → open/closed；
+  #   item_update/item_create → 整数（由 schema type 处理，此处不收敛）
+  status:
+    - {tools: [batch_item_status], values: [OnSale, OffSale]}
+    - {tools: [set_store_open_status], values: [open, closed]}
   # paymentType：PocketStore 取值与 POS 系（Cash/CreditCard）完全不同，
   #   不覆盖会沿用内置 POS 枚举误判（生成器已从描述提取 proton_pay 等）。
   paymentType: [proton_pay, offline_cash, offline_card, offline_other]

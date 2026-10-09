@@ -108,6 +108,8 @@ class Checker:
     param_not_bools = set()
     use_builtin_enums = True
     _tool_schema_cache = None
+    _SCHEMA_ENUM_CACHE = None
+    dataset = {}
 
     def __init__(self, dataset, ability_path, products_path=None, verbose=False):
         self.dataset = load_yaml(dataset)
@@ -382,7 +384,11 @@ class Checker:
                     bad.append(f"{k}={v!r} 非布尔值")
                 continue
             # 2) 枚举型参数：值必须在白名单内（config 优先，其次内置）
-            allowed = self.param_enums.get(kl)
+            #    先按参数名 + 工具名解析 config（支持 [值...] 与 [{tools,values}...] 两种写法）
+            allowed = self._enum_for(kl, tool, self.param_enums)
+            if allowed is None and self.param_enums.get(kl) is not None:
+                # config 声明了该参数但当前工具未命中任何 {tools} 规则 → 该工具不受此枚举约束
+                continue
             if allowed is None:
                 spec = self.PARAM_ENUMS.get(kl) if use_builtin else None
                 if spec is None:
@@ -429,7 +435,12 @@ class Checker:
         if s == "":
             return "为空串"
         if self._UUID_RE.fullmatch(s):
-            return None                       # UUID 形态合法
+            # 全零 / 全同字符 UUID = 占位，不是真实实体 ID
+            #   （00000000-0000-0000-0000-000000000000 是空 UUID 占位，
+            #    服务端会返回 data is null，属数据集缺陷）
+            if len(set(s.replace("-", ""))) <= 1:
+                return "占位 UUID（全同字符/全零）"
+            return None                       # 正常 UUID 形态合法
         if self._ID_RE.fullmatch(s):
             return None if int(s) > 0 else "正整数 ID 应为正数"
         return "非合法 ID 形态"
@@ -658,6 +669,52 @@ class Checker:
     # 实体真实存在性无法离线确认，故此处只查「形态明显是占位/编造」的 ID（见 _fake_id_reason）。
     _FAKE_ID_PAT = re.compile(r"^(0+|1+|9+|123+|1234567890+|00000000-0000-0000-0000-000000000000)$")
 
+    _SCHEMA_ENUM_CACHE = None
+
+    def _schema_enums(self):
+        """读 results/mcp_schemas/<系统>.raw.json 的 per-tool 参数 enum。
+
+        返回 {工具名(小写): {参数名(小写): [合法值]}}。schema enum 最权威，
+        按工具隔离，可解决「同名参数不同工具枚举不同」（如 status）。
+        """
+        if self._SCHEMA_ENUM_CACHE is not None:
+            return self._SCHEMA_ENUM_CACHE
+        result = {}
+        sys_name = self.dataset.get("系统") or ""
+        sch_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "results", "mcp_schemas")
+        cands = [f for f in (os.listdir(sch_dir) if os.path.isdir(sch_dir) else [])
+                 if f.endswith(".raw.json")]
+        target = None
+        for f in sorted(cands):
+            if sys_name and (os.path.splitext(f)[0].replace(".raw", "") in sys_name
+                             or sys_name in os.path.splitext(f)[0]):
+                target = os.path.join(sch_dir, f)
+                break
+        if not target and cands:
+            target = os.path.join(sch_dir, sorted(cands)[0])
+        if target and os.path.exists(target):
+            try:
+                import json as _json
+                data = _json.load(open(target, encoding="utf-8"))
+                for t in data.get("tools") or []:
+                    name = str(t.get("name") or "").lower()
+                    props = (t.get("inputSchema") or {}).get("properties") or {}
+                    inner = props.get("parameters") or props.get("toolParams") or {}
+                    inner = inner.get("properties") if isinstance(inner, dict) else {}
+                    if not name or not isinstance(inner, dict):
+                        continue
+                    for p, spec in inner.items():
+                        if isinstance(spec, dict) and isinstance(spec.get("enum"), list):
+                            vals = [str(x) for x in spec["enum"]
+                                    if x is not None and str(x).lower() not in ("none", "null")]
+                            if vals:
+                                result.setdefault(name, {})[str(p).lower()] = vals
+            except Exception:
+                pass
+        self._SCHEMA_ENUM_CACHE = result
+        return result
+
     def _tool_schema(self):
         """读 configs 的 mcp_tools -> {工具名: (params集合, required集合)}。"""
         if getattr(self, "_tool_schema_cache", None) is not None:
@@ -780,7 +837,21 @@ class Checker:
                     f"{' …' if len(items) > 5 else ''} {_HINT}")
 
     def _enum_for(self, param_lower, tool, enums):
-        """按参数名 + 工具名解析合法枚举（支持 config 的 {tools,values} 细化）。"""
+        """按参数名 + 工具名解析合法枚举。
+
+        优先级：工具 schema 自带的 enum（按工具隔离，最权威）→ config 的
+        {tools,values} / [值...] 规则。schema 无枚举才回退 config。
+        """
+        # 1) 工具 schema enum（<系统>.raw.json）
+        sch = self._schema_enums()
+        tl = str(tool or "").lower()
+        for tn, pmap in sch.items():
+            if tn == tl or tn in tl or tl in tn:
+                vals = pmap.get(param_lower)
+                if vals:
+                    return list(vals)
+                break
+        # 2) config 枚举
         spec = enums.get(param_lower)
         if spec is None:
             return None

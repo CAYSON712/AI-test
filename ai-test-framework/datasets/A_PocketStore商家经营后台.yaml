@@ -75,10 +75,10 @@
     block: true
     semantic:
       contains:
-      - 拒绝
-      - 错误
-      - 无权限
       - 权限拒绝
+      - 拒绝
+      - 无权限
+      - 错误
       any_of: true
   标签:
   - 越权
@@ -260,7 +260,7 @@
     tool_name: set_store_open_status
     tool_params: &id011
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      status: open
   期望:
     intent: 切换营业状态
     params: *id011
@@ -275,7 +275,7 @@
   输入:
     tool_name: set_store_open_status
     tool_params: &id012
-      status: OnSale
+      status: open
   期望:
     intent: 切换营业状态
     params: *id012
@@ -296,7 +296,7 @@
     tool_name: set_store_open_status
     tool_params:
       merchId: '0'
-      status: OnSale
+      status: open
   期望:
     intent: 切换营业状态
     params: *id011
@@ -317,7 +317,7 @@
     tool_name: set_store_open_status
     tool_params: &id013
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      status: open
   期望:
     intent: 切换营业状态
     params: *id013
@@ -626,7 +626,7 @@
   输入:
     tool_name: item_detail
     tool_params: &id026
-      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
   期望:
     intent: 查询商品详情
     params: *id026
@@ -693,10 +693,10 @@
     block: true
     semantic:
       contains:
-      - 拒绝
-      - 错误
-      - 无权限
       - 权限拒绝
+      - 拒绝
+      - 无权限
+      - 错误
       any_of: true
   标签:
   - 越权
@@ -708,7 +708,7 @@
   输入:
     tool_name: item_detail
     tool_params: &id029
-      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
+      itemId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 查询商品详情
     params: *id029
@@ -729,8 +729,8 @@
     tool_name: item_create
     tool_params: &id030
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
-      price: 10
+      name: Iced Ribera w. Lemon
+      price: '4.95'
   期望:
     intent: 新建商品
     params: *id030
@@ -745,8 +745,8 @@
   输入:
     tool_name: item_create
     tool_params: &id031
-      name: popular item
-      price: 10
+      name: Iced Ribera w. Lemon
+      price: '4.95'
   期望:
     intent: 新建商品
     params: *id031
@@ -767,8 +767,8 @@
     tool_name: item_create
     tool_params:
       merchId: '0'
-      name: popular item
-      price: 10
+      name: Iced Ribera w. Lemon
+      price: '4.95'
   期望:
     intent: 新建商品
     params: *id030
@@ -789,8 +789,8 @@
     tool_name: item_create
     tool_params: &id032
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 全天菜单
-      price: 10
+      name: Coke
+      price: '2.95'
   期望:
     intent: 新建商品
     params: *id032
@@ -805,9 +805,9 @@
   输入:
     tool_name: item_update
     tool_params: &id033
-      itemId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      newName: 0税率
-      price: 10
+      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      newName: 测试订单
+      price: '10.00'
   期望:
     intent: 修改商品信息
     params: *id033
@@ -823,8 +823,8 @@
   输入:
     tool_name: item_update
     tool_params: &id034
-      newName: 0税率
-      price: 10
+      newName: 测试订单
+      price: '10.00'
   期望:
     intent: 修改商品信息
     params: *id034
@@ -846,8 +846,8 @@
     tool_name: item_update
     tool_params:
       itemId: '0'
-      newName: 0税率
-      price: 10
+      newName: 测试订单
+      price: '10.00'
   期望:
     intent: 修改商品信息
     params: *id033
@@ -868,9 +868,9 @@
   输入:
     tool_name: item_update
     tool_params: &id035
-      itemId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
-      newName: Proton Pay
-      price: 10
+      itemId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      newName: 商品
+      price: '10.00'
   期望:
     intent: 修改商品信息
     params: *id035
@@ -887,7 +887,7 @@
     tool_name: item_delete
     tool_params: &id036
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      itemId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 删除商品
     params: *id036
@@ -903,7 +903,7 @@
   输入:
     tool_name: item_delete
     tool_params: &id037
-      itemId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 删除商品
     params: *id037
@@ -925,7 +925,7 @@
     tool_name: item_delete
     tool_params:
       merchId: '0'
-      itemId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 删除商品
     params: *id036
@@ -963,7 +963,7 @@
   输入:
     tool_name: item_update_stock
     tool_params: &id039
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
       stock: 99999
   期望:
     intent: 修改商品库存
@@ -1023,7 +1023,7 @@
   输入:
     tool_name: item_update_stock
     tool_params: &id041
-      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
       stock: 99999
   期望:
     intent: 修改商品库存
@@ -1041,7 +1041,7 @@
     tool_name: batch_item_price
     tool_params: &id042
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      price: '4.95'
+      price: '13.95'
   期望:
     intent: 批量修改商品价格
     params: *id042
@@ -1057,7 +1057,7 @@
   输入:
     tool_name: batch_item_price
     tool_params: &id043
-      price: '4.95'
+      price: '13.95'
   期望:
     intent: 批量修改商品价格
     params: *id043
@@ -1079,7 +1079,7 @@
     tool_name: batch_item_price
     tool_params:
       merchId: '0'
-      price: '4.95'
+      price: '13.95'
   期望:
     intent: 批量修改商品价格
     params: *id042
@@ -1101,7 +1101,7 @@
     tool_name: batch_item_price
     tool_params: &id044
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      price: '10.00'
+      price: '13.95'
   期望:
     intent: 批量修改商品价格
     params: *id044
@@ -1118,7 +1118,7 @@
     tool_name: batch_item_stock
     tool_params: &id045
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: 1
+      stock: 99999
   期望:
     intent: 批量修改商品库存
     params: *id045
@@ -1134,7 +1134,7 @@
   输入:
     tool_name: batch_item_stock
     tool_params: &id046
-      stock: 1
+      stock: 99999
   期望:
     intent: 批量修改商品库存
     params: *id046
@@ -1156,7 +1156,7 @@
     tool_name: batch_item_stock
     tool_params:
       merchId: '0'
-      stock: 1
+      stock: 99999
   期望:
     intent: 批量修改商品库存
     params: *id045
@@ -1178,7 +1178,7 @@
     tool_name: batch_item_stock
     tool_params: &id047
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: 1
+      stock: 99999
   期望:
     intent: 批量修改商品库存
     params: *id047
@@ -1491,7 +1491,7 @@
     tool_name: menu_create
     tool_params: &id061
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
+      name: lunch special
   期望:
     intent: 新建菜单
     params: *id061
@@ -1506,7 +1506,7 @@
   输入:
     tool_name: menu_create
     tool_params: &id062
-      name: 测试订单
+      name: lunch special
   期望:
     intent: 新建菜单
     params: *id062
@@ -1527,7 +1527,7 @@
     tool_name: menu_create
     tool_params:
       merchId: '0'
-      name: 测试订单
+      name: lunch special
   期望:
     intent: 新建菜单
     params: *id061
@@ -1548,7 +1548,7 @@
     tool_name: menu_create
     tool_params: &id063
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: soup
+      name: main
   期望:
     intent: 新建菜单
     params: *id063
@@ -1848,7 +1848,7 @@
     tool_name: category_create
     tool_params: &id077
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Iced Ribera w. Lemon
+      name: soup
   期望:
     intent: 新建分类
     params: *id077
@@ -1863,7 +1863,7 @@
   输入:
     tool_name: category_create
     tool_params: &id078
-      name: Iced Ribera w. Lemon
+      name: soup
   期望:
     intent: 新建分类
     params: *id078
@@ -1884,7 +1884,7 @@
     tool_name: category_create
     tool_params:
       merchId: '0'
-      name: Iced Ribera w. Lemon
+      name: soup
   期望:
     intent: 新建分类
     params: *id077
@@ -1905,7 +1905,7 @@
     tool_name: category_create
     tool_params: &id079
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
+      name: popular item
   期望:
     intent: 新建分类
     params: *id079
@@ -2140,8 +2140,8 @@
     tool_name: tax_create
     tool_params: &id089
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Pork Chop Cutlet w. Curry Sauce
-      tax: Tax
+      name: Hainan Style Chicken Noodle In Soup
+      tax: 1
   期望:
     intent: 新建税率
     params: *id089
@@ -2156,8 +2156,8 @@
   输入:
     tool_name: tax_create
     tool_params: &id090
-      name: Pork Chop Cutlet w. Curry Sauce
-      tax: Tax
+      name: Hainan Style Chicken Noodle In Soup
+      tax: 1
   期望:
     intent: 新建税率
     params: *id090
@@ -2178,8 +2178,8 @@
     tool_name: tax_create
     tool_params:
       merchId: '0'
-      name: Pork Chop Cutlet w. Curry Sauce
-      tax: Tax
+      name: Hainan Style Chicken Noodle In Soup
+      tax: 1
   期望:
     intent: 新建税率
     params: *id089
@@ -2200,8 +2200,8 @@
     tool_name: tax_create
     tool_params: &id091
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Curry Beef Brisket Flank
-      tax: Tax
+      name: Coke
+      tax: 1
   期望:
     intent: 新建税率
     params: *id091
@@ -2217,7 +2217,7 @@
     tool_name: tax_update
     tool_params: &id092
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      taxId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 修改税率
     params: *id092
@@ -2233,7 +2233,7 @@
   输入:
     tool_name: tax_update
     tool_params: &id093
-      taxId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 修改税率
     params: *id093
@@ -2255,7 +2255,7 @@
     tool_name: tax_update
     tool_params:
       merchId: '0'
-      taxId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 修改税率
     params: *id092
@@ -2277,7 +2277,7 @@
     tool_name: tax_update
     tool_params: &id094
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      taxId: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
+      taxId: 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
   期望:
     intent: 修改税率
     params: *id094
@@ -2293,10 +2293,10 @@
   输入:
     tool_name: tax_bind_item
     tool_params: &id095
-      merchFoodIds: &id397
-      - c8cae758-c014-4b14-a745-719dbbd70ba2
+      merchFoodIds: &id365
+      - 23c23434-3a90-4369-93c9-2a74cb191cc8
       taxIds: &id096
-      - c8cae758-c014-4b14-a745-719dbbd70ba2
+      - 23c23434-3a90-4369-93c9-2a74cb191cc8
   期望:
     intent: 商品绑定税率
     params: *id095
@@ -2354,9 +2354,9 @@
     tool_name: tax_bind_item
     tool_params: &id098
       merchFoodIds:
-      - d2de8117-56ca-42dd-8406-eb5237756f32
+      - 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
       taxIds:
-      - d2de8117-56ca-42dd-8406-eb5237756f32
+      - 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 商品绑定税率
     params: *id098
@@ -2372,7 +2372,7 @@
     tool_name: spec_create
     tool_params: &id099
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
+      name: Delivery Area 1
   期望:
     intent: 新建规格组
     params: *id099
@@ -2387,7 +2387,7 @@
   输入:
     tool_name: spec_create
     tool_params: &id100
-      name: popular item
+      name: Delivery Area 1
   期望:
     intent: 新建规格组
     params: *id100
@@ -2408,7 +2408,7 @@
     tool_name: spec_create
     tool_params:
       merchId: '0'
-      name: popular item
+      name: Delivery Area 1
   期望:
     intent: 新建规格组
     params: *id099
@@ -2429,7 +2429,7 @@
     tool_name: spec_create
     tool_params: &id101
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 全天菜单
+      name: cayson店鋪4444
   期望:
     intent: 新建规格组
     params: *id101
@@ -2445,9 +2445,9 @@
     tool_name: spec_bind_item
     tool_params: &id102
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      specId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
+      specId: c8cae758-c014-4b14-a745-719dbbd70ba2
       itemIds: &id103
-      - 11b6d16a-65dc-4bba-b9fa-db5b085db25b
+      - c8cae758-c014-4b14-a745-719dbbd70ba2
   期望:
     intent: 商品绑定规格组
     params: *id102
@@ -2462,7 +2462,7 @@
   输入:
     tool_name: spec_bind_item
     tool_params: &id104
-      specId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
+      specId: c8cae758-c014-4b14-a745-719dbbd70ba2
       itemIds: *id103
   期望:
     intent: 商品绑定规格组
@@ -2484,7 +2484,7 @@
     tool_name: spec_bind_item
     tool_params:
       merchId: '0'
-      specId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
+      specId: c8cae758-c014-4b14-a745-719dbbd70ba2
       itemIds: *id103
   期望:
     intent: 商品绑定规格组
@@ -2506,9 +2506,9 @@
     tool_name: spec_bind_item
     tool_params: &id105
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      specId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      specId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
       itemIds:
-      - 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      - ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 商品绑定规格组
     params: *id105
@@ -2881,7 +2881,7 @@
     tool_name: set_pickup_order_threshold
     tool_params: &id121
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      thresholdAmount: 10
+      thresholdAmount: '13.95'
   期望:
     intent: 设置自提门槛
     params: *id121
@@ -2897,7 +2897,7 @@
   输入:
     tool_name: set_pickup_order_threshold
     tool_params: &id122
-      thresholdAmount: 10
+      thresholdAmount: '13.95'
   期望:
     intent: 设置自提门槛
     params: *id122
@@ -2919,7 +2919,7 @@
     tool_name: set_pickup_order_threshold
     tool_params:
       merchId: '0'
-      thresholdAmount: 10
+      thresholdAmount: '13.95'
   期望:
     intent: 设置自提门槛
     params: *id121
@@ -2941,7 +2941,7 @@
     tool_name: set_pickup_order_threshold
     tool_params: &id123
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      thresholdAmount: 10
+      thresholdAmount: '12.95'
   期望:
     intent: 设置自提门槛
     params: *id123
@@ -3116,7 +3116,7 @@
     tool_name: add_extra_fee
     tool_params: &id130
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
+      name: 晚餐
       target: pickup
       feeType: percentage
       value: 1
@@ -3136,7 +3136,7 @@
   输入:
     tool_name: add_extra_fee
     tool_params: &id131
-      name: 测试订单
+      name: 晚餐
       target: pickup
       feeType: percentage
       value: 1
@@ -3162,7 +3162,7 @@
     tool_name: add_extra_fee
     tool_params:
       merchId: '0'
-      name: 测试订单
+      name: 晚餐
       target: pickup
       feeType: percentage
       value: 1
@@ -3188,7 +3188,7 @@
     tool_name: add_extra_fee
     tool_params: &id132
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: soup
+      name: Delivery Area 1
       target: pickup
       feeType: percentage
       value: 1
@@ -3209,7 +3209,7 @@
     tool_name: delete_extra_fee
     tool_params: &id133
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      feeId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+      feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除附加费用
     params: *id133
@@ -3225,7 +3225,7 @@
   输入:
     tool_name: delete_extra_fee
     tool_params: &id134
-      feeId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+      feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除附加费用
     params: *id134
@@ -3247,7 +3247,7 @@
     tool_name: delete_extra_fee
     tool_params:
       merchId: '0'
-      feeId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+      feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除附加费用
     params: *id133
@@ -3269,7 +3269,7 @@
     tool_name: delete_extra_fee
     tool_params: &id135
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      feeId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+      feeId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
   期望:
     intent: 删除附加费用
     params: *id135
@@ -3584,7 +3584,7 @@
     tool_name: get_user_detail
     tool_params: &id149
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: d2de8117-56ca-42dd-8406-eb5237756f32
+      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
   期望:
     intent: 查询员工详情
     params: *id149
@@ -3599,7 +3599,7 @@
   输入:
     tool_name: get_user_detail
     tool_params: &id150
-      merchManagerId: d2de8117-56ca-42dd-8406-eb5237756f32
+      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
   期望:
     intent: 查询员工详情
     params: *id150
@@ -3620,7 +3620,7 @@
     tool_name: get_user_detail
     tool_params:
       merchId: '0'
-      merchManagerId: d2de8117-56ca-42dd-8406-eb5237756f32
+      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
   期望:
     intent: 查询员工详情
     params: *id149
@@ -3641,7 +3641,7 @@
     tool_name: get_user_detail
     tool_params: &id151
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+      merchManagerId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 查询员工详情
     params: *id151
@@ -3727,7 +3727,7 @@
     tool_params: &id155
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
-      roleId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 新增员工
     params: *id155
@@ -3744,7 +3744,7 @@
     tool_name: add_store_user
     tool_params: &id156
       phone: '9023162140'
-      roleId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 新增员工
     params: *id156
@@ -3767,7 +3767,7 @@
     tool_params:
       merchId: '0'
       phone: '9023162140'
-      roleId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 新增员工
     params: *id155
@@ -3789,8 +3789,8 @@
     tool_name: add_store_user
     tool_params: &id157
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      phone: '9023162143'
-      roleId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      phone: '9023162140'
+      roleId: 15fbc43d-3650-4e8e-9929-42798462c7a1
   期望:
     intent: 新增员工
     params: *id157
@@ -3807,7 +3807,7 @@
     tool_name: update_user_status
     tool_params: &id158
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
       isActive: false
   期望:
     intent: 启用停用员工
@@ -3823,7 +3823,7 @@
   输入:
     tool_name: update_user_status
     tool_params: &id159
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
       isActive: false
   期望:
     intent: 启用停用员工
@@ -3845,7 +3845,7 @@
     tool_name: update_user_status
     tool_params:
       merchId: '0'
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
       isActive: false
   期望:
     intent: 启用停用员工
@@ -3867,7 +3867,7 @@
     tool_name: update_user_status
     tool_params: &id160
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+      merchManagerId: 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
       isActive: false
   期望:
     intent: 启用停用员工
@@ -3884,7 +3884,7 @@
     tool_name: delete_store_user
     tool_params: &id161
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
   期望:
     intent: 删除员工
     params: *id161
@@ -3900,7 +3900,7 @@
   输入:
     tool_name: delete_store_user
     tool_params: &id162
-      merchManagerId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
   期望:
     intent: 删除员工
     params: *id162
@@ -3922,7 +3922,7 @@
     tool_name: delete_store_user
     tool_params:
       merchId: '0'
-      merchManagerId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
   期望:
     intent: 删除员工
     params: *id161
@@ -3944,7 +3944,7 @@
     tool_name: delete_store_user
     tool_params: &id163
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
+      merchManagerId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
   期望:
     intent: 删除员工
     params: *id163
@@ -3961,7 +3961,8 @@
     tool_name: list_all_campaigns
     tool_params: &id164
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      type: MerchPromotion
+      status: true
   期望:
     intent: 查询全部活动
     params: *id164
@@ -3976,7 +3977,8 @@
   输入:
     tool_name: list_all_campaigns
     tool_params: &id165
-      status: OnSale
+      type: MerchPromotion
+      status: true
   期望:
     intent: 查询全部活动
     params: *id165
@@ -3997,7 +3999,8 @@
     tool_name: list_all_campaigns
     tool_params:
       merchId: '0'
-      status: OnSale
+      type: MerchPromotion
+      status: true
   期望:
     intent: 查询全部活动
     params: *id164
@@ -4018,7 +4021,8 @@
     tool_name: list_all_campaigns
     tool_params: &id166
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      type: MerchPromotion
+      status: true
   期望:
     intent: 查询全部活动
     params: *id166
@@ -4107,7 +4111,7 @@
     tool_name: create_discount_campaign
     tool_params: &id170
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 0税率
+      name: Spicy Beef Tripe & Tendon Noodle In Soup
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4125,7 +4129,7 @@
   输入:
     tool_name: create_discount_campaign
     tool_params: &id171
-      name: 0税率
+      name: Spicy Beef Tripe & Tendon Noodle In Soup
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4149,7 +4153,7 @@
     tool_name: create_discount_campaign
     tool_params:
       merchId: '0'
-      name: 0税率
+      name: Spicy Beef Tripe & Tendon Noodle In Soup
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4173,7 +4177,7 @@
     tool_name: create_discount_campaign
     tool_params: &id172
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Proton Pay
+      name: Iced Ribera w. Lemon
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4260,7 +4264,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id176
-      name: Curry Beef Brisket Flank
+      name: popular item
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4323,7 +4327,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id178
-      name: Spicy Beef Tripe & Tendon Noodle In Soup
+      name: 全天菜单
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4342,6 +4346,8 @@
     tool_name: add_report_subscription
     tool_params: &id179
       email: 944600294123@qq.com
+      isSalesReport: false
+      isPayoutReport: false
   期望:
     intent: 添加报表订阅
     params: *id179
@@ -4356,7 +4362,9 @@
   层: L1
   输入:
     tool_name: add_report_subscription
-    tool_params: &id180 {}
+    tool_params: &id180
+      isSalesReport: false
+      isPayoutReport: false
   期望:
     intent: 添加报表订阅
     params: *id180
@@ -4378,6 +4386,8 @@
     tool_name: add_report_subscription
     tool_params:
       email: INVALID
+      isSalesReport: false
+      isPayoutReport: false
   期望:
     intent: 添加报表订阅
     params: *id179
@@ -4399,6 +4409,8 @@
     tool_name: add_report_subscription
     tool_params: &id181
       email: 944600294123@qq.com
+      isSalesReport: false
+      isPayoutReport: false
   期望:
     intent: 添加报表订阅
     params: *id181
@@ -5072,7 +5084,7 @@
     tool_name: update_store_name
     tool_params: &id205
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      newName: Pork Chop Cutlet w. Curry Sauce
+      newName: popular item
   期望:
     intent: 修改店铺名称
     params: *id205
@@ -5089,7 +5101,7 @@
     tool_name: update_store_name
     tool_params: &id206
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      newName: Curry Beef Brisket Flank
+      newName: 全天菜单
   期望:
     intent: 修改店铺名称
     params: *id206
@@ -5287,7 +5299,7 @@
     tool_name: set_store_open_status
     tool_params: &id209
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      status: open
   期望:
     intent: 切换营业状态
     params: *id209
@@ -5303,7 +5315,7 @@
     tool_name: set_store_open_status
     tool_params: &id210
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      status: open
   期望:
     intent: 切换营业状态
     params: *id210
@@ -5814,7 +5826,7 @@
   输入:
     tool_name: item_detail
     tool_params: &id219
-      itemId: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
+      itemId: f67011c7-71f6-49ba-b1ac-309a4c0539bb
   期望:
     intent: 查询商品详情
     params: *id219
@@ -5834,7 +5846,7 @@
   输入:
     tool_name: item_detail
     tool_params: &id220
-      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
   期望:
     intent: 查询商品详情
     params: *id220
@@ -5927,8 +5939,8 @@
     tool_name: item_create
     tool_params: &id221
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: soup
-      price: 10
+      name: Hainan Style Chicken Noodle In Soup
+      price: '12.95'
   期望:
     intent: 新建商品
     params: *id221
@@ -5944,8 +5956,8 @@
     tool_name: item_create
     tool_params: &id222
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
-      price: 10
+      name: Iced Ribera w. Lemon
+      price: '4.95'
   期望:
     intent: 新建商品
     params: *id222
@@ -5998,8 +6010,8 @@
     tool_name: item_create
     tool_params: &id223
       merchId: '0000000000000000'
-      name: soup
-      price: 10
+      name: Hainan Style Chicken Noodle In Soup
+      price: '12.95'
   期望:
     intent: 新建商品
     params: *id223
@@ -6013,8 +6025,8 @@
       存在性检查:
         工具: item_list
         参数:
-          merchId: d2de8117-56ca-42dd-8406-eb5237756f32
-        目标ID: d2de8117-56ca-42dd-8406-eb5237756f32
+          merchId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
+        目标ID: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
     高危: true
   影响范围对账: *id224
   高危: true
@@ -6064,9 +6076,9 @@
   输入:
     tool_name: item_update
     tool_params: &id225
-      itemId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
-      newName: 全天菜单
-      price: 10
+      itemId: 15fbc43d-3650-4e8e-9929-42798462c7a1
+      newName: Coke
+      price: '2.95'
   期望:
     intent: 修改商品信息
     params: *id225
@@ -6082,9 +6094,9 @@
   输入:
     tool_name: item_update
     tool_params: &id226
-      itemId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      newName: 0税率
-      price: 10
+      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      newName: 测试订单
+      price: '10.00'
   期望:
     intent: 修改商品信息
     params: *id226
@@ -6175,7 +6187,7 @@
     tool_name: item_delete
     tool_params: &id227
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      itemId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      itemId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 删除商品
     params: *id227
@@ -6192,7 +6204,7 @@
     tool_name: item_delete
     tool_params: &id228
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      itemId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 删除商品
     params: *id228
@@ -6261,8 +6273,8 @@
       存在性检查:
         工具: item_detail
         参数:
-          itemId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
-        目标ID: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+          itemId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+        目标ID: ca8f94be-ac00-4b25-9c80-5e6aabffd601
     高危: true
   影响范围对账: *id230
   高危: true
@@ -6329,7 +6341,7 @@
   输入:
     tool_name: item_update_stock
     tool_params: &id232
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
       stock: 99999
   期望:
     intent: 修改商品库存
@@ -6438,7 +6450,7 @@
     tool_name: batch_item_price
     tool_params: &id234
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      price: '4.95'
+      price: '13.95'
   期望:
     intent: 批量修改商品价格
     params: *id234
@@ -6529,7 +6541,7 @@
     tool_name: batch_item_stock
     tool_params: &id235
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: 999
+      stock: 99999
   期望:
     intent: 批量修改商品库存
     params: *id235
@@ -6546,7 +6558,7 @@
     tool_name: batch_item_stock
     tool_params: &id236
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: 1
+      stock: 99999
   期望:
     intent: 批量修改商品库存
     params: *id236
@@ -7059,7 +7071,7 @@
     tool_name: menu_create
     tool_params: &id245
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Iced Ribera w. Lemon
+      name: Pork Chop Cutlet w. Curry Sauce
   期望:
     intent: 新建菜单
     params: *id245
@@ -7075,7 +7087,7 @@
     tool_name: menu_create
     tool_params: &id246
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
+      name: Curry Beef Brisket Flank
   期望:
     intent: 新建菜单
     params: *id246
@@ -7128,7 +7140,7 @@
     tool_name: menu_create
     tool_params: &id247
       merchId: '0000000000000000'
-      name: Iced Ribera w. Lemon
+      name: Pork Chop Cutlet w. Curry Sauce
   期望:
     intent: 新建菜单
     params: *id247
@@ -7142,8 +7154,8 @@
       存在性检查:
         工具: menu_list
         参数:
-          merchId: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
-        目标ID: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
+          merchId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
+        目标ID: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
     高危: true
   影响范围对账: *id248
   高危: true
@@ -7636,7 +7648,7 @@
     tool_name: category_create
     tool_params: &id260
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Spicy Beef Tripe & Tendon Noodle In Soup
+      name: Pork Chop w. Curry Sauce
   期望:
     intent: 新建分类
     params: *id260
@@ -7652,7 +7664,7 @@
     tool_name: category_create
     tool_params: &id261
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Iced Ribera w. Lemon
+      name: Curry Chicken
   期望:
     intent: 新建分类
     params: *id261
@@ -7705,7 +7717,7 @@
     tool_name: category_create
     tool_params: &id262
       merchId: '0000000000000000'
-      name: Spicy Beef Tripe & Tendon Noodle In Soup
+      name: Pork Chop w. Curry Sauce
   期望:
     intent: 新建分类
     params: *id262
@@ -7719,8 +7731,8 @@
       存在性检查:
         工具: category_list
         参数:
-          merchId: 23c23434-3a90-4369-93c9-2a74cb191cc8
-        目标ID: 23c23434-3a90-4369-93c9-2a74cb191cc8
+          merchId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
+        目标ID: 5fd6f2b9-431f-442f-81e8-d960af93ded9
     高危: true
   影响范围对账: *id263
   高危: true
@@ -8115,8 +8127,8 @@
     tool_name: tax_create
     tool_params: &id272
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: cayson店鋪4444
-      tax: Tax
+      name: 晚餐
+      tax: 1
   期望:
     intent: 新建税率
     params: *id272
@@ -8132,8 +8144,8 @@
     tool_name: tax_create
     tool_params: &id273
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Pork Chop Cutlet w. Curry Sauce
-      tax: Tax
+      name: Delivery Area 1
+      tax: 1
   期望:
     intent: 新建税率
     params: *id273
@@ -8186,8 +8198,8 @@
     tool_name: tax_create
     tool_params: &id274
       merchId: '0000000000000000'
-      name: cayson店鋪4444
-      tax: Tax
+      name: 晚餐
+      tax: 1
   期望:
     intent: 新建税率
     params: *id274
@@ -8201,8 +8213,8 @@
       存在性检查:
         工具: tax_list
         参数:
-          merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-        目标ID: 202c2fe7-aa2f-424c-867f-26524a197dfa
+          merchId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+        目标ID: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
     高危: true
   影响范围对账: *id275
   高危: true
@@ -8253,7 +8265,7 @@
     tool_name: tax_update
     tool_params: &id276
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      taxId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+      taxId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 修改税率
     params: *id276
@@ -8270,7 +8282,7 @@
     tool_name: tax_update
     tool_params: &id277
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      taxId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      taxId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
   期望:
     intent: 修改税率
     params: *id277
@@ -8360,9 +8372,9 @@
     tool_name: tax_bind_item
     tool_params: &id278
       merchFoodIds:
-      - c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
+      - f67011c7-71f6-49ba-b1ac-309a4c0539bb
       taxIds:
-      - c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
+      - f67011c7-71f6-49ba-b1ac-309a4c0539bb
   期望:
     intent: 商品绑定税率
     params: *id278
@@ -8378,9 +8390,9 @@
     tool_name: tax_bind_item
     tool_params: &id279
       merchFoodIds:
-      - c8cae758-c014-4b14-a745-719dbbd70ba2
+      - 23c23434-3a90-4369-93c9-2a74cb191cc8
       taxIds:
-      - c8cae758-c014-4b14-a745-719dbbd70ba2
+      - 23c23434-3a90-4369-93c9-2a74cb191cc8
   期望:
     intent: 商品绑定税率
     params: *id279
@@ -8468,7 +8480,7 @@
     tool_name: spec_create
     tool_params: &id280
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: soup
+      name: Iced Ribera w. Lemon
   期望:
     intent: 新建规格组
     params: *id280
@@ -8484,7 +8496,7 @@
     tool_name: spec_create
     tool_params: &id281
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
+      name: 测试订单
   期望:
     intent: 新建规格组
     params: *id281
@@ -8537,7 +8549,7 @@
     tool_name: spec_create
     tool_params: &id282
       merchId: '0000000000000000'
-      name: soup
+      name: Iced Ribera w. Lemon
   期望:
     intent: 新建规格组
     params: *id282
@@ -8551,8 +8563,8 @@
       存在性检查:
         工具: tax_list
         参数:
-          merchId: d2de8117-56ca-42dd-8406-eb5237756f32
-        目标ID: d2de8117-56ca-42dd-8406-eb5237756f32
+          merchId: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
+        目标ID: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
     高危: true
   影响范围对账: *id283
   高危: true
@@ -8602,9 +8614,9 @@
     tool_name: spec_bind_item
     tool_params: &id284
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      specId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+      specId: 15fbc43d-3650-4e8e-9929-42798462c7a1
       itemIds:
-      - 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+      - 15fbc43d-3650-4e8e-9929-42798462c7a1
   期望:
     intent: 商品绑定规格组
     params: *id284
@@ -8620,9 +8632,9 @@
     tool_name: spec_bind_item
     tool_params: &id285
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      specId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
+      specId: c8cae758-c014-4b14-a745-719dbbd70ba2
       itemIds:
-      - 11b6d16a-65dc-4bba-b9fa-db5b085db25b
+      - c8cae758-c014-4b14-a745-719dbbd70ba2
   期望:
     intent: 商品绑定规格组
     params: *id285
@@ -9430,8 +9442,8 @@
       存在性检查:
         工具: list_pickup_time_slots
         参数:
-          merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-        目标ID: 202c2fe7-aa2f-424c-867f-26524a197dfa
+          merchId: 4feb93b4-3283-4580-ac65-6b4d0212d6f3
+        目标ID: 4feb93b4-3283-4580-ac65-6b4d0212d6f3
     高危: true
   影响范围对账: *id301
   高危: true
@@ -9584,7 +9596,7 @@
     tool_name: add_extra_fee
     tool_params: &id304
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Iced Ribera w. Lemon
+      name: Spicy Beef Tripe & Tendon Noodle In Soup
       target: pickup
       feeType: percentage
       value: 1
@@ -9605,7 +9617,7 @@
     tool_name: add_extra_fee
     tool_params: &id305
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
+      name: Iced Ribera w. Lemon
       target: pickup
       feeType: percentage
       value: 1
@@ -9664,7 +9676,7 @@
     tool_name: add_extra_fee
     tool_params: &id306
       merchId: '0000000000000000'
-      name: Iced Ribera w. Lemon
+      name: Spicy Beef Tripe & Tendon Noodle In Soup
       target: pickup
       feeType: percentage
       value: 1
@@ -9682,8 +9694,8 @@
       存在性检查:
         工具: get_extra_fee
         参数:
-          merchId: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
-        目标ID: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
+          merchId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+        目标ID: 23c23434-3a90-4369-93c9-2a74cb191cc8
     高危: true
   影响范围对账: *id307
   高危: true
@@ -9734,7 +9746,7 @@
     tool_name: delete_extra_fee
     tool_params: &id308
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      feeId: d2de8117-56ca-42dd-8406-eb5237756f32
+      feeId: c8cae758-c014-4b14-a745-719dbbd70ba2
   期望:
     intent: 删除附加费用
     params: *id308
@@ -9751,7 +9763,7 @@
     tool_name: delete_extra_fee
     tool_params: &id309
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      feeId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+      feeId: d2de8117-56ca-42dd-8406-eb5237756f32
   期望:
     intent: 删除附加费用
     params: *id309
@@ -9820,8 +9832,8 @@
       存在性检查:
         工具: get_extra_fee
         参数:
-          merchId: d2de8117-56ca-42dd-8406-eb5237756f32
-        目标ID: d2de8117-56ca-42dd-8406-eb5237756f32
+          merchId: c8cae758-c014-4b14-a745-719dbbd70ba2
+        目标ID: c8cae758-c014-4b14-a745-719dbbd70ba2
     高危: true
   影响范围对账: *id311
   高危: true
@@ -10295,7 +10307,7 @@
     tool_name: get_user_detail
     tool_params: &id320
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      merchManagerId: 15fbc43d-3650-4e8e-9929-42798462c7a1
   期望:
     intent: 查询员工详情
     params: *id320
@@ -10311,7 +10323,7 @@
     tool_name: get_user_detail
     tool_params: &id321
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: d2de8117-56ca-42dd-8406-eb5237756f32
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 查询员工详情
     params: *id321
@@ -10503,7 +10515,7 @@
     tool_params: &id324
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
-      roleId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
+      roleId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
   期望:
     intent: 新增员工
     params: *id324
@@ -10521,7 +10533,7 @@
     tool_params: &id325
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
-      roleId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      roleId: 4feb93b4-3283-4580-ac65-6b4d0212d6f3
   期望:
     intent: 新增员工
     params: *id325
@@ -10592,8 +10604,8 @@
       存在性检查:
         工具: get_user_detail
         参数:
-          merchId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-        目标ID: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
+          merchId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+        目标ID: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
     高危: true
   影响范围对账: *id327
   高危: true
@@ -10888,7 +10900,8 @@
     tool_name: list_all_campaigns
     tool_params: &id334
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      type: MerchPromotion
+      status: true
   期望:
     intent: 查询全部活动
     params: *id334
@@ -10904,7 +10917,8 @@
     tool_name: list_all_campaigns
     tool_params: &id335
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      type: MerchPromotion
+      status: true
   期望:
     intent: 查询全部活动
     params: *id335
@@ -11343,7 +11357,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id344
-      name: Pork Chop Cutlet w. Curry Sauce
+      name: Curry Chicken
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -11361,7 +11375,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id345
-      name: Curry Beef Brisket Flank
+      name: Seafood Fried Rice
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -11522,6 +11536,8 @@
     tool_name: add_report_subscription
     tool_params: &id346
       email: 944600294123@qq.com
+      isSalesReport: false
+      isPayoutReport: false
   期望:
     intent: 添加报表订阅
     params: *id346
@@ -11538,6 +11554,8 @@
     tool_name: add_report_subscription
     tool_params: &id347
       email: 944600294123@qq.com
+      isSalesReport: false
+      isPayoutReport: false
   期望:
     intent: 添加报表订阅
     params: *id347
@@ -11814,8 +11832,8 @@
       存在性检查:
         工具: list_order_notification_emails
         参数:
-          merchId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
-        目标ID: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+          merchId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+        目标ID: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
     高危: true
   影响范围对账: *id353
   高危: true
@@ -12358,15 +12376,16 @@
   - 容错
   用例ID: A-L1-539
 - 维度: 调用正确性
-  能力: 查询附加费用
+  能力: 删除附加费用
   层: L2
   输入:
-    tool_name: get_extra_fee_typo
+    tool_name: delete_extra_fee_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
-    intent: 查询附加费用
-    params: *id127
+    intent: 删除附加费用
+    params: *id133
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -12377,17 +12396,19 @@
   标签:
   - 工具错配
   用例ID: A-L2-540
+  sample_extra: 3
 - 维度: 调用正确性
-  能力: 开关餐具选项
+  能力: 新增员工
   层: L2
   输入:
-    tool_name: set_utensil_option_enabled_typo
+    tool_name: add_store_user_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: false
+      phone: '9023162140'
+      roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
-    intent: 开关餐具选项
-    params: *id143
+    intent: 新增员工
+    params: *id155
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -12398,17 +12419,17 @@
   标签:
   - 工具错配
   用例ID: A-L2-541
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 查询满减活动
+  能力: 查询优惠券活动
   层: L2
   输入:
-    tool_name: list_discount_campaigns
+    tool_name: list_reward_campaigns
     tool_params: &id364
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      filterType: All
       unknown_param: x
   期望:
-    intent: 查询满减活动
+    intent: 查询优惠券活动
     params: *id364
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -12436,18 +12457,17 @@
   - 未知参数
   用例ID: A-L2-542
 - 维度: 参数校验
-  能力: 新建税率
+  能力: 商品绑定税率
   层: L2
   输入:
-    tool_name: tax_create
-    tool_params: &id365
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Pork Chop Cutlet w. Curry Sauce
-      tax: Tax
+    tool_name: tax_bind_item
+    tool_params: &id366
+      merchFoodIds: *id365
+      taxIds: *id096
       unknown_param: x
   期望:
-    intent: 新建税率
-    params: *id365
+    intent: 商品绑定税率
+    params: *id366
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12474,18 +12494,17 @@
   - 未知参数
   用例ID: A-L2-543
 - 维度: 参数校验
-  能力: 新增员工
+  能力: 删除员工
   层: L2
   输入:
-    tool_name: add_store_user
-    tool_params: &id366
+    tool_name: delete_store_user
+    tool_params: &id367
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      phone: '9023162140'
-      roleId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
       unknown_param: x
   期望:
-    intent: 新增员工
-    params: *id366
+    intent: 删除员工
+    params: *id367
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12512,55 +12531,39 @@
   - 未知参数
   用例ID: A-L2-544
   sample_extra: 3
-- 维度: 参数校验
-  能力: 新建商品
+- 维度: 调用正确性
+  能力: 修改商品信息
   层: L2
   输入:
-    tool_name: item_create
-    tool_params: &id367
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
-      price: 10
-      unknown_param: x
+    tool_name: item_update_typo
+    tool_params:
+      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      newName: 测试订单
+      price: '10.00'
   期望:
-    intent: 新建商品
-    params: *id367
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
+    intent: 修改商品信息
+    params: *id033
+    output: 工具无效，拒绝触发
+    block: true
     semantic:
       contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
       - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
+      - 错误
       any_of: true
   标签:
-  - 未知参数
+  - 工具错配
   用例ID: A-L2-545
+  sample_extra: 3
 - 维度: 调用正确性
-  能力: 设置自提门槛
+  能力: 查询附加费用
   层: L2
   输入:
-    tool_name: set_pickup_order_threshold_typo
+    tool_name: get_extra_fee_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      thresholdAmount: 10
   期望:
-    intent: 设置自提门槛
-    params: *id121
+    intent: 查询附加费用
+    params: *id127
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -12571,18 +12574,16 @@
   标签:
   - 工具错配
   用例ID: A-L2-546
-  sample_extra: 3
 - 维度: 参数校验
-  能力: 商品绑定分类
+  能力: 发布菜单
   层: L2
   输入:
-    tool_name: item_bind_category
+    tool_name: menu_publish
     tool_params: &id368
-      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
-      categoryIds: *id052
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       unknown_param: x
   期望:
-    intent: 商品绑定分类
+    intent: 发布菜单
     params: *id368
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -12610,16 +12611,18 @@
   - 未知参数
   用例ID: A-L2-547
 - 维度: 参数校验
-  能力: 查询全部活动
+  能力: 创建满减活动
   层: L2
   输入:
-    tool_name: list_all_campaigns
+    tool_name: create_discount_campaign
     tool_params: &id369
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      name: Spicy Beef Tripe & Tendon Noodle In Soup
+      startDate: '2026-01-01'
+      endDate: '2026-01-01'
       unknown_param: x
   期望:
-    intent: 查询全部活动
+    intent: 创建满减活动
     params: *id369
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -12646,17 +12649,17 @@
   标签:
   - 未知参数
   用例ID: A-L2-548
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 菜单绑定分类
+  能力: 删除分类
   层: L2
   输入:
-    tool_name: menu_bind_categories
+    tool_name: category_delete
     tool_params: &id370
-      menuId: d2de8117-56ca-42dd-8406-eb5237756f32
-      categoryIds: *id052
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
       unknown_param: x
   期望:
-    intent: 菜单绑定分类
+    intent: 删除分类
     params: *id370
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -12683,17 +12686,19 @@
   标签:
   - 未知参数
   用例ID: A-L2-549
-- 维度: 调用正确性
-  能力: 查询配送区域
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 开关配送服务
   层: L2
   输入:
-    tool_name: list_delivery_areas_typo
-    tool_params:
+    tool_name: set_delivery_enabled
+    tool_params: &id371
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      enabled: -1
   期望:
-    intent: 查询配送区域
-    params: *id106
-    output: 工具无效，拒绝触发
+    intent: 开关配送服务
+    params: *id371
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
@@ -12701,20 +12706,19 @@
       - 错误
       any_of: true
   标签:
-  - 工具错配
+  - 数值变异
   用例ID: A-L2-550
 - 维度: 调用正确性
-  能力: 新建商品
+  能力: 删除商品
   层: L2
   输入:
-    tool_name: item_create_typo
+    tool_name: item_delete_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
-      price: 10
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
-    intent: 新建商品
-    params: *id030
+    intent: 删除商品
+    params: *id036
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -12725,38 +12729,17 @@
   标签:
   - 工具错配
   用例ID: A-L2-551
-- 维度: 参数校验
-  能力: 设置自提门槛
-  层: L2
-  输入:
-    tool_name: set_pickup_order_threshold
-    tool_params: &id371
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      thresholdAmount: abc
-  期望:
-    intent: 设置自提门槛
-    params: *id371
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-552
   sample_extra: 3
 - 维度: 参数校验
-  能力: 查询税率列表
+  能力: 查询附加费用
   层: L2
   输入:
-    tool_name: tax_list
+    tool_name: get_extra_fee
     tool_params: &id372
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
-    intent: 查询税率列表
+    intent: 查询附加费用
     params: *id372
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -12782,59 +12765,18 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-553
-- 维度: 调用正确性
-  能力: 查询可用角色
-  层: L2
-  输入:
-    tool_name: list_merchant_roles_typo
-    tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-  期望:
-    intent: 查询可用角色
-    params: *id152
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-554
-- 维度: 调用正确性
-  能力: 开关自提服务
-  层: L2
-  输入:
-    tool_name: set_pickup_enabled_typo
-    tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: false
-  期望:
-    intent: 开关自提服务
-    params: *id115
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-555
+  用例ID: A-L2-552
 - 维度: 参数校验
-  能力: 查询员工详情
+  能力: 修改税率
   层: L2
   输入:
-    tool_name: get_user_detail
+    tool_name: tax_update
     tool_params: &id373
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: d2de8117-56ca-42dd-8406-eb5237756f32
+      taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
       unknown_param: x
   期望:
-    intent: 查询员工详情
+    intent: 修改税率
     params: *id373
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -12860,20 +12802,21 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-556
-- 维度: 参数校验
+  用例ID: A-L2-553
+  sample_extra: 3
+- 维度: 调用正确性
   能力: 启用停用员工
   层: L2
   输入:
-    tool_name: update_user_status
-    tool_params: &id374
+    tool_name: update_user_status_typo
+    tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
-      isActive: abc
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      isActive: false
   期望:
     intent: 启用停用员工
-    params: *id374
-    output: 参数类型错误被拒绝/提示
+    params: *id158
+    output: 工具无效，拒绝触发
     block: true
     semantic:
       contains:
@@ -12881,20 +12824,20 @@
       - 错误
       any_of: true
   标签:
-  - 类型错配
-  用例ID: A-L2-557
+  - 工具错配
+  用例ID: A-L2-554
 - 维度: 参数校验
-  能力: 新建分类
+  能力: 开启自动接单
   层: L2
   输入:
-    tool_name: category_create
-    tool_params: &id375
+    tool_name: set_auto_accept_orders
+    tool_params: &id374
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Iced Ribera w. Lemon
+      enabled: false
       unknown_param: x
   期望:
-    intent: 新建分类
-    params: *id375
+    intent: 开启自动接单
+    params: *id374
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12919,19 +12862,85 @@
       any_of: true
   标签:
   - 未知参数
+  用例ID: A-L2-555
+- 维度: 参数校验
+  能力: 启用停用员工
+  层: L2
+  输入:
+    tool_name: update_user_status
+    tool_params: &id375
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      isActive: 9999999999999999
+  期望:
+    intent: 启用停用员工
+    params: *id375
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-556
+- 维度: 参数校验
+  能力: 查询全部活动
+  层: L2
+  输入:
+    tool_name: list_all_campaigns
+    tool_params: &id376
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      type: MerchPromotion
+      status: abc
+  期望:
+    intent: 查询全部活动
+    params: *id376
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-557
+- 维度: 参数校验
+  能力: 新建税率
+  层: L2
+  输入:
+    tool_name: tax_create
+    tool_params: &id377
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: Hainan Style Chicken Noodle In Soup
+      tax: 0
+  期望:
+    intent: 新建税率
+    params: *id377
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
   用例ID: A-L2-558
 - 维度: 参数校验
   能力: 修改店铺名称
   层: L2
   输入:
     tool_name: update_store_name
-    tool_params: &id376
+    tool_params: &id378
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       newName: Curry Beef Brisket Flank
       unknown_param: x
   期望:
     intent: 修改店铺名称
-    params: *id376
+    params: *id378
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12959,21 +12968,17 @@
   用例ID: A-L2-559
   sample_extra: 3
 - 维度: 参数校验
-  能力: 添加附加费用
+  能力: 开关餐具选项
   层: L2
   输入:
-    tool_name: add_extra_fee
-    tool_params: &id377
+    tool_name: set_utensil_option_enabled
+    tool_params: &id379
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
-      target: pickup
-      feeType: percentage
-      value: abc
-      isTaxable: false
+      enabled: 0
   期望:
-    intent: 添加附加费用
-    params: *id377
-    output: 参数类型错误被拒绝/提示
+    intent: 开关餐具选项
+    params: *id379
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
@@ -12981,20 +12986,20 @@
       - 错误
       any_of: true
   标签:
-  - 类型错配
+  - 数值变异
   用例ID: A-L2-560
-  sample_extra: 3
 - 维度: 参数校验
-  能力: 发布菜单
+  能力: 新建分类
   层: L2
   输入:
-    tool_name: menu_publish
-    tool_params: &id378
-      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+    tool_name: category_create
+    tool_params: &id380
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: soup
       unknown_param: x
   期望:
-    intent: 发布菜单
-    params: *id378
+    intent: 新建分类
+    params: *id380
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13021,17 +13026,17 @@
   - 未知参数
   用例ID: A-L2-561
 - 维度: 参数校验
-  能力: 批量上下架商品
+  能力: 新建菜单
   层: L2
   输入:
-    tool_name: batch_item_status
-    tool_params: &id379
+    tool_name: menu_create
+    tool_params: &id381
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      name: lunch special
       unknown_param: x
   期望:
-    intent: 批量上下架商品
-    params: *id379
+    intent: 新建菜单
+    params: *id381
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13058,64 +13063,16 @@
   - 未知参数
   用例ID: A-L2-562
 - 维度: 参数校验
-  能力: 添加附加费用
+  能力: 设置小费类型
   层: L2
   输入:
-    tool_name: add_extra_fee
-    tool_params: &id380
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
-      target: pickup
-      feeType: percentage
-      value: 0
-      isTaxable: false
-  期望:
-    intent: 添加附加费用
-    params: *id380
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-563
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 新建商品
-  层: L2
-  输入:
-    tool_name: item_create
-    tool_params: &id381
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
-      price: -1
-  期望:
-    intent: 新建商品
-    params: *id381
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-564
-- 维度: 参数校验
-  能力: 批量修改商品价格
-  层: L2
-  输入:
-    tool_name: batch_item_price
+    tool_name: set_tip_type
     tool_params: &id382
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      price: '4.95'
+      tipType: fixed
       unknown_param: x
   期望:
-    intent: 批量修改商品价格
+    intent: 设置小费类型
     params: *id382
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -13141,19 +13098,78 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-565
+  用例ID: A-L2-563
   sample_extra: 3
+- 维度: 调用正确性
+  能力: 新建商品
+  层: L2
+  输入:
+    tool_name: item_create_typo
+    tool_params:
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: Iced Ribera w. Lemon
+      price: '4.95'
+  期望:
+    intent: 新建商品
+    params: *id030
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-564
+- 维度: 参数校验
+  能力: 批量上下架商品
+  层: L2
+  输入:
+    tool_name: batch_item_status
+    tool_params: &id383
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      status: OnSale
+      unknown_param: x
+  期望:
+    intent: 批量上下架商品
+    params: *id383
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-565
 - 维度: 参数校验
   能力: 查询店铺信息
   层: L2
   输入:
     tool_name: get_store_info
-    tool_params: &id383
+    tool_params: &id384
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询店铺信息
-    params: *id383
+    params: *id384
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13180,58 +13196,15 @@
   - 未知参数
   用例ID: A-L2-566
 - 维度: 参数校验
-  能力: 开关配送服务
+  能力: 开关自提服务
   层: L2
   输入:
-    tool_name: set_delivery_enabled
-    tool_params: &id384
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: abc
-  期望:
-    intent: 开关配送服务
-    params: *id384
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-567
-- 维度: 调用正确性
-  能力: 新建分类
-  层: L2
-  输入:
-    tool_name: category_create_typo
-    tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Iced Ribera w. Lemon
-  期望:
-    intent: 新建分类
-    params: *id077
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-568
-- 维度: 参数校验
-  能力: 新建商品
-  层: L2
-  输入:
-    tool_name: item_create
+    tool_name: set_pickup_enabled
     tool_params: &id385
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
-      price: 0
+      enabled: 9999999999999999
   期望:
-    intent: 新建商品
+    intent: 开关自提服务
     params: *id385
     output: 越界参数被拒绝/提示
     block: true
@@ -13242,18 +13215,78 @@
       any_of: true
   标签:
   - 数值变异
+  用例ID: A-L2-567
+- 维度: 参数校验
+  能力: 新建税率
+  层: L2
+  输入:
+    tool_name: tax_create
+    tool_params: &id386
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: Hainan Style Chicken Noodle In Soup
+      tax: -1
+  期望:
+    intent: 新建税率
+    params: *id386
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-568
+- 维度: 参数校验
+  能力: 新建商品
+  层: L2
+  输入:
+    tool_name: item_create
+    tool_params: &id387
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: Iced Ribera w. Lemon
+      price: '4.95'
+      unknown_param: x
+  期望:
+    intent: 新建商品
+    params: *id387
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
   用例ID: A-L2-569
 - 维度: 参数校验
   能力: 查询商品列表
   层: L2
   输入:
     tool_name: item_list
-    tool_params: &id386
+    tool_params: &id388
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询商品列表
-    params: *id386
+    params: *id388
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13284,13 +13317,13 @@
   层: L2
   输入:
     tool_name: set_store_open_status
-    tool_params: &id387
+    tool_params: &id389
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      status: open
       unknown_param: x
   期望:
     intent: 切换营业状态
-    params: *id387
+    params: *id389
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13336,18 +13369,104 @@
   标签:
   - 工具错配
   用例ID: A-L2-572
-- 维度: 参数校验
-  能力: 开启自动接单
+- 维度: 调用正确性
+  能力: 设置自提门槛
   层: L2
   输入:
-    tool_name: set_auto_accept_orders
-    tool_params: &id388
+    tool_name: set_pickup_order_threshold_typo
+    tool_params:
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      thresholdAmount: '13.95'
+  期望:
+    intent: 设置自提门槛
+    params: *id121
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-573
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 开关餐具选项
+  层: L2
+  输入:
+    tool_name: set_utensil_option_enabled_typo
+    tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
+  期望:
+    intent: 开关餐具选项
+    params: *id143
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-574
+- 维度: 调用正确性
+  能力: 商品绑定分类
+  层: L2
+  输入:
+    tool_name: item_bind_category_typo
+    tool_params:
+      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
+      categoryIds: *id052
+  期望:
+    intent: 商品绑定分类
+    params: *id051
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-575
+- 维度: 参数校验
+  能力: 批量修改商品库存
+  层: L2
+  输入:
+    tool_name: batch_item_stock
+    tool_params: &id390
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      stock: -1
+  期望:
+    intent: 批量修改商品库存
+    params: *id390
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-576
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 设置自提门槛
+  层: L2
+  输入:
+    tool_name: set_pickup_order_threshold
+    tool_params: &id391
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      thresholdAmount: '13.95'
       unknown_param: x
   期望:
-    intent: 开启自动接单
-    params: *id388
+    intent: 设置自提门槛
+    params: *id391
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13372,104 +13491,19 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-573
-- 维度: 调用正确性
-  能力: 设置小费类型
-  层: L2
-  输入:
-    tool_name: set_tip_type_typo
-    tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      tipType: fixed
-  期望:
-    intent: 设置小费类型
-    params: *id136
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-574
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 批量修改商品库存
-  层: L2
-  输入:
-    tool_name: batch_item_stock
-    tool_params: &id389
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: -1
-  期望:
-    intent: 批量修改商品库存
-    params: *id389
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-575
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 修改商品库存
-  层: L2
-  输入:
-    tool_name: item_update_stock
-    tool_params: &id390
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
-      stock: -1
-  期望:
-    intent: 修改商品库存
-    params: *id390
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-576
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 开启自动接单
-  层: L2
-  输入:
-    tool_name: set_auto_accept_orders
-    tool_params: &id391
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: 9999999999999999
-  期望:
-    intent: 开启自动接单
-    params: *id391
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
   用例ID: A-L2-577
+  sample_extra: 3
 - 维度: 调用正确性
-  能力: 查询菜单详情
+  能力: 菜单绑定分类
   层: L2
   输入:
-    tool_name: menu_detail_typo
+    tool_name: menu_bind_categories_typo
     tool_params:
-      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+      menuId: d2de8117-56ca-42dd-8406-eb5237756f32
+      categoryIds: *id052
   期望:
-    intent: 查询菜单详情
-    params: *id058
+    intent: 菜单绑定分类
+    params: *id070
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -13487,48 +13521,32 @@
     tool_name: add_report_subscription
     tool_params: &id392
       email: 944600294123@qq.com
-      unknown_param: x
+      isSalesReport: abc
+      isPayoutReport: false
   期望:
     intent: 添加报表订阅
     params: *id392
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
+    output: 参数类型错误被拒绝/提示
+    block: true
     semantic:
       contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
       - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
+      - 错误
       any_of: true
   标签:
-  - 未知参数
+  - 类型错配
   用例ID: A-L2-579
   sample_extra: 3
 - 维度: 参数校验
-  能力: 商品绑定规格组
+  能力: 查询自提时段
   层: L2
   输入:
-    tool_name: spec_bind_item
+    tool_name: list_pickup_time_slots
     tool_params: &id393
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      specId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      itemIds: *id103
       unknown_param: x
   期望:
-    intent: 商品绑定规格组
+    intent: 查询自提时段
     params: *id393
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -13577,17 +13595,19 @@
   标签:
   - 数值变异
   用例ID: A-L2-581
-- 维度: 调用正确性
-  能力: 查询员工列表
+- 维度: 参数校验
+  能力: 启用停用员工
   层: L2
   输入:
-    tool_name: list_store_users_typo
-    tool_params:
+    tool_name: update_user_status
+    tool_params: &id395
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      isActive: -1
   期望:
-    intent: 查询员工列表
-    params: *id146
-    output: 工具无效，拒绝触发
+    intent: 启用停用员工
+    params: *id395
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
@@ -13595,20 +13615,19 @@
       - 错误
       any_of: true
   标签:
-  - 工具错配
+  - 数值变异
   用例ID: A-L2-582
 - 维度: 参数校验
-  能力: 新建菜单
+  能力: 查询分类列表
   层: L2
   输入:
-    tool_name: menu_create
-    tool_params: &id395
+    tool_name: category_list
+    tool_params: &id396
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
       unknown_param: x
   期望:
-    intent: 新建菜单
-    params: *id395
+    intent: 查询分类列表
+    params: *id396
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13635,83 +13654,17 @@
   - 未知参数
   用例ID: A-L2-583
 - 维度: 参数校验
-  能力: 批量修改商品库存
+  能力: 商品绑定分类
   层: L2
   输入:
-    tool_name: batch_item_stock
-    tool_params: &id396
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: 0
-  期望:
-    intent: 批量修改商品库存
-    params: *id396
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-584
-  sample_extra: 3
-- 维度: 调用正确性
-  能力: 商品绑定税率
-  层: L2
-  输入:
-    tool_name: tax_bind_item_typo
-    tool_params:
-      merchFoodIds: *id397
-      taxIds: *id096
-  期望:
-    intent: 商品绑定税率
-    params: *id095
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-585
-- 维度: 调用正确性
-  能力: 修改商品信息
-  层: L2
-  输入:
-    tool_name: item_update_typo
-    tool_params:
-      itemId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      newName: 0税率
-      price: 10
-  期望:
-    intent: 修改商品信息
-    params: *id033
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-586
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 批量修改商品库存
-  层: L2
-  输入:
-    tool_name: batch_item_stock
-    tool_params: &id398
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: 1
+    tool_name: item_bind_category
+    tool_params: &id397
+      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
+      categoryIds: *id052
       unknown_param: x
   期望:
-    intent: 批量修改商品库存
-    params: *id398
+    intent: 商品绑定分类
+    params: *id397
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13736,19 +13689,103 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-587
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 设置小费类型
+  用例ID: A-L2-584
+- 维度: 调用正确性
+  能力: 商品绑定规格组
   层: L2
   输入:
-    tool_name: set_tip_type
+    tool_name: spec_bind_item_typo
+    tool_params:
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      specId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      itemIds: *id103
+  期望:
+    intent: 商品绑定规格组
+    params: *id102
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-585
+- 维度: 调用正确性
+  能力: 修改商品库存
+  层: L2
+  输入:
+    tool_name: item_update_stock_typo
+    tool_params:
+      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+      stock: 99999
+  期望:
+    intent: 修改商品库存
+    params: *id039
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-586
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 查询菜单列表
+  层: L2
+  输入:
+    tool_name: menu_list_typo
+    tool_params:
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+  期望:
+    intent: 查询菜单列表
+    params: *id055
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-587
+- 维度: 参数校验
+  能力: 开关餐具选项
+  层: L2
+  输入:
+    tool_name: set_utensil_option_enabled
+    tool_params: &id398
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      enabled: abc
+  期望:
+    intent: 开关餐具选项
+    params: *id398
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-588
+- 维度: 参数校验
+  能力: 新建规格组
+  层: L2
+  输入:
+    tool_name: spec_create
     tool_params: &id399
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      tipType: fixed
+      name: Delivery Area 1
       unknown_param: x
   期望:
-    intent: 设置小费类型
+    intent: 新建规格组
     params: *id399
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -13774,57 +13811,18 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-588
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 修改税率
-  层: L2
-  输入:
-    tool_name: tax_update
-    tool_params: &id400
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      taxId: 23c23434-3a90-4369-93c9-2a74cb191cc8
-      unknown_param: x
-  期望:
-    intent: 修改税率
-    params: *id400
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 未知参数
   用例ID: A-L2-589
-  sample_extra: 3
 - 维度: 参数校验
   能力: 查询商品详情
   层: L2
   输入:
     tool_name: item_detail
-    tool_params: &id401
-      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+    tool_params: &id400
+      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
       unknown_param: x
   期望:
     intent: 查询商品详情
-    params: *id401
+    params: *id400
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13875,13 +13873,13 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id402
+    tool_params: &id401
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: 0
   期望:
     intent: 开关支付方式
-    params: *id402
+    params: *id401
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -13893,15 +13891,71 @@
   - 数值变异
   用例ID: A-L2-592
 - 维度: 参数校验
-  能力: 批量修改商品库存
+  能力: 查询菜单详情
   层: L2
   输入:
-    tool_name: batch_item_stock
+    tool_name: menu_detail
+    tool_params: &id402
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+      unknown_param: x
+  期望:
+    intent: 查询菜单详情
+    params: *id402
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-593
+- 维度: 调用正确性
+  能力: 查询可用角色
+  层: L2
+  输入:
+    tool_name: list_merchant_roles_typo
+    tool_params:
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+  期望:
+    intent: 查询可用角色
+    params: *id152
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-594
+- 维度: 参数校验
+  能力: 开启自动接单
+  层: L2
+  输入:
+    tool_name: set_auto_accept_orders
     tool_params: &id403
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: abc
+      enabled: abc
   期望:
-    intent: 批量修改商品库存
+    intent: 开启自动接单
     params: *id403
     output: 参数类型错误被拒绝/提示
     block: true
@@ -13912,19 +13966,17 @@
       any_of: true
   标签:
   - 类型错配
-  用例ID: A-L2-593
-  sample_extra: 3
+  用例ID: A-L2-595
 - 维度: 参数校验
-  能力: 开关餐具选项
+  能力: 查询菜单列表
   层: L2
   输入:
-    tool_name: set_utensil_option_enabled
+    tool_name: menu_list
     tool_params: &id404
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: false
       unknown_param: x
   期望:
-    intent: 开关餐具选项
+    intent: 查询菜单列表
     params: *id404
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -13950,61 +14002,21 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-594
+  用例ID: A-L2-596
 - 维度: 参数校验
-  能力: 开启自动接单
+  能力: 添加自提时段
   层: L2
   输入:
-    tool_name: set_auto_accept_orders
+    tool_name: add_pickup_time_slot
     tool_params: &id405
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: 0
+      days: Monday
+      openTime: '12:00'
+      closeTime: '12:00'
+      preparationMinutes: 9999999999999999
   期望:
-    intent: 开启自动接单
+    intent: 添加自提时段
     params: *id405
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-595
-- 维度: 参数校验
-  能力: 批量修改商品库存
-  层: L2
-  输入:
-    tool_name: batch_item_stock
-    tool_params: &id406
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: 9999999999999999
-  期望:
-    intent: 批量修改商品库存
-    params: *id406
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-596
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 设置自提门槛
-  层: L2
-  输入:
-    tool_name: set_pickup_order_threshold
-    tool_params: &id407
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      thresholdAmount: 0
-  期望:
-    intent: 设置自提门槛
-    params: *id407
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14017,16 +14029,15 @@
   用例ID: A-L2-597
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 商品绑定分类
+  能力: 发布菜单
   层: L2
   输入:
-    tool_name: item_bind_category_typo
+    tool_name: menu_publish_typo
     tool_params:
-      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
-      categoryIds: *id052
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
-    intent: 商品绑定分类
-    params: *id051
+    intent: 发布菜单
+    params: *id064
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14042,12 +14053,12 @@
   层: L2
   输入:
     tool_name: list_order_notification_emails
-    tool_params: &id408
+    tool_params: &id406
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询订单通知邮箱
-    params: *id408
+    params: *id406
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14074,43 +14085,17 @@
   - 未知参数
   用例ID: A-L2-599
 - 维度: 参数校验
-  能力: 添加附加费用
+  能力: 设置小费选项
   层: L2
   输入:
-    tool_name: add_extra_fee
-    tool_params: &id409
+    tool_name: set_tip_options
+    tool_params: &id407
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
-      target: pickup
-      feeType: percentage
-      value: 9999999999999999
-      isTaxable: false
-  期望:
-    intent: 添加附加费用
-    params: *id409
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-600
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 开关自提服务
-  层: L2
-  输入:
-    tool_name: set_pickup_enabled
-    tool_params: &id410
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: false
+      tipValues: *id140
       unknown_param: x
   期望:
-    intent: 开关自提服务
-    params: *id410
+    intent: 设置小费选项
+    params: *id407
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14135,18 +14120,40 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-601
+  用例ID: A-L2-600
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 开关配送服务
+  能力: 开启自动接单
   层: L2
   输入:
-    tool_name: set_delivery_enabled
-    tool_params: &id411
+    tool_name: set_auto_accept_orders
+    tool_params: &id408
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: 9999999999999999
+      enabled: -1
   期望:
-    intent: 开关配送服务
-    params: *id411
+    intent: 开启自动接单
+    params: *id408
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-601
+- 维度: 参数校验
+  能力: 开关自提服务
+  层: L2
+  输入:
+    tool_name: set_pickup_enabled
+    tool_params: &id409
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      enabled: 0
+  期望:
+    intent: 开关自提服务
+    params: *id409
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14162,12 +14169,12 @@
   层: L2
   输入:
     tool_name: item_list
-    tool_params: &id412
+    tool_params: &id410
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询店铺商品结构
-    params: *id412
+    params: *id410
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14194,17 +14201,16 @@
   - 未知参数
   用例ID: A-L2-603
 - 维度: 参数校验
-  能力: 修改商品信息
+  能力: 修改商品库存
   层: L2
   输入:
-    tool_name: item_update
-    tool_params: &id413
-      itemId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      newName: 0税率
-      price: 0
+    tool_name: item_update_stock
+    tool_params: &id411
+      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+      stock: 0
   期望:
-    intent: 修改商品信息
-    params: *id413
+    intent: 修改商品库存
+    params: *id411
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14221,13 +14227,13 @@
   层: L2
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id414
+    tool_params: &id412
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: 0
+      enabled: abc
   期望:
     intent: 开关自提服务
-    params: *id414
-    output: 越界参数被拒绝/提示
+    params: *id412
+    output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
@@ -14235,19 +14241,20 @@
       - 错误
       any_of: true
   标签:
-  - 数值变异
+  - 类型错配
   用例ID: A-L2-605
 - 维度: 参数校验
-  能力: 查询附加费用
+  能力: 删除附加费用
   层: L2
   输入:
-    tool_name: get_extra_fee
-    tool_params: &id415
+    tool_name: delete_extra_fee
+    tool_params: &id413
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
-    intent: 查询附加费用
-    params: *id415
+    intent: 删除附加费用
+    params: *id413
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14273,18 +14280,19 @@
   标签:
   - 未知参数
   用例ID: A-L2-606
+  sample_extra: 3
 - 维度: 参数校验
   能力: 添加订单通知邮箱
   层: L2
   输入:
     tool_name: add_order_notification_email
-    tool_params: &id416
+    tool_params: &id414
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       email: test@example.com
       unknown_param: x
   期望:
     intent: 添加订单通知邮箱
-    params: *id416
+    params: *id414
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14312,17 +14320,17 @@
   用例ID: A-L2-607
   sample_extra: 3
 - 维度: 参数校验
-  能力: 启用停用员工
+  能力: 查询全部活动
   层: L2
   输入:
-    tool_name: update_user_status
-    tool_params: &id417
+    tool_name: list_all_campaigns
+    tool_params: &id415
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
-      isActive: 0
+      type: MerchPromotion
+      status: 0
   期望:
-    intent: 启用停用员工
-    params: *id417
+    intent: 查询全部活动
+    params: *id415
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14333,18 +14341,18 @@
   标签:
   - 数值变异
   用例ID: A-L2-608
-- 维度: 参数校验
+- 维度: 调用正确性
   能力: 开启自动接单
   层: L2
   输入:
-    tool_name: set_auto_accept_orders
-    tool_params: &id418
+    tool_name: set_auto_accept_orders_typo
+    tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: -1
+      enabled: false
   期望:
     intent: 开启自动接单
-    params: *id418
-    output: 越界参数被拒绝/提示
+    params: *id118
+    output: 工具无效，拒绝触发
     block: true
     semantic:
       contains:
@@ -14352,20 +14360,20 @@
       - 错误
       any_of: true
   标签:
-  - 数值变异
+  - 工具错配
   用例ID: A-L2-609
 - 维度: 参数校验
   能力: 修改店铺电话
   层: L2
   输入:
     tool_name: update_store_phone
-    tool_params: &id419
+    tool_params: &id416
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       newPhone: '9023162140'
       unknown_param: x
   期望:
     intent: 修改店铺电话
-    params: *id419
+    params: *id416
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14397,13 +14405,13 @@
   层: L2
   输入:
     tool_name: set_sales_mode
-    tool_params: &id420
+    tool_params: &id417
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       mode: regular
       unknown_param: x
   期望:
     intent: 切换销售模式
-    params: *id420
+    params: *id417
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14429,37 +14437,53 @@
   标签:
   - 未知参数
   用例ID: A-L2-611
-- 维度: 调用正确性
-  能力: 查询自提时段
+- 维度: 参数校验
+  能力: 开关配送服务
   层: L2
   输入:
-    tool_name: list_pickup_time_slots_typo
-    tool_params:
+    tool_name: set_delivery_enabled
+    tool_params: &id418
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      enabled: false
+      unknown_param: x
   期望:
-    intent: 查询自提时段
-    params: *id109
-    output: 工具无效，拒绝触发
-    block: true
+    intent: 开关配送服务
+    params: *id418
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 工具错配
+  - 未知参数
   用例ID: A-L2-612
 - 维度: 调用正确性
-  能力: 新建菜单
+  能力: 查询分类列表
   层: L2
   输入:
-    tool_name: menu_create_typo
+    tool_name: category_list_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
   期望:
-    intent: 新建菜单
-    params: *id061
+    intent: 查询分类列表
+    params: *id074
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14471,17 +14495,16 @@
   - 工具错配
   用例ID: A-L2-613
 - 维度: 参数校验
-  能力: 设置小费选项
+  能力: 查询员工列表
   层: L2
   输入:
-    tool_name: set_tip_options
-    tool_params: &id421
+    tool_name: list_store_users
+    tool_params: &id419
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      tipValues: *id140
       unknown_param: x
   期望:
-    intent: 设置小费选项
-    params: *id421
+    intent: 查询员工列表
+    params: *id419
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14507,21 +14530,21 @@
   标签:
   - 未知参数
   用例ID: A-L2-614
-  sample_extra: 3
 - 维度: 参数校验
-  能力: 添加自提时段
+  能力: 添加附加费用
   层: L2
   输入:
-    tool_name: add_pickup_time_slot
-    tool_params: &id422
+    tool_name: add_extra_fee
+    tool_params: &id420
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      days: Monday
-      openTime: '12:00'
-      closeTime: '12:00'
-      preparationMinutes: 9999999999999999
+      name: 晚餐
+      target: pickup
+      feeType: percentage
+      value: 9999999999999999
+      isTaxable: false
   期望:
-    intent: 添加自提时段
-    params: *id422
+    intent: 添加附加费用
+    params: *id420
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14534,41 +14557,59 @@
   用例ID: A-L2-615
   sample_extra: 3
 - 维度: 参数校验
-  能力: 设置自提门槛
+  能力: 添加自提时段
   层: L2
   输入:
-    tool_name: set_pickup_order_threshold
-    tool_params: &id423
+    tool_name: add_pickup_time_slot
+    tool_params: &id421
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      thresholdAmount: -1
+      days: Monday
+      openTime: '12:00'
+      closeTime: '12:00'
+      preparationMinutes: 1
+      unknown_param: x
   期望:
-    intent: 设置自提门槛
-    params: *id423
-    output: 越界参数被拒绝/提示
-    block: true
+    intent: 添加自提时段
+    params: *id421
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 数值变异
+  - 未知参数
   用例ID: A-L2-616
   sample_extra: 3
 - 维度: 参数校验
-  能力: 创建满减活动
+  能力: 创建优惠券活动
   层: L2
   输入:
-    tool_name: create_discount_campaign
-    tool_params: &id424
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 0税率
+    tool_name: create_reward_campaign
+    tool_params: &id422
+      name: popular item
       startDate: '2026-01-01'
       endDate: '2026-01-01'
       unknown_param: x
   期望:
-    intent: 创建满减活动
-    params: *id424
+    intent: 创建优惠券活动
+    params: *id422
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14596,15 +14637,15 @@
   用例ID: A-L2-617
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 查询分类列表
+  能力: 查询税率列表
   层: L2
   输入:
-    tool_name: category_list_typo
+    tool_name: tax_list_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
-    intent: 查询分类列表
-    params: *id074
+    intent: 查询税率列表
+    params: *id086
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14615,17 +14656,55 @@
   标签:
   - 工具错配
   用例ID: A-L2-618
-- 维度: 调用正确性
-  能力: 修改分类
+- 维度: 参数校验
+  能力: 新建税率
   层: L2
   输入:
-    tool_name: category_update_typo
-    tool_params:
-      categoryId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
-      newName: popular item
+    tool_name: tax_create
+    tool_params: &id423
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: Hainan Style Chicken Noodle In Soup
+      tax: 1
+      unknown_param: x
   期望:
-    intent: 修改分类
-    params: *id080
+    intent: 新建税率
+    params: *id423
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-619
+- 维度: 调用正确性
+  能力: 开关配送服务
+  层: L2
+  输入:
+    tool_name: set_delivery_enabled_typo
+    tool_params:
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      enabled: false
+  期望:
+    intent: 开关配送服务
+    params: *id112
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14635,42 +14714,20 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-619
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 开关配送服务
-  层: L2
-  输入:
-    tool_name: set_delivery_enabled
-    tool_params: &id425
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: -1
-  期望:
-    intent: 开关配送服务
-    params: *id425
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
   用例ID: A-L2-620
 - 维度: 参数校验
-  能力: 启用停用员工
+  能力: 查询全部活动
   层: L2
   输入:
-    tool_name: update_user_status
-    tool_params: &id426
+    tool_name: list_all_campaigns
+    tool_params: &id424
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
-      isActive: false
+      type: MerchPromotion
+      status: true
       unknown_param: x
   期望:
-    intent: 启用停用员工
-    params: *id426
+    intent: 查询全部活动
+    params: *id424
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14697,16 +14754,15 @@
   - 未知参数
   用例ID: A-L2-621
 - 维度: 调用正确性
-  能力: 设置小费选项
+  能力: 查询员工列表
   层: L2
   输入:
-    tool_name: set_tip_options_typo
+    tool_name: list_store_users_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      tipValues: *id140
   期望:
-    intent: 设置小费选项
-    params: *id139
+    intent: 查询员工列表
+    params: *id146
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14717,21 +14773,21 @@
   标签:
   - 工具错配
   用例ID: A-L2-622
-  sample_extra: 3
 - 维度: 参数校验
-  能力: 添加自提时段
+  能力: 添加附加费用
   层: L2
   输入:
-    tool_name: add_pickup_time_slot
-    tool_params: &id427
+    tool_name: add_extra_fee
+    tool_params: &id425
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      days: Monday
-      openTime: '12:00'
-      closeTime: '12:00'
-      preparationMinutes: -1
+      name: 晚餐
+      target: pickup
+      feeType: percentage
+      value: -1
+      isTaxable: false
   期望:
-    intent: 添加自提时段
-    params: *id427
+    intent: 添加附加费用
+    params: *id425
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14743,22 +14799,18 @@
   - 数值变异
   用例ID: A-L2-623
   sample_extra: 3
-- 维度: 参数校验
-  能力: 添加附加费用
+- 维度: 调用正确性
+  能力: 设置小费类型
   层: L2
   输入:
-    tool_name: add_extra_fee
-    tool_params: &id428
+    tool_name: set_tip_type_typo
+    tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
-      target: pickup
-      feeType: percentage
-      value: -1
-      isTaxable: false
+      tipType: fixed
   期望:
-    intent: 添加附加费用
-    params: *id428
-    output: 越界参数被拒绝/提示
+    intent: 设置小费类型
+    params: *id136
+    output: 工具无效，拒绝触发
     block: true
     semantic:
       contains:
@@ -14766,31 +14818,48 @@
       - 错误
       any_of: true
   标签:
-  - 数值变异
+  - 工具错配
   用例ID: A-L2-624
   sample_extra: 3
 - 维度: 参数校验
-  能力: 新建商品
+  能力: 修改商品信息
   层: L2
   输入:
-    tool_name: item_create
-    tool_params: &id429
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
-      price: 9999999999999999
+    tool_name: item_update
+    tool_params: &id426
+      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      newName: 测试订单
+      price: '10.00'
+      unknown_param: x
   期望:
-    intent: 新建商品
-    params: *id429
-    output: 越界参数被拒绝/提示
-    block: true
+    intent: 修改商品信息
+    params: *id426
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 数值变异
+  - 未知参数
   用例ID: A-L2-625
+  sample_extra: 3
 - 维度: 调用正确性
   能力: 查询店铺经营概况
   层: L2
@@ -14812,63 +14881,6 @@
   - 工具错配
   用例ID: A-L2-626
 - 维度: 调用正确性
-  能力: 菜单绑定分类
-  层: L2
-  输入:
-    tool_name: menu_bind_categories_typo
-    tool_params:
-      menuId: d2de8117-56ca-42dd-8406-eb5237756f32
-      categoryIds: *id052
-  期望:
-    intent: 菜单绑定分类
-    params: *id070
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-627
-- 维度: 参数校验
-  能力: 查询自提时段
-  层: L2
-  输入:
-    tool_name: list_pickup_time_slots
-    tool_params: &id430
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      unknown_param: x
-  期望:
-    intent: 查询自提时段
-    params: *id430
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 未知参数
-  用例ID: A-L2-628
-- 维度: 调用正确性
   能力: 删除分类
   层: L2
   输入:
@@ -14887,19 +14899,61 @@
       any_of: true
   标签:
   - 工具错配
-  用例ID: A-L2-629
+  用例ID: A-L2-627
   sample_extra: 3
-- 维度: 调用正确性
-  能力: 批量修改商品库存
+- 维度: 参数校验
+  能力: 开关配送服务
   层: L2
   输入:
-    tool_name: batch_item_stock_typo
+    tool_name: set_delivery_enabled
+    tool_params: &id427
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      enabled: 9999999999999999
+  期望:
+    intent: 开关配送服务
+    params: *id427
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-628
+- 维度: 调用正确性
+  能力: 新建税率
+  层: L2
+  输入:
+    tool_name: tax_create_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      stock: 1
+      name: Hainan Style Chicken Noodle In Soup
+      tax: 1
   期望:
-    intent: 批量修改商品库存
-    params: *id045
+    intent: 新建税率
+    params: *id089
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-629
+- 维度: 调用正确性
+  能力: 查询菜单详情
+  层: L2
+  输入:
+    tool_name: menu_detail_typo
+    tool_params:
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+  期望:
+    intent: 查询菜单详情
+    params: *id058
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14910,18 +14964,17 @@
   标签:
   - 工具错配
   用例ID: A-L2-630
-  sample_extra: 3
 - 维度: 调用正确性
-  能力: 删除商品
+  能力: 批量修改商品价格
   层: L2
   输入:
-    tool_name: item_delete_typo
+    tool_name: batch_item_price_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      itemId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      price: '13.95'
   期望:
-    intent: 删除商品
-    params: *id036
+    intent: 批量修改商品价格
+    params: *id042
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14934,17 +14987,17 @@
   用例ID: A-L2-631
   sample_extra: 3
 - 维度: 参数校验
-  能力: 启用停用员工
+  能力: 查询全部活动
   层: L2
   输入:
-    tool_name: update_user_status
-    tool_params: &id431
+    tool_name: list_all_campaigns
+    tool_params: &id428
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
-      isActive: 9999999999999999
+      type: MerchPromotion
+      status: 9999999999999999
   期望:
-    intent: 启用停用员工
-    params: *id431
+    intent: 查询全部活动
+    params: *id428
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14956,16 +15009,16 @@
   - 数值变异
   用例ID: A-L2-632
 - 维度: 参数校验
-  能力: 修改商品库存
+  能力: 批量修改商品库存
   层: L2
   输入:
-    tool_name: item_update_stock
-    tool_params: &id432
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+    tool_name: batch_item_stock
+    tool_params: &id429
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 0
   期望:
-    intent: 修改商品库存
-    params: *id432
+    intent: 批量修改商品库存
+    params: *id429
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14982,11 +15035,91 @@
   层: L2
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id433
+    tool_params: &id430
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: 0
+      enabled: abc
   期望:
     intent: 开关配送服务
+    params: *id430
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-634
+- 维度: 参数校验
+  能力: 查询员工详情
+  层: L2
+  输入:
+    tool_name: get_user_detail
+    tool_params: &id431
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      unknown_param: x
+  期望:
+    intent: 查询员工详情
+    params: *id431
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-635
+- 维度: 参数校验
+  能力: 新建税率
+  层: L2
+  输入:
+    tool_name: tax_create
+    tool_params: &id432
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: Hainan Style Chicken Noodle In Soup
+      tax: abc
+  期望:
+    intent: 新建税率
+    params: *id432
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 类型错配
+  用例ID: A-L2-636
+- 维度: 参数校验
+  能力: 开关自提服务
+  层: L2
+  输入:
+    tool_name: set_pickup_enabled
+    tool_params: &id433
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      enabled: -1
+  期望:
+    intent: 开关自提服务
     params: *id433
     output: 越界参数被拒绝/提示
     block: true
@@ -14997,114 +15130,18 @@
       any_of: true
   标签:
   - 数值变异
-  用例ID: A-L2-634
-- 维度: 参数校验
-  能力: 开关餐具选项
-  层: L2
-  输入:
-    tool_name: set_utensil_option_enabled
-    tool_params: &id434
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: 0
-  期望:
-    intent: 开关餐具选项
-    params: *id434
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-635
-- 维度: 参数校验
-  能力: 删除分类
-  层: L2
-  输入:
-    tool_name: category_delete
-    tool_params: &id435
-      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
-      unknown_param: x
-  期望:
-    intent: 删除分类
-    params: *id435
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 未知参数
-  用例ID: A-L2-636
-  sample_extra: 3
-- 维度: 参数校验
-  能力: 开关配送服务
-  层: L2
-  输入:
-    tool_name: set_delivery_enabled
-    tool_params: &id436
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: false
-      unknown_param: x
-  期望:
-    intent: 开关配送服务
-    params: *id436
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 未知参数
   用例ID: A-L2-637
 - 维度: 参数校验
-  能力: 修改商品信息
+  能力: 修改商品库存
   层: L2
   输入:
-    tool_name: item_update
-    tool_params: &id437
-      itemId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      newName: 0税率
-      price: -1
+    tool_name: item_update_stock
+    tool_params: &id434
+      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+      stock: -1
   期望:
-    intent: 修改商品信息
-    params: *id437
+    intent: 修改商品库存
+    params: *id434
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15123,7 +15160,7 @@
     tool_name: set_store_open_status_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      status: open
   期望:
     intent: 切换营业状态
     params: *id011
@@ -15137,17 +15174,19 @@
   标签:
   - 工具错配
   用例ID: A-L2-639
-- 维度: 调用正确性
-  能力: 查询优惠券活动
+- 维度: 参数校验
+  能力: 添加报表订阅
   层: L2
   输入:
-    tool_name: list_reward_campaigns_typo
-    tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+    tool_name: add_report_subscription
+    tool_params: &id435
+      email: 944600294123@qq.com
+      isSalesReport: -1
+      isPayoutReport: false
   期望:
-    intent: 查询优惠券活动
-    params: *id173
-    output: 工具无效，拒绝触发
+    intent: 添加报表订阅
+    params: *id435
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
@@ -15155,56 +15194,41 @@
       - 错误
       any_of: true
   标签:
-  - 工具错配
+  - 数值变异
   用例ID: A-L2-640
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 查询配送区域
+  能力: 开关配送服务
   层: L2
   输入:
-    tool_name: list_delivery_areas
-    tool_params: &id438
+    tool_name: set_delivery_enabled
+    tool_params: &id436
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      unknown_param: x
+      enabled: 0
   期望:
-    intent: 查询配送区域
-    params: *id438
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
+    intent: 开关配送服务
+    params: *id436
+    output: 越界参数被拒绝/提示
+    block: true
     semantic:
       contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
       - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
+      - 错误
       any_of: true
   标签:
-  - 未知参数
+  - 数值变异
   用例ID: A-L2-641
 - 维度: 参数校验
-  能力: 修改商品信息
+  能力: 修改商品库存
   层: L2
   输入:
-    tool_name: item_update
-    tool_params: &id439
-      itemId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      newName: 0税率
-      price: abc
+    tool_name: item_update_stock
+    tool_params: &id437
+      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+      stock: abc
   期望:
-    intent: 修改商品信息
-    params: *id439
+    intent: 修改商品库存
+    params: *id437
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -15239,16 +15263,16 @@
   - 工具错配
   用例ID: A-L2-643
 - 维度: 调用正确性
-  能力: 修改税率
+  能力: 新建规格组
   层: L2
   输入:
-    tool_name: tax_update_typo
+    tool_name: spec_create_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      taxId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      name: Delivery Area 1
   期望:
-    intent: 修改税率
-    params: *id092
+    intent: 新建规格组
+    params: *id099
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15259,19 +15283,18 @@
   标签:
   - 工具错配
   用例ID: A-L2-644
-  sample_extra: 3
 - 维度: 调用正确性
-  能力: 启用停用员工
+  能力: 查询全部活动
   层: L2
   输入:
-    tool_name: update_user_status_typo
+    tool_name: list_all_campaigns_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
-      isActive: false
+      type: MerchPromotion
+      status: true
   期望:
-    intent: 启用停用员工
-    params: *id158
+    intent: 查询全部活动
+    params: *id164
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15303,75 +15326,16 @@
   - 工具错配
   用例ID: A-L2-646
 - 维度: 参数校验
-  能力: 删除附加费用
-  层: L2
-  输入:
-    tool_name: delete_extra_fee
-    tool_params: &id440
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      feeId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
-      unknown_param: x
-  期望:
-    intent: 删除附加费用
-    params: *id440
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 未知参数
-  用例ID: A-L2-647
-  sample_extra: 3
-- 维度: 调用正确性
-  能力: 开启自动接单
-  层: L2
-  输入:
-    tool_name: set_auto_accept_orders_typo
-    tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: false
-  期望:
-    intent: 开启自动接单
-    params: *id118
-    output: 工具无效，拒绝触发
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 工具错配
-  用例ID: A-L2-648
-- 维度: 参数校验
   能力: 开关餐具选项
   层: L2
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id441
+    tool_params: &id438
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: -1
+      enabled: 9999999999999999
   期望:
     intent: 开关餐具选项
-    params: *id441
+    params: *id438
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15381,18 +15345,65 @@
       any_of: true
   标签:
   - 数值变异
-  用例ID: A-L2-649
+  用例ID: A-L2-647
 - 维度: 参数校验
-  能力: 查询菜单详情
+  能力: 添加自提时段
   层: L2
   输入:
-    tool_name: menu_detail
-    tool_params: &id442
-      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+    tool_name: add_pickup_time_slot
+    tool_params: &id439
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      days: Monday
+      openTime: '12:00'
+      closeTime: '12:00'
+      preparationMinutes: -1
+  期望:
+    intent: 添加自提时段
+    params: *id439
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-648
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 查询员工详情
+  层: L2
+  输入:
+    tool_name: get_user_detail_typo
+    tool_params:
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+  期望:
+    intent: 查询员工详情
+    params: *id149
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 工具错配
+  用例ID: A-L2-649
+- 维度: 参数校验
+  能力: 菜单绑定分类
+  层: L2
+  输入:
+    tool_name: menu_bind_categories
+    tool_params: &id440
+      menuId: d2de8117-56ca-42dd-8406-eb5237756f32
+      categoryIds: *id052
       unknown_param: x
   期望:
-    intent: 查询菜单详情
-    params: *id442
+    intent: 菜单绑定分类
+    params: *id440
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15419,16 +15430,16 @@
   - 未知参数
   用例ID: A-L2-650
 - 维度: 参数校验
-  能力: 查询菜单列表
+  能力: 删除菜单
   层: L2
   输入:
-    tool_name: menu_list
-    tool_params: &id443
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+    tool_name: menu_delete
+    tool_params: &id441
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       unknown_param: x
   期望:
-    intent: 查询菜单列表
-    params: *id443
+    intent: 删除菜单
+    params: *id441
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15454,17 +15465,18 @@
   标签:
   - 未知参数
   用例ID: A-L2-651
+  sample_extra: 3
 - 维度: 参数校验
   能力: 查询支付方式
   层: L2
   输入:
     tool_name: get_payment_methods
-    tool_params: &id444
+    tool_params: &id442
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询支付方式
-    params: *id444
+    params: *id442
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15490,39 +15502,56 @@
   标签:
   - 未知参数
   用例ID: A-L2-652
-- 维度: 调用正确性
-  能力: 删除附加费用
+- 维度: 参数校验
+  能力: 开关餐具选项
   层: L2
   输入:
-    tool_name: delete_extra_fee_typo
-    tool_params:
+    tool_name: set_utensil_option_enabled
+    tool_params: &id443
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      feeId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+      enabled: false
+      unknown_param: x
   期望:
-    intent: 删除附加费用
-    params: *id133
-    output: 工具无效，拒绝触发
-    block: true
+    intent: 开关餐具选项
+    params: *id443
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 工具错配
+  - 未知参数
   用例ID: A-L2-653
-  sample_extra: 3
 - 维度: 调用正确性
-  能力: 查询全部活动
+  能力: 创建满减活动
   层: L2
   输入:
-    tool_name: list_all_campaigns_typo
+    tool_name: create_discount_campaign_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      name: Spicy Beef Tripe & Tendon Noodle In Soup
+      startDate: '2026-01-01'
+      endDate: '2026-01-01'
   期望:
-    intent: 查询全部活动
-    params: *id164
+    intent: 创建满减活动
+    params: *id170
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15533,6 +15562,7 @@
   标签:
   - 工具错配
   用例ID: A-L2-654
+  sample_extra: 3
 - 维度: 调用正确性
   能力: 查询店铺信息
   层: L2
@@ -15554,15 +15584,16 @@
   - 工具错配
   用例ID: A-L2-655
 - 维度: 调用正确性
-  能力: 发布菜单
+  能力: 新建分类
   层: L2
   输入:
-    tool_name: menu_publish_typo
+    tool_name: category_create_typo
     tool_params:
-      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: soup
   期望:
-    intent: 发布菜单
-    params: *id064
+    intent: 新建分类
+    params: *id077
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15574,17 +15605,16 @@
   - 工具错配
   用例ID: A-L2-656
 - 维度: 参数校验
-  能力: 修改商品信息
+  能力: 修改商品库存
   层: L2
   输入:
-    tool_name: item_update
-    tool_params: &id445
-      itemId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      newName: 0税率
-      price: 9999999999999999
+    tool_name: item_update_stock
+    tool_params: &id444
+      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+      stock: 9999999999999999
   期望:
-    intent: 修改商品信息
-    params: *id445
+    intent: 修改商品库存
+    params: *id444
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15618,17 +15648,15 @@
   - 工具错配
   用例ID: A-L2-658
 - 维度: 调用正确性
-  能力: 商品绑定规格组
+  能力: 查询自提时段
   层: L2
   输入:
-    tool_name: spec_bind_item_typo
+    tool_name: list_pickup_time_slots_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      specId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      itemIds: *id103
   期望:
-    intent: 商品绑定规格组
-    params: *id102
+    intent: 查询自提时段
+    params: *id109
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15640,17 +15668,16 @@
   - 工具错配
   用例ID: A-L2-659
 - 维度: 调用正确性
-  能力: 新建税率
+  能力: 商品绑定税率
   层: L2
   输入:
-    tool_name: tax_create_typo
+    tool_name: tax_bind_item_typo
     tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: Pork Chop Cutlet w. Curry Sauce
-      tax: Tax
+      merchFoodIds: *id365
+      taxIds: *id096
   期望:
-    intent: 新建税率
-    params: *id089
+    intent: 商品绑定税率
+    params: *id095
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15662,15 +15689,39 @@
   - 工具错配
   用例ID: A-L2-660
 - 维度: 参数校验
-  能力: 查询优惠券活动
+  能力: 添加报表订阅
   层: L2
   输入:
-    tool_name: list_reward_campaigns
+    tool_name: add_report_subscription
+    tool_params: &id445
+      email: 944600294123@qq.com
+      isSalesReport: 0
+      isPayoutReport: false
+  期望:
+    intent: 添加报表订阅
+    params: *id445
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-661
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 删除商品
+  层: L2
+  输入:
+    tool_name: item_delete
     tool_params: &id446
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       unknown_param: x
   期望:
-    intent: 查询优惠券活动
+    intent: 删除商品
     params: *id446
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -15696,20 +15747,20 @@
       any_of: true
   标签:
   - 未知参数
-  用例ID: A-L2-661
-- 维度: 参数校验
-  能力: 新建商品
+  用例ID: A-L2-662
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 设置小费选项
   层: L2
   输入:
-    tool_name: item_create
-    tool_params: &id447
+    tool_name: set_tip_options_typo
+    tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
-      price: abc
+      tipValues: *id140
   期望:
-    intent: 新建商品
-    params: *id447
-    output: 参数类型错误被拒绝/提示
+    intent: 设置小费选项
+    params: *id139
+    output: 工具无效，拒绝触发
     block: true
     semantic:
       contains:
@@ -15717,86 +15768,32 @@
       - 错误
       any_of: true
   标签:
-  - 类型错配
-  用例ID: A-L2-662
-- 维度: 参数校验
-  能力: 添加附加费用
-  层: L2
-  输入:
-    tool_name: add_extra_fee
-    tool_params: &id448
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
-      target: pickup
-      feeType: percentage
-      value: 1
-      isTaxable: false
-      unknown_param: x
-  期望:
-    intent: 添加附加费用
-    params: *id448
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 未知参数
+  - 工具错配
   用例ID: A-L2-663
   sample_extra: 3
-- 维度: 参数校验
-  能力: 设置自提门槛
+- 维度: 调用正确性
+  能力: 添加自提时段
   层: L2
   输入:
-    tool_name: set_pickup_order_threshold
-    tool_params: &id449
+    tool_name: add_pickup_time_slot_typo
+    tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      thresholdAmount: 10
-      unknown_param: x
+      days: Monday
+      openTime: '12:00'
+      closeTime: '12:00'
+      preparationMinutes: 1
   期望:
-    intent: 设置自提门槛
-    params: *id449
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
+    intent: 添加自提时段
+    params: *id124
+    output: 工具无效，拒绝触发
+    block: true
     semantic:
       contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
       - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
+      - 错误
       any_of: true
   标签:
-  - 未知参数
+  - 工具错配
   用例ID: A-L2-664
   sample_extra: 3
 - 维度: 参数校验
@@ -15804,12 +15801,12 @@
   层: L2
   输入:
     tool_name: get_store_info
-    tool_params: &id450
+    tool_params: &id447
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询店铺经营概况
-    params: *id450
+    params: *id447
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15836,16 +15833,16 @@
   - 未知参数
   用例ID: A-L2-665
 - 维度: 调用正确性
-  能力: 修改商品库存
+  能力: 批量修改商品库存
   层: L2
   输入:
-    tool_name: item_update_stock_typo
+    tool_name: batch_item_stock_typo
     tool_params:
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 99999
   期望:
-    intent: 修改商品库存
-    params: *id039
+    intent: 批量修改商品库存
+    params: *id045
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15858,17 +15855,17 @@
   用例ID: A-L2-666
   sample_extra: 3
 - 维度: 参数校验
-  能力: 删除员工
+  能力: 查询满减活动
   层: L2
   输入:
-    tool_name: delete_store_user
-    tool_params: &id451
+    tool_name: list_discount_campaigns
+    tool_params: &id448
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      filterType: All
       unknown_param: x
   期望:
-    intent: 删除员工
-    params: *id451
+    intent: 查询满减活动
+    params: *id448
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15894,7 +15891,6 @@
   标签:
   - 未知参数
   用例ID: A-L2-667
-  sample_extra: 3
 - 维度: 调用正确性
   能力: 修改店铺名称
   层: L2
@@ -15918,38 +15914,54 @@
   用例ID: A-L2-668
   sample_extra: 3
 - 维度: 参数校验
-  能力: 开关餐具选项
+  能力: 查询可用角色
   层: L2
   输入:
-    tool_name: set_utensil_option_enabled
-    tool_params: &id452
+    tool_name: list_merchant_roles
+    tool_params: &id449
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: 9999999999999999
-  期望:
-    intent: 开关餐具选项
-    params: *id452
-    output: 越界参数被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 数值变异
-  用例ID: A-L2-669
-- 维度: 参数校验
-  能力: 商品绑定税率
-  层: L2
-  输入:
-    tool_name: tax_bind_item
-    tool_params: &id453
-      merchFoodIds: *id397
-      taxIds: *id096
       unknown_param: x
   期望:
-    intent: 商品绑定税率
-    params: *id453
+    intent: 查询可用角色
+    params: *id449
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-669
+- 维度: 参数校验
+  能力: 商品绑定规格组
+  层: L2
+  输入:
+    tool_name: spec_bind_item
+    tool_params: &id450
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      specId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      itemIds: *id103
+      unknown_param: x
+  期望:
+    intent: 商品绑定规格组
+    params: *id450
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15976,38 +15988,55 @@
   - 未知参数
   用例ID: A-L2-670
 - 维度: 参数校验
-  能力: 开关餐具选项
-  层: L2
-  输入:
-    tool_name: set_utensil_option_enabled
-    tool_params: &id454
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: abc
-  期望:
-    intent: 开关餐具选项
-    params: *id454
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-671
-- 维度: 调用正确性
   能力: 新增员工
   层: L2
   输入:
-    tool_name: add_store_user_typo
-    tool_params:
+    tool_name: add_store_user
+    tool_params: &id451
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
-      roleId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
+      unknown_param: x
   期望:
     intent: 新增员工
-    params: *id155
+    params: *id451
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  用例ID: A-L2-671
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 删除员工
+  层: L2
+  输入:
+    tool_name: delete_store_user_typo
+    tool_params:
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+  期望:
+    intent: 删除员工
+    params: *id161
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16042,17 +16071,17 @@
   用例ID: A-L2-673
   sample_extra: 3
 - 维度: 参数校验
-  能力: 启用停用员工
+  能力: 查询全部活动
   层: L2
   输入:
-    tool_name: update_user_status
-    tool_params: &id455
+    tool_name: list_all_campaigns
+    tool_params: &id452
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
-      isActive: -1
+      type: MerchPromotion
+      status: -1
   期望:
-    intent: 启用停用员工
-    params: *id455
+    intent: 查询全部活动
+    params: *id452
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16070,6 +16099,8 @@
     tool_name: add_report_subscription_typo
     tool_params:
       email: 944600294123@qq.com
+      isSalesReport: false
+      isPayoutReport: false
   期望:
     intent: 添加报表订阅
     params: *id179
@@ -16085,53 +16116,38 @@
   用例ID: A-L2-675
   sample_extra: 3
 - 维度: 参数校验
+  能力: 新建税率
+  层: L2
+  输入:
+    tool_name: tax_create
+    tool_params: &id453
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      name: Hainan Style Chicken Noodle In Soup
+      tax: 9999999999999999
+  期望:
+    intent: 新建税率
+    params: *id453
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-676
+- 维度: 调用正确性
   能力: 修改分类
   层: L2
   输入:
-    tool_name: category_update
-    tool_params: &id456
+    tool_name: category_update_typo
+    tool_params:
       categoryId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
       newName: popular item
-      unknown_param: x
   期望:
     intent: 修改分类
-    params: *id456
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
-    semantic:
-      contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
-      - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
-      any_of: true
-  标签:
-  - 未知参数
-  用例ID: A-L2-676
-  sample_extra: 3
-- 维度: 调用正确性
-  能力: 删除菜单
-  层: L2
-  输入:
-    tool_name: menu_delete_typo
-    tool_params:
-      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
-  期望:
-    intent: 删除菜单
-    params: *id067
+    params: *id080
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16149,7 +16165,7 @@
   输入:
     tool_name: item_detail_typo
     tool_params:
-      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
   期望:
     intent: 查询商品详情
     params: *id026
@@ -16164,17 +16180,16 @@
   - 工具错配
   用例ID: A-L2-678
 - 维度: 参数校验
-  能力: 新建规格组
+  能力: 查询配送区域
   层: L2
   输入:
-    tool_name: spec_create
-    tool_params: &id457
+    tool_name: list_delivery_areas
+    tool_params: &id454
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
       unknown_param: x
   期望:
-    intent: 新建规格组
-    params: *id457
+    intent: 查询配送区域
+    params: *id454
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16200,18 +16215,18 @@
   标签:
   - 未知参数
   用例ID: A-L2-679
-- 维度: 参数校验
+- 维度: 调用正确性
   能力: 开关自提服务
   层: L2
   输入:
-    tool_name: set_pickup_enabled
-    tool_params: &id458
+    tool_name: set_pickup_enabled_typo
+    tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: -1
+      enabled: false
   期望:
     intent: 开关自提服务
-    params: *id458
-    output: 越界参数被拒绝/提示
+    params: *id115
+    output: 工具无效，拒绝触发
     block: true
     semantic:
       contains:
@@ -16219,21 +16234,20 @@
       - 错误
       any_of: true
   标签:
-  - 数值变异
+  - 工具错配
   用例ID: A-L2-680
 - 维度: 调用正确性
-  能力: 创建满减活动
+  能力: 创建优惠券活动
   层: L2
   输入:
-    tool_name: create_discount_campaign_typo
+    tool_name: create_reward_campaign_typo
     tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 0税率
+      name: popular item
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
-    intent: 创建满减活动
-    params: *id170
+    intent: 创建优惠券活动
+    params: *id176
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16246,19 +16260,20 @@
   用例ID: A-L2-681
   sample_extra: 3
 - 维度: 参数校验
-  能力: 添加自提时段
+  能力: 添加附加费用
   层: L2
   输入:
-    tool_name: add_pickup_time_slot
-    tool_params: &id459
+    tool_name: add_extra_fee
+    tool_params: &id455
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      days: Monday
-      openTime: '12:00'
-      closeTime: '12:00'
-      preparationMinutes: abc
+      name: 晚餐
+      target: pickup
+      feeType: percentage
+      value: abc
+      isTaxable: false
   期望:
-    intent: 添加自提时段
-    params: *id459
+    intent: 添加附加费用
+    params: *id455
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -16271,16 +16286,16 @@
   用例ID: A-L2-682
   sample_extra: 3
 - 维度: 参数校验
-  能力: 修改商品库存
+  能力: 批量修改商品库存
   层: L2
   输入:
-    tool_name: item_update_stock
-    tool_params: &id460
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+    tool_name: batch_item_stock
+    tool_params: &id456
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: abc
   期望:
-    intent: 修改商品库存
-    params: *id460
+    intent: 批量修改商品库存
+    params: *id456
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -16292,22 +16307,18 @@
   - 类型错配
   用例ID: A-L2-683
   sample_extra: 3
-- 维度: 调用正确性
-  能力: 添加附加费用
+- 维度: 参数校验
+  能力: 开关餐具选项
   层: L2
   输入:
-    tool_name: add_extra_fee_typo
-    tool_params:
+    tool_name: set_utensil_option_enabled
+    tool_params: &id457
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: 测试订单
-      target: pickup
-      feeType: percentage
-      value: 1
-      isTaxable: false
+      enabled: -1
   期望:
-    intent: 添加附加费用
-    params: *id130
-    output: 工具无效，拒绝触发
+    intent: 开关餐具选项
+    params: *id457
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
@@ -16315,60 +16326,43 @@
       - 错误
       any_of: true
   标签:
-  - 工具错配
+  - 数值变异
   用例ID: A-L2-684
-  sample_extra: 3
 - 维度: 参数校验
-  能力: 创建优惠券活动
+  能力: 添加报表订阅
   层: L2
   输入:
-    tool_name: create_reward_campaign
-    tool_params: &id461
-      name: Curry Beef Brisket Flank
-      startDate: '2026-01-01'
-      endDate: '2026-01-01'
-      unknown_param: x
+    tool_name: add_report_subscription
+    tool_params: &id458
+      email: 944600294123@qq.com
+      isSalesReport: 9999999999999999
+      isPayoutReport: false
   期望:
-    intent: 创建优惠券活动
-    params: *id461
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
+    intent: 添加报表订阅
+    params: *id458
+    output: 越界参数被拒绝/提示
+    block: true
     semantic:
       contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
       - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
+      - 错误
       any_of: true
   标签:
-  - 未知参数
+  - 数值变异
   用例ID: A-L2-685
   sample_extra: 3
 - 维度: 参数校验
-  能力: 修改商品库存
+  能力: 批量修改商品库存
   层: L2
   输入:
-    tool_name: item_update_stock
-    tool_params: &id462
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+    tool_name: batch_item_stock
+    tool_params: &id459
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 99999
       unknown_param: x
   期望:
-    intent: 修改商品库存
-    params: *id462
+    intent: 批量修改商品库存
+    params: *id459
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16396,46 +16390,62 @@
   用例ID: A-L2-686
   sample_extra: 3
 - 维度: 参数校验
+  能力: 开启自动接单
+  层: L2
+  输入:
+    tool_name: set_auto_accept_orders
+    tool_params: &id460
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      enabled: 9999999999999999
+  期望:
+    intent: 开启自动接单
+    params: *id460
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 拒绝
+      - 错误
+      any_of: true
+  标签:
+  - 数值变异
+  用例ID: A-L2-687
+- 维度: 参数校验
   能力: 开关自提服务
   层: L2
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id463
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: abc
-  期望:
-    intent: 开关自提服务
-    params: *id463
-    output: 参数类型错误被拒绝/提示
-    block: true
-    semantic:
-      contains:
-      - 拒绝
-      - 错误
-      any_of: true
-  标签:
-  - 类型错配
-  用例ID: A-L2-687
-- 维度: 调用正确性
-  能力: 开关配送服务
-  层: L2
-  输入:
-    tool_name: set_delivery_enabled_typo
-    tool_params:
+    tool_params: &id461
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
+      unknown_param: x
   期望:
-    intent: 开关配送服务
-    params: *id112
-    output: 工具无效，拒绝触发
-    block: true
+    intent: 开关自提服务
+    params: *id461
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 工具错配
+  - 未知参数
   用例ID: A-L2-688
 - 维度: 调用正确性
   能力: 查询第三方集成
@@ -16458,16 +16468,15 @@
   - 工具错配
   用例ID: A-L2-689
 - 维度: 调用正确性
-  能力: 查询满减活动
+  能力: 查询优惠券活动
   层: L2
   输入:
-    tool_name: list_discount_campaigns_typo
+    tool_name: list_reward_campaigns_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      filterType: All
   期望:
-    intent: 查询满减活动
-    params: *id167
+    intent: 查询优惠券活动
+    params: *id173
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16479,17 +16488,20 @@
   - 工具错配
   用例ID: A-L2-690
 - 维度: 参数校验
-  能力: 设置自提门槛
+  能力: 添加自提时段
   层: L2
   输入:
-    tool_name: set_pickup_order_threshold
-    tool_params: &id464
+    tool_name: add_pickup_time_slot
+    tool_params: &id462
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      thresholdAmount: 9999999999999999
+      days: Monday
+      openTime: '12:00'
+      closeTime: '12:00'
+      preparationMinutes: abc
   期望:
-    intent: 设置自提门槛
-    params: *id464
-    output: 越界参数被拒绝/提示
+    intent: 添加自提时段
+    params: *id462
+    output: 参数类型错误被拒绝/提示
     block: true
     semantic:
       contains:
@@ -16497,20 +16509,20 @@
       - 错误
       any_of: true
   标签:
-  - 数值变异
+  - 类型错配
   用例ID: A-L2-691
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 批量修改商品价格
+  能力: 批量上下架商品
   层: L2
   输入:
-    tool_name: batch_item_price_typo
+    tool_name: batch_item_status_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      price: '4.95'
+      status: OnSale
   期望:
-    intent: 批量修改商品价格
-    params: *id042
+    intent: 批量上下架商品
+    params: *id048
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16521,22 +16533,22 @@
   标签:
   - 工具错配
   用例ID: A-L2-692
-  sample_extra: 3
 - 维度: 参数校验
-  能力: 添加自提时段
+  能力: 添加附加费用
   层: L2
   输入:
-    tool_name: add_pickup_time_slot
-    tool_params: &id465
+    tool_name: add_extra_fee
+    tool_params: &id463
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      days: Monday
-      openTime: '12:00'
-      closeTime: '12:00'
-      preparationMinutes: 1
+      name: 晚餐
+      target: pickup
+      feeType: percentage
+      value: 1
+      isTaxable: false
       unknown_param: x
   期望:
-    intent: 添加自提时段
-    params: *id465
+    intent: 添加附加费用
+    params: *id463
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16564,16 +16576,17 @@
   用例ID: A-L2-693
   sample_extra: 3
 - 维度: 参数校验
-  能力: 删除菜单
+  能力: 修改分类
   层: L2
   输入:
-    tool_name: menu_delete
-    tool_params: &id466
-      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+    tool_name: category_update
+    tool_params: &id464
+      categoryId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+      newName: popular item
       unknown_param: x
   期望:
-    intent: 删除菜单
-    params: *id466
+    intent: 修改分类
+    params: *id464
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16625,12 +16638,12 @@
   层: L2
   输入:
     tool_name: get_store_link
-    tool_params: &id467
+    tool_params: &id465
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询店铺链接
-    params: *id467
+    params: *id465
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16661,12 +16674,12 @@
   层: L2
   输入:
     tool_name: get_bank_account_info
-    tool_params: &id468
+    tool_params: &id466
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询收款账户
-    params: *id468
+    params: *id466
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16693,16 +16706,16 @@
   - 未知参数
   用例ID: A-L2-697
 - 维度: 参数校验
-  能力: 查询分类列表
+  能力: 查询税率列表
   层: L2
   输入:
-    tool_name: category_list
-    tool_params: &id469
+    tool_name: tax_list
+    tool_params: &id467
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
-    intent: 查询分类列表
-    params: *id469
+    intent: 查询税率列表
+    params: *id467
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16729,17 +16742,20 @@
   - 未知参数
   用例ID: A-L2-698
 - 维度: 参数校验
-  能力: 开启自动接单
+  能力: 添加自提时段
   层: L2
   输入:
-    tool_name: set_auto_accept_orders
-    tool_params: &id470
+    tool_name: add_pickup_time_slot
+    tool_params: &id468
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: abc
+      days: Monday
+      openTime: '12:00'
+      closeTime: '12:00'
+      preparationMinutes: 0
   期望:
-    intent: 开启自动接单
-    params: *id470
-    output: 参数类型错误被拒绝/提示
+    intent: 添加自提时段
+    params: *id468
+    output: 越界参数被拒绝/提示
     block: true
     semantic:
       contains:
@@ -16747,19 +16763,20 @@
       - 错误
       any_of: true
   标签:
-  - 类型错配
+  - 数值变异
   用例ID: A-L2-699
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 开关自提服务
+  能力: 开启自动接单
   层: L2
   输入:
-    tool_name: set_pickup_enabled
-    tool_params: &id471
+    tool_name: set_auto_accept_orders
+    tool_params: &id469
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      enabled: 9999999999999999
+      enabled: 0
   期望:
-    intent: 开关自提服务
-    params: *id471
+    intent: 开启自动接单
+    params: *id469
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16775,14 +16792,14 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id472
+    tool_params: &id470
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: false
       unknown_param: x
   期望:
     intent: 开关支付方式
-    params: *id472
+    params: *id470
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16813,13 +16830,13 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id473
+    tool_params: &id471
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: abc
   期望:
     intent: 开关支付方式
-    params: *id473
+    params: *id471
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -16831,53 +16848,39 @@
   - 类型错配
   用例ID: A-L2-702
 - 维度: 参数校验
-  能力: 查询可用角色
+  能力: 启用停用员工
   层: L2
   输入:
-    tool_name: list_merchant_roles
-    tool_params: &id474
+    tool_name: update_user_status
+    tool_params: &id472
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      unknown_param: x
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      isActive: abc
   期望:
-    intent: 查询可用角色
-    params: *id474
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
+    intent: 启用停用员工
+    params: *id472
+    output: 参数类型错误被拒绝/提示
+    block: true
     semantic:
       contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
       - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
+      - 错误
       any_of: true
   标签:
-  - 未知参数
+  - 类型错配
   用例ID: A-L2-703
 - 维度: 参数校验
-  能力: 删除商品
+  能力: 批量修改商品价格
   层: L2
   输入:
-    tool_name: item_delete
-    tool_params: &id475
+    tool_name: batch_item_price
+    tool_params: &id473
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      itemId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      price: '13.95'
       unknown_param: x
   期望:
-    intent: 删除商品
-    params: *id475
+    intent: 批量修改商品价格
+    params: *id473
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16905,16 +16908,15 @@
   用例ID: A-L2-704
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 新建规格组
+  能力: 查询配送区域
   层: L2
   输入:
-    tool_name: spec_create_typo
+    tool_name: list_delivery_areas_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      name: popular item
   期望:
-    intent: 新建规格组
-    params: *id099
+    intent: 查询配送区域
+    params: *id106
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16930,13 +16932,13 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id476
+    tool_params: &id474
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: 9999999999999999
   期望:
     intent: 开关支付方式
-    params: *id476
+    params: *id474
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16947,27 +16949,43 @@
   标签:
   - 数值变异
   用例ID: A-L2-706
-- 维度: 调用正确性
-  能力: 创建优惠券活动
+- 维度: 参数校验
+  能力: 添加报表订阅
   层: L2
   输入:
-    tool_name: create_reward_campaign_typo
-    tool_params:
-      name: Curry Beef Brisket Flank
-      startDate: '2026-01-01'
-      endDate: '2026-01-01'
+    tool_name: add_report_subscription
+    tool_params: &id475
+      email: 944600294123@qq.com
+      isSalesReport: false
+      isPayoutReport: false
+      unknown_param: x
   期望:
-    intent: 创建优惠券活动
-    params: *id176
-    output: 工具无效，拒绝触发
-    block: true
+    intent: 添加报表订阅
+    params: *id475
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 工具错配
+  - 未知参数
   用例ID: A-L2-707
   sample_extra: 3
 - 维度: 调用正确性
@@ -16990,40 +17008,58 @@
   标签:
   - 工具错配
   用例ID: A-L2-708
-- 维度: 调用正确性
-  能力: 查询员工详情
+- 维度: 参数校验
+  能力: 启用停用员工
   层: L2
   输入:
-    tool_name: get_user_detail_typo
-    tool_params:
+    tool_name: update_user_status
+    tool_params: &id476
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: d2de8117-56ca-42dd-8406-eb5237756f32
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      isActive: false
+      unknown_param: x
   期望:
-    intent: 查询员工详情
-    params: *id149
-    output: 工具无效，拒绝触发
-    block: true
+    intent: 启用停用员工
+    params: *id476
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
     semantic:
       contains:
-      - 拒绝
+      - 查询成功
+      - 成功
       - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
       any_of: true
   标签:
-  - 工具错配
+  - 未知参数
   用例ID: A-L2-709
 - 维度: 参数校验
-  能力: 添加自提时段
+  能力: 添加附加费用
   层: L2
   输入:
-    tool_name: add_pickup_time_slot
+    tool_name: add_extra_fee
     tool_params: &id477
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      days: Monday
-      openTime: '12:00'
-      closeTime: '12:00'
-      preparationMinutes: 0
+      name: 晚餐
+      target: pickup
+      feeType: percentage
+      value: 0
+      isTaxable: false
   期望:
-    intent: 添加自提时段
+    intent: 添加附加费用
     params: *id477
     output: 越界参数被拒绝/提示
     block: true
@@ -17037,16 +17073,16 @@
   用例ID: A-L2-710
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 删除员工
+  能力: 查询满减活动
   层: L2
   输入:
-    tool_name: delete_store_user_typo
+    tool_name: list_discount_campaigns_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      filterType: All
   期望:
-    intent: 删除员工
-    params: *id161
+    intent: 查询满减活动
+    params: *id167
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -17057,7 +17093,6 @@
   标签:
   - 工具错配
   用例ID: A-L2-711
-  sample_extra: 3
 - 维度: 调用正确性
   能力: 添加订单通知邮箱
   层: L2
@@ -17081,17 +17116,16 @@
   用例ID: A-L2-712
   sample_extra: 3
 - 维度: 参数校验
-  能力: 修改商品信息
+  能力: 修改商品库存
   层: L2
   输入:
-    tool_name: item_update
+    tool_name: item_update_stock
     tool_params: &id478
-      itemId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-      newName: 0税率
-      price: 10
+      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+      stock: 99999
       unknown_param: x
   期望:
-    intent: 修改商品信息
+    intent: 修改商品库存
     params: *id478
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
@@ -17120,15 +17154,15 @@
   用例ID: A-L2-713
   sample_extra: 3
 - 维度: 调用正确性
-  能力: 查询菜单列表
+  能力: 删除菜单
   层: L2
   输入:
-    tool_name: menu_list_typo
+    tool_name: menu_delete_typo
     tool_params:
-      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
-    intent: 查询菜单列表
-    params: *id055
+    intent: 删除菜单
+    params: *id067
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -17139,16 +17173,17 @@
   标签:
   - 工具错配
   用例ID: A-L2-714
+  sample_extra: 3
 - 维度: 参数校验
-  能力: 修改商品库存
+  能力: 批量修改商品库存
   层: L2
   输入:
-    tool_name: item_update_stock
+    tool_name: batch_item_stock
     tool_params: &id479
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+      merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 9999999999999999
   期望:
-    intent: 修改商品库存
+    intent: 批量修改商品库存
     params: *id479
     output: 越界参数被拒绝/提示
     block: true
@@ -17182,19 +17217,20 @@
   - 工具错配
   用例ID: A-L2-716
 - 维度: 调用正确性
-  能力: 添加自提时段
+  能力: 添加附加费用
   层: L2
   输入:
-    tool_name: add_pickup_time_slot_typo
+    tool_name: add_extra_fee_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      days: Monday
-      openTime: '12:00'
-      closeTime: '12:00'
-      preparationMinutes: 1
+      name: 晚餐
+      target: pickup
+      feeType: percentage
+      value: 1
+      isTaxable: false
   期望:
-    intent: 添加自提时段
-    params: *id124
+    intent: 添加附加费用
+    params: *id130
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -17243,51 +17279,38 @@
   - 未知参数
   用例ID: A-L2-718
 - 维度: 参数校验
-  能力: 查询员工列表
+  能力: 启用停用员工
   层: L2
   输入:
-    tool_name: list_store_users
+    tool_name: update_user_status
     tool_params: &id481
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      unknown_param: x
+      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      isActive: 0
   期望:
-    intent: 查询员工列表
+    intent: 启用停用员工
     params: *id481
-    output: 未知参数被忽略并正常执行（或结构化校验响应）
-    block: false
+    output: 越界参数被拒绝/提示
+    block: true
     semantic:
       contains:
-      - 查询成功
-      - 成功
-      - 错误
-      - 参数
-      - 校验
-      - 失败
-      - 不存在
-      - 未找到
-      - 无效
-      - 无法
       - 拒绝
-      - exception
-      - error
-      - invalid
-      - not found
-      - failed
-      - unsupported
+      - 错误
       any_of: true
   标签:
-  - 未知参数
+  - 数值变异
   用例ID: A-L2-719
 - 维度: 调用正确性
-  能力: 查询税率列表
+  能力: 修改税率
   层: L2
   输入:
-    tool_name: tax_list_typo
+    tool_name: tax_update_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
+      taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
-    intent: 查询税率列表
-    params: *id086
+    intent: 修改税率
+    params: *id092
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -17298,17 +17321,18 @@
   标签:
   - 工具错配
   用例ID: A-L2-720
+  sample_extra: 3
 - 维度: 调用正确性
-  能力: 批量上下架商品
+  能力: 新建菜单
   层: L2
   输入:
-    tool_name: batch_item_status_typo
+    tool_name: menu_create_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      status: OnSale
+      name: lunch special
   期望:
-    intent: 批量上下架商品
-    params: *id048
+    intent: 新建菜单
+    params: *id061
     output: 工具无效，拒绝触发
     block: true
     semantic:

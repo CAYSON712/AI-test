@@ -22,11 +22,16 @@ def expected_block_hint(case):
 
 
 def _preview_ok(output):
-    """判断 output 是否为「干跑成功」（服务端只预览、未执行）。
+    """判断 output 是否为「服务端接受的调用成功」（含干跑预览、no-op、正常执行）。
 
-    适用被测 MCP 自带 confirm 二段式（如 PocketStore）：CONFIRM_DRYRUN=1 时
-    执行器把 confirm 强制为 false，服务端返回 code=0 且 data.isPreview=true。
-    这代表「参数被接受」，是期望成功用例通过的有效证据。
+    ⚠ 关键设计：**不列举业务特征**（isPreview/isNoOp/previewMessage...），
+    只认服务端自己给的成败信号 —— 这与执行器 generic_mcp_executor 的判定
+    口径完全一致：`code in (0,200)` 且 `success != False` 即成功。
+
+    为什么这样最稳：不同工具/不同模式（干跑预览、无需变更、正常执行）的
+    成功返回结构各不相同，但「成功」这件事服务端统一用 code/success 表达。
+    枚举业务特征永远会漏（PocketStore 曾因只认 isPreview 漏掉 isNoOp 的
+    "no change needed"，把成功误判为业务失败）。
     """
     if not isinstance(output, dict):
         return False
@@ -42,14 +47,11 @@ def _preview_ok(output):
     if not isinstance(d, dict):
         return False
     code = d.get("code")
-    data = d.get("data")
-    is_ok_code = code in (0, 200) or code is None
-    is_preview = isinstance(data, dict) and data.get("isPreview") is True
-    if is_preview and is_ok_code:
-        return True
-    # 兜底：文案里明确写了 Preview 且 code 正常
-    msg = str(d.get("msg") or "")
-    return is_ok_code and "preview" in msg.lower()
+    if not (code in (0, 200) or code is None):
+        return False
+    if d.get("success") is False:
+        return False
+    return True
 
 # 5 分制评分
 SCORE_LABELS = {
@@ -648,13 +650,13 @@ class RubricJudger:
                 return None, False, (f"影响范围对账基线为 0 条（快照工具 "
                                      f"{imp.get('快照工具')} 未取到数据），无法判定")
             return None, False, "未提供影响范围对账数据（快照工具不可用或用例被跳过）"
-        # 0.5 干跑（dry-run）语义：被测 MCP 带 confirm 二段式时，CONFIRM_DRYRUN=1
-        #     会把写操作强制 confirm=false，服务端返回 code=0 + isPreview:true（仅预览）。
-        #     这是「参数被接受」的成功证明，对期望成功(block=false)的用例应判通过，
-        #     否则会被 is_biz_fail 误伤成业务失败（PocketStore 首轮干跑误判根因之一）。
+        # 0.5 服务端接受即成功：期望成功(block=false)的用例，只要服务端返回
+        #     code=0 且 success!=false，即判通过（统一信号，见 _preview_ok）。
+        #     覆盖干跑预览(isPreview)、无需变更(isNoOp)、正常执行等各种成功形态，
+        #     避免逐一举业务特征导致漏判（PocketStore 首轮即因漏 isNoOp 误伤）。
         if not expected_block_hint(case):
             if _preview_ok(output) and dim not in ("写入安全边界",):
-                return 5, True, "干跑成功：服务端返回预览(isPreview)，参数被接受且未改动数据"
+                return 5, True, "服务端接受：返回 code=0/success，调用成功（含预览/无需变更）"
         is_biz_fail = getattr(result, "status", "") != "success" or (
             isinstance(output, dict) and output.get("biz_error")
         )

@@ -201,6 +201,12 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                 if v["score"] < 3:
                     cur = case_fails.get(uid, {}).get(k)
                     if cur is None or v["score"] < cur["score"]:
+                        # 存服务端原始响应：失分诊断 / 评分口径核对的关键证据。
+                        # 否则只能"重跑抓返回"，无法离线判断是数据问题还是评分问题。
+                        _od = getattr(result, "output_data", None)
+                        _raw = ""
+                        if isinstance(_od, dict):
+                            _raw = str(_od.get("output") or _od.get("error") or "")[:800]
                         case_fails.setdefault(uid, {})[k] = {
                             "score": v["score"],
                             "error_type": v.get("error_type", "other"),
@@ -209,6 +215,7 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                             "input": str(case.get("输入", ""))[:200],
                             "capability": case.get("能力", ""),
                             "via": v.get("via", ""),
+                            "raw_response": _raw,      # 服务端原始响应（诊断/核对用）
                         }
             if result.status != "success":
                 exp = case.get("期望") or {}

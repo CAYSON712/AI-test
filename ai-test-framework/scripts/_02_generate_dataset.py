@@ -508,14 +508,20 @@ _DESC_ENUM_RE = re.compile(r"[\"'`]([A-Za-z][A-Za-z0-9_\-]{1,30})[\"'`]")
 # 工具名 -> {参数名: [描述里提取的候选值]}；由 load_param_descriptions() 填充
 _TOOL_DESC_ENUMS = {}
 
+# 工具名 -> {参数名(小写)}：schema 声明为 boolean 的参数（按工具隔离，最权威）。
+#   用于把同名参数在不同工具下的类型分清（如 status 在 list_all_campaigns 是 bool、
+#   在 batch_item_status 是字符串枚举），避免一律当字符串处理产生非法值。
+_TOOL_BOOL_PARAMS = {}
+
 
 def load_param_descriptions(schema_json_path):
     """从 results/mcp_schemas/<系统>.json（含参数描述）提取「工具.参数 → 候选值」。
 
     优先用已落盘的原始 schema（含 description）；缺失则返回空（退回默认值）。
     """
-    global _TOOL_DESC_ENUMS
+    global _TOOL_DESC_ENUMS, _TOOL_BOOL_PARAMS
     _TOOL_DESC_ENUMS = {}
+    _TOOL_BOOL_PARAMS = {}
     if not schema_json_path or not os.path.exists(schema_json_path):
         return _TOOL_DESC_ENUMS
     try:
@@ -533,11 +539,18 @@ def load_param_descriptions(schema_json_path):
         for p, spec in inner.items():
             if not isinstance(spec, dict):
                 continue
+            # 记录 schema 声明的 boolean 参数（type 可能是 'boolean' 或 ['boolean','null']）
+            tp = spec.get("type")
+            tps = tp if isinstance(tp, list) else [tp]
+            if "boolean" in tps:
+                _TOOL_BOOL_PARAMS.setdefault(name, set()).add(str(p).lower())
             desc = str(spec.get("description") or "")
             enum = spec.get("enum")
             cands = []
             if isinstance(enum, list):
-                cands = [str(v) for v in enum if v is not None]
+                # 过滤 nullable 占位：'None'/'null' 是 schema 表达可空的产物，非真实业务值
+                cands = [str(v) for v in enum
+                         if v is not None and str(v).lower() not in ("none", "null")]
             else:
                 cands = _DESC_ENUM_RE.findall(desc)
                 # 去重保序
@@ -554,34 +567,52 @@ def _allowed_for(param_lower, tool):
     if not rules:
         return None
     tool = str(tool or "").lower()
+    # 1) 优先「工具限定」规则命中
     for rule in rules:
         tset = rule["tools"]
-        if tset is None:
-            return rule["values"]           # 全局规则
-        if any(str(t).lower() in tool for t in tset):
-            return rule["values"]           # 工具限定规则命中
-    # 有规则但工具都不匹配 → 用最后一条（配置里通常把宽泛规则放最后）
-    return rules[-1]["values"]
+        if tset and any(str(t).lower() in tool for t in tset):
+            return rule["values"]
+    # 2) 其次「全局」规则（无 tools 的条目 = 全局 fallback）
+    for rule in rules:
+        if not rule["tools"]:
+            return rule["values"]
+    # 3) 只有工具限定规则、且当前工具都不匹配 → 该工具不受此枚举约束（返回 None，
+    #    不硬套别的工具的枚举；避免 set_store_open_status 的 open/closed 污染
+    #    list_all_campaigns(boolean)）。
+    return None
 
 
 def _coerce_param(param, value, cap):
     """按参数名收敛取值域：枚举白名单 + 布尔型。
 
     只修正「明显跨域/非法」的值，不改动合法的业务值。
-    取值域来自 configs（load_param_schema），本函数不含任何业务知识。
+    取值域优先级（前者更权威）：
+      1) 工具 schema 自带的 enum（_TOOL_DESC_ENUMS，按工具隔离，最准）
+      2) configs 的 param_enums（load_param_schema，可全局/按工具）
+      3) 内置 _PARAM_BOOL（仅老系统）
+    本函数不含任何业务知识。
     """
     pl = str(param).lower()
+    tool = cap.get("工具")
 
-    # 1) 布尔型参数：把 '1'/''/非空字符串 统一成真正的 bool
-    if pl in _PARAM_BOOL:
+    # 1) 布尔型参数：schema 按工具声明的 boolean 优先，其次 config param_bools。
+    #    同名参数不同工具类型可能不同（如 status：list_all_campaigns 是 bool，
+    #    batch_item_status 是字符串枚举），故必须按工具判定。
+    schema_bool = pl in (_TOOL_BOOL_PARAMS.get(tool) or set())
+    if schema_bool or pl in _PARAM_BOOL:
         if isinstance(value, bool):
             return value
         if value in ("", None):
-            return None  # 让调用方按「不传」处理
+            # schema 明确声明 boolean 的参数必须给真 bool（缺省 False）；
+            # config param_bools 的旧口径保留「空 → None（不传）」语义。
+            return False if schema_bool else None
+        if isinstance(value, str) and value.lower() in ("true", "false"):
+            return value.lower() == "true"
         return bool(value)
 
-    # 2) 枚举型参数：不在白名单内 → 回退到首个合法值
-    allowed = _allowed_for(pl, cap.get("工具"))
+    # 2) 枚举型参数：优先用「该工具 schema 声明的 enum」，其次 config 枚举
+    allowed = (list((_TOOL_DESC_ENUMS.get(tool) or {}).get(pl) or [])
+               or _allowed_for(pl, tool))
     if allowed:
         vals = value if isinstance(value, list) else [value]
         fixed = []
@@ -609,8 +640,9 @@ def _default_param_value(param, cap):
     desc_enum = (_TOOL_DESC_ENUMS.get(tool) or {}).get(pl)
     if desc_enum:
         return desc_enum[0]
-    # 2) 布尔：先看 config param_bools，再看命名特征
-    if pl in _PARAM_BOOL or pl.startswith(("is", "enable", "allow", "has", "should")):
+    # 2) 布尔：schema 按工具声明的 boolean 优先，其次 config，再看命名特征
+    if pl in (_TOOL_BOOL_PARAMS.get(tool) or set()) or pl in _PARAM_BOOL \
+            or pl.startswith(("is", "enable", "allow", "has", "should")):
         return False
     # 3) config 枚举：取该工具该参数的第一个合法值
     allowed = _allowed_for(pl, tool)
@@ -624,7 +656,9 @@ def _default_param_value(param, cap):
         return "test@example.com"
     # 6) 数值类
     if any(k in pl for k in ("price", "amount", "fee", "value", "qty", "count",
-                             "stock", "number", "rate", "percent", "minutes", "duration")):
+                             "stock", "number", "rate", "percent", "minutes",
+                             "duration", "tax", "threshold", "budget", "radius",
+                             "sort", "page", "size")):
         return 1
     # 7) 时间/日期
     if "time" in pl or "date" in pl:
@@ -798,12 +832,14 @@ def _update_phrase(cap, e):
 # productId 上（清单里各层实体用 id 冗余对齐）。挑实体时按能力语义先定层级，
 # 再从该层级里轮换——避免纯查询系统（RetailPOS）所有能力都回退到 P[0]（公司）
 # 造成「按名称搜索商品却拿公司名当商品名」的语义错配与同骨干输入重复。
+# 值可为字符串或字符串列表（多候选）——不同系统同层命名不同（如商品：
+# POS 用 productId，PocketStore 用 itemId），列表任一命中即可，避免因此落回 P[0]。
 _ENTITY_ROLE_KEYS = {
-    "company": "companyId",
-    "store": "merchantId",
-    "menu": "menuId",
-    "category": "categoryId",
-    "product": "productId",
+    "company": ["companyId", "companyIds"],
+    "store": ["merchantId", "merchId", "storeId", "shopId"],
+    "menu": ["menuId", "menuIds"],
+    "category": ["categoryId", "categoryIds"],
+    "product": ["productId", "itemId", "goodsId", "dishId", "skuId"],
 }
 
 
@@ -823,12 +859,15 @@ def _entity_role_of(cap):
         return "company"
     if "categoryname" in pl or "categoryids" in pl or "categoryid" in pl:
         return "category"
-    if "productname" in pl or "productids" in pl or "productid" in pl:
+    # 商品类实体：不同系统叫法不同（product / item / goods / dish / food / sku），
+    #   参数与工具名都要认，否则 item_update 会挑到非商品实体（如支付方式），
+    #   生成「修改商品」用例却传了支付方式 ID → 服务端 data is null（PocketStore 踩过）。
+    if any(k in pl for k in ("productname", "productids", "productid",
+                             "itemname", "itemids", "itemid", "skuid", "skus",
+                             "foodid", "dishes", "goodsid")):
         return "product"
-    # 商品类工具名兜底（参数可能只是 type/status 等通用筛选词，不含商品字样，
-    # 如 query_products_by_filter → 必须选商品实体，否则会从订单/报表字段
-    # orderStatus/orderSourceType 误匹配出 Completed/0 等错值）
-    if "product" in tool:
+    # 商品类工具名兜底（参数可能只是 type/status 等通用筛选词，不含商品字样）
+    if any(k in tool for k in ("product", "item", "goods", "dish", "food", "sku")):
         return "product"
     if "menuids" in pl or "menuid" in pl:
         return "menu"
@@ -858,12 +897,14 @@ def _pick_entity_for(cap, P, fallback_idx=0, idx=None):
         idx = _ENTITY_ROTATE["cursor"]
         _ENTITY_ROTATE["cursor"] += 1
     if role:
-        rk = _ENTITY_ROLE_KEYS[role]
-        same = [e for e in P if str(e.get(rk)) == str(e.get("id"))]
-        if same:
-            return same[idx % len(same)]
-        # 该层级实体清单缺少身份键对齐时，退回含该键的实体
-        same = [e for e in P if rk in e]
+        rks = _ENTITY_ROLE_KEYS[role]
+        rks = rks if isinstance(rks, list) else [rks]
+        # 优先：身份键之一与实体自身 id 对齐的（层级身份明确）
+        same = [e for e in P if any(
+            str(e.get(k)) == str(e.get("id")) for k in rks)]
+        # 其次：含任一身份键的实体
+        if not same:
+            same = [e for e in P if any(k in e for k in rks)]
         if same:
             return same[idx % len(same)]
     key = None
