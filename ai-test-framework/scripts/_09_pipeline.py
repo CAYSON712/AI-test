@@ -211,6 +211,8 @@ def _gen_dataset(req_type, system, ability, products):
 JOB_ALIASES = {
     "retailpos":  ("retailpos", "A"),   # A_RetailPOS数据查询
     "unattended": ("unattended", "D"),  # D_小韩面无人值守门禁
+    "pocketstore": ("pocketstore", "A"),  # A_PocketStore商家经营后台
+    "pocketstore-c": ("pocketstore", "C"),  # C_PocketStore商家经营后台
 }
 
 

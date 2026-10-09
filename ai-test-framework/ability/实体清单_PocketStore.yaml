@@ -1,0 +1,191 @@
+# =====================================================================
+# 实体清单：PocketStore 商家经营后台（BossApp / test 环境真实数据）
+# 探针日期：2026-10-08
+# 店铺：cayson店鋪4444  merchId=202c2fe7-aa2f-424c-867f-26524a197dfa
+# 账号：45a2ca8d-1192-400b-bfb3-5771dab46c20（16 个店铺）
+# 商品：33 个（29 OnSale + 4 OffSale），下列挑代表
+# 分类：4 个（soup / lunch special / popular item / main）
+# 菜单：3 个（全天菜单 / 晚餐 / 午餐）
+# 税率：1 个（0税率 11b6d16a-65dc-4bba-b9fa-db5b085db25b）
+# 员工：0 个、角色：0 个（⚠ 本店铺无员工数据，员工类工具返回空属正常）
+# 配送区域：2 个；额外费用：0 个；支付方式：3 个（Proton Pay 已启用）
+#
+# 注意：所有 ID 一律用字符串（uuid）。时间用店铺本地日期/时刻。
+# 公共字段冗余：merchId/merchIds/itemId/itemIds/categoryId/categoryIds/
+#   menuId/menuIds/taxId/specId 等同时挂到业务实体上，保证任意实体回退都能填出合法参数。
+# =====================================================================
+实体清单:
+  # ---- 店铺 ----
+  - 名称: "cayson店鋪4444"
+    id: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    merchantId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    merchantName: "cayson店鋪4444"
+    accountId: "45a2ca8d-1192-400b-bfb3-5771dab46c20"
+    phone: "9023162143"
+    email: "944600294123@qq.com"
+    txStatus: "open"
+    status: "open"
+
+  # ---- 商品（挑 10 个代表，覆盖高低价与在售/下架）----
+  - 名称: "Pork Chop w. Curry Sauce"
+    id: "5fd6f2b9-431f-442f-81e8-d960af93ded9"
+    itemId: "5fd6f2b9-431f-442f-81e8-d960af93ded9"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Pork Chop w. Curry Sauce"
+    price: "12.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "Pork Chop Cutlet w. Curry Sauce"
+    id: "2e6c6a3c-d7ef-40d0-a940-98f10cb9b590"
+    itemId: "2e6c6a3c-d7ef-40d0-a940-98f10cb9b590"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Pork Chop Cutlet w. Curry Sauce"
+    price: "13.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "Curry Chicken"
+    id: "bf557267-c42b-40ce-9cf6-27962472b0fb"
+    itemId: "bf557267-c42b-40ce-9cf6-27962472b0fb"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Curry Chicken"
+    price: "12.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "Curry Beef Brisket Flank"
+    id: "333c0f81-9fa4-4eb0-a40c-c5dbba5129a4"
+    itemId: "333c0f81-9fa4-4eb0-a40c-c5dbba5129a4"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Curry Beef Brisket Flank"
+    price: "13.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "Seafood Fried Rice"
+    id: "f67011c7-71f6-49ba-b1ac-309a4c0539bb"
+    itemId: "f67011c7-71f6-49ba-b1ac-309a4c0539bb"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Seafood Fried Rice"
+    price: "13.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "Spicy Beef Tripe & Tendon Noodle In Soup"
+    id: "23c23434-3a90-4369-93c9-2a74cb191cc8"
+    itemId: "23c23434-3a90-4369-93c9-2a74cb191cc8"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Spicy Beef Tripe & Tendon Noodle In Soup"
+    price: "13.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "Hainan Style Chicken Noodle In Soup"
+    id: "54d27d4c-ab49-410f-bdda-a1b0b5c36cef"
+    itemId: "54d27d4c-ab49-410f-bdda-a1b0b5c36cef"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Hainan Style Chicken Noodle In Soup"
+    price: "12.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "Iced Ribera w. Lemon"
+    id: "c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b"
+    itemId: "c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Iced Ribera w. Lemon"
+    price: "4.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "Coke"
+    id: "15fbc43d-3650-4e8e-9929-42798462c7a1"
+    itemId: "15fbc43d-3650-4e8e-9929-42798462c7a1"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "Coke"
+    price: "2.95"
+    stock: 99999
+    status: "OnSale"
+  - 名称: "测试订单"
+    id: "c8cae758-c014-4b14-a745-719dbbd70ba2"
+    itemId: "c8cae758-c014-4b14-a745-719dbbd70ba2"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "测试订单"
+    price: "10.00"
+    stock: 999
+    status: "OnSale"
+    categoryIds: ["27615b48-f411-4f41-91e0-e5e9ddd8e22f"]
+  - 名称: "商品"
+    id: "ca8f94be-ac00-4b25-9c80-5e6aabffd601"
+    itemId: "ca8f94be-ac00-4b25-9c80-5e6aabffd601"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    name: "商品"
+    price: "10.00"
+    stock: 997
+    status: "OffSale"
+
+  # ---- 分类（4 个，全部真实）----
+  - 名称: "soup"
+    id: "d2de8117-56ca-42dd-8406-eb5237756f32"
+    categoryId: "d2de8117-56ca-42dd-8406-eb5237756f32"
+    categoryIds: ["d2de8117-56ca-42dd-8406-eb5237756f32"]
+    categoryName: "soup"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    menuIds: ["409d9253-83d5-4ce9-9eb1-5ed76ca9e056"]
+  - 名称: "lunch special"
+    id: "9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1"
+    categoryId: "9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1"
+    categoryIds: ["9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1"]
+    categoryName: "lunch special"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+  - 名称: "popular item"
+    id: "f8f2d07d-6fe4-4db9-a094-037feec3a5a4"
+    categoryId: "f8f2d07d-6fe4-4db9-a094-037feec3a5a4"
+    categoryIds: ["f8f2d07d-6fe4-4db9-a094-037feec3a5a4"]
+    categoryName: "popular item"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+  - 名称: "main"
+    id: "27615b48-f411-4f41-91e0-e5e9ddd8e22f"
+    categoryId: "27615b48-f411-4f41-91e0-e5e9ddd8e22f"
+    categoryIds: ["27615b48-f411-4f41-91e0-e5e9ddd8e22f"]
+    categoryName: "main"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    menuIds: ["9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f"]
+
+  # ---- 菜单（3 个真实）----
+  - 名称: "全天菜单"
+    id: "9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f"
+    menuId: "9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f"
+    menuIds: ["9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f"]
+    menuName: "全天菜单"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+  - 名称: "晚餐"
+    id: "409d9253-83d5-4ce9-9eb1-5ed76ca9e056"
+    menuId: "409d9253-83d5-4ce9-9eb1-5ed76ca9e056"
+    menuIds: ["409d9253-83d5-4ce9-9eb1-5ed76ca9e056"]
+    menuName: "晚餐"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+
+  # ---- 税率（1 个）----
+  - 名称: "0税率"
+    id: "11b6d16a-65dc-4bba-b9fa-db5b085db25b"
+    taxId: "11b6d16a-65dc-4bba-b9fa-db5b085db25b"
+    taxIds: ["11b6d16a-65dc-4bba-b9fa-db5b085db25b"]
+    taxName: "0税率"
+    taxRate: 0.0
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+
+  # ---- 配送区域（2 个）----
+  - 名称: "Delivery Area 1"
+    id: "4feb93b4-3283-4580-ac65-6b4d0212d6f3"
+    areaId: "4feb93b4-3283-4580-ac65-6b4d0212d6f3"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+    minimumAmountForDelivery: 20.0
+    deliveryFee: 4.99
+
+  # ---- 支付方式（3 个）----
+  - 名称: "Proton Pay"
+    id: "6b3e1ccd-37c3-11f1-94d6-00224808ba53"
+    paymentType: "proton_pay"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"
+
+  # ---- 员工/角色（本店铺为空，占位保证生成器有值可填）----
+  - 名称: "员工占位"
+    id: "00000000-0000-0000-0000-000000000000"
+    merchManagerId: "00000000-0000-0000-0000-000000000000"
+    roleId: "00000000-0000-0000-0000-000000000000"
+    merchId: "202c2fe7-aa2f-424c-867f-26524a197dfa"

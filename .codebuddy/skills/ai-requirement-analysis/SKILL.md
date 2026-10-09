@@ -27,6 +27,144 @@ description: AI 测试「需求分析 + 数据集生成」专用入口。当用�
 
 > 判断方法：先问"被测对象是什么"——纯接口→A；对话无工具→B；对话且背后调工具→C；单个子能力→D；文档检索→E。
 
+## 第一步半：接入新 MCP（**遇到"MCP 交测"必做，且只用通用脚本**）
+
+当被测对象是一个**新 MCP 端点**时，**第一步永远是先把它接进框架**，不要直接跳到生成数据集。
+
+### 只用一条命令，禁止为每个 MCP 新建脚本
+
+```powershell
+cd ai-test-framework
+python scripts/_01_mcp_setup.py --name <系统名> --url <MCP端点> \
+    [--token <TOKEN>] [--company-id <ID>] [--company-header CompanyId] [--req-type C] [--dry-run]
+```
+
+它会自动完成：**拉全量工具 schema → 平铺 → 落盘 `results/mcp_schemas/<系统名>.json`
+→ 落盘 `<系统名>.overview.md` 业务域概览 → 写 `.env` → 生成 `configs/<系统名>.yaml` 骨架**。
+
+> ⛔ **铁律：不要为某个具体 MCP 写 `_probe_<系统>.py` 这类一次性脚本。**
+> `_01_mcp_setup.py` 是「任意 MCP 通用」的接入器，新 MCP 永远复用它。
+> 业务域分类等判断逻辑应**沉淀进 `_01_mcp_setup.py`**（见下），而非散落成一次性文件。
+> 唯一的例外是**与具体 MCP 无关**的「中文路径绕乱码」辅助（见本文件末「Windows 中文路径」）。
+
+### 脚本自动识别「参数外壳」，勿手工判断
+
+不同 MCP 把入参包在不同外壳里，`_01_mcp_setup.py` 会自动探测并写进 config 的 `参数包装`：
+
+| 外壳形态 | 代表系统 | config 的 `参数包装` |
+|---|---|---|
+| `properties.toolParams` 内层才是真参数 | POS / 小韩面 / AutoMart / RetailPOS | `toolParams` |
+| `properties.parameters` 内层才是真参数 | PocketStore | `parameters` |
+| properties 直接是参数 | 少数简单 MCP | 不写（executor 回退 `toolParams`） |
+
+`generic_mcp_executor` / `direct_mcp_executor` 会读 `参数包装` 把入参包对应一层——
+**若执行时全部报「参数缺失/校验失败」，首先核查 config 的 `参数包装` 是否与该 MCP 一致**。
+
+### 接入后立刻看三件事（决定后续测试范围）
+
+1. **`<系统名>.overview.md`**：工具总数 + 业务域分布 + 每个工具的**真实必填参数**。
+2. **读/写比例**：若绝大多数是写操作（改价/删除/批量），必须走「写入安全边界」维度（见下），
+   且执行前确认是**隔离测试环境**。
+3. **鉴权语义**：部分 MCP `list_tools` 免鉴权但 `call_tool` 要 token（如 PocketStore 报 `code=1002`）；
+   部分工具的必填参数**不含店铺 ID**（直接按实体 ID 操作，如 `item_update` 只要 `itemId`）——
+   这类是高危写入面，测试时尤其注意影响范围。
+
+### 前置条件自检（接入完就能填）
+
+| 数据源 | 是否必须 | 影响 |
+|---|---|---|
+| **能力目录** | ✅ **必须** | 系统有哪些操作/查询能力。没有它，只能按维度表生成通用骨架，**与被测系统无关，无意义** |
+| **真实实体清单** | ⚠️ **建议（可降级）** | 真实的商品/点位/对象。有 → 用例真实、verify 可落地；无 → 先生成结构骨架，后续接真实数据补齐 |
+
+- 能力目录没有 → **要求用户提供**该系统的能力清单（否则拒绝继续，产物无效）
+- 实体清单没有 → **可降级**：先用占位符生成结构骨架，明确告知"执行阶段需接入真实数据"
+
+## 第一步¾：生成前「准入体检」（**强制，缺一不可**）
+
+> 血的教训（PocketStore 2026-10-08）：首轮干跑 685 条，147 条失分**全是数据集问题**
+> ——假 ID / 枚举跨工具污染 / 必填参数漏生成 / 「实体不存在」被误归因 AI 系统。
+> 根因是**没有在生成前做体检**，带着病数据集跑完才发现。以下四项**生成前必须自检**，
+> 任一不通过就先修数据源，**不要往下生成**。
+
+### ① 实体清单必须是「实调 MCP 拉到的真实 ID」
+
+```powershell
+# 用真实 token 调用列表类工具（如 item_list / category_list / menu_list），
+# 把返回的真实 ID 写进 实体清单_<系统>.yaml，禁止从 schema 快照抄/编造 ID。
+```
+
+- ⛔ **禁止用占位/编造 ID**（`'0'`、全 9、连续数字）做「正常执行」用例 —— 服务端会返回
+  `data is null` / `not found`，导致用例必然失败，且**结果只能看到"系统报错"，看不出是数据集问题**。
+- ⛔ **禁止从 `results/mcp_schemas/*.json` 抄 ID** —— 那里只有 schema（字段定义），没有真实数据 ID。
+
+### ② 枚举取值必须「按工具」核对，不能全局一刀切
+
+- 同名参数（`status`/`type`/`mode`）**在不同工具下语义不同**：如 `status` 在
+  「商品上下架」是 `OnSale/OffSale`、在「店铺营业」是 `open/closed`、在 `item_update` 甚至**是整数**。
+- 优先让生成器**从参数 description 自动提取**（很多 MCP 把合法值写在描述里，如
+  `mode: "Sales mode: 'regular' ... 'fixed_date' ..."` → 自动得到 `regular`/`fixed_date`）。
+- config 必须用**按工具细化**写法，禁止全局：
+  ```yaml
+  param_enums:
+    status:                       # 全局会污染所有叫 status 的参数
+      - {tools: [batch_item_status], values: [OnSale, OffSale]}
+      - {tools: [set_store_open_status], values: [open, closed]}
+  ```
+
+### ③ 能力目录的参数必须逐条对齐工具 schema 的 required
+
+- 打开 `configs/<系统>.yaml` 的 `mcp_tools`，逐工具核对 `required`；
+  能力目录的 `参数:` **至少覆盖必填**（生成器会自动补 + 告警，但**根上要对齐**）。
+- ⚠ 注意「二选一」必填（如 `batch_item_price` 要 `merchFoodIds` **或** `merchId+categoryId`）——
+  能力目录要写清，否则必填只是"其一"。
+
+### ④ 生成后必跑硬校验门禁，**FAIL 就不准往下走**
+
+```powershell
+python scripts/_10_maintain.py validate <系统>   # 必须在 regen 之后、执行之前跑
+```
+
+校验器会硬拦三类「期望成功但不可能成功」的用例（缺必填 / 枚举非法 / 占位 ID），
+报错文案会指明**该补参数还是该换真值**（**不是**改 block=true）。
+**只有 `结论: PASS` 才能进入执行阶段。**
+
+### ⑤ 先干跑一轮，且**先自查归因**再出报告
+
+- 若被测 MCP 带 `confirm` 二段式，用 `CONFIRM_DRYRUN=1` 零风险跑一轮。
+- **看到失分先问"是数据问题还是系统问题"**：已知会被判「数据集问题」的特征包括
+  `data is null` / `not found` / `缺必填` / `枚举非法` —— 这些**不是系统的错**，
+  不要直接当「AI 系统缺陷」提给开发。
+
+## 第一步⅞：形态体检 —— 提前判断「这次会不会需要扩展框架」
+
+> 目的：**不要等跑完一轮才发现框架扛不住**。接入后立刻看
+> `results/mcp_schemas/<系统>.overview.md` 顶部的「形态信号」一行
+> （由 `_01_mcp_setup.py` 自动扫描工具 schema 生成，无需手工分析）。
+
+### 怎么用
+
+打开 `<系统>.overview.md`，看是否有 ⚠ 形态信号，对照下表决定"能不能直接用现有框架"：
+
+| 形态信号 | 现有框架是否支持 | 若命中要做什么 |
+|---|---|---|
+| **未发现特殊形态** | ✅ 直接可用 | 照常生成/执行，无需扩展 |
+| **分页游标**（cursor/pageToken/offset） | ⚠ 部分是 offset 能当普通参数；**纯 cursor 链式翻页**不支持 | 先小样本验证；若需翻页，评估是否扩展执行器 |
+| **嵌套参数**（object / array-of-object） | ⚠ 单层嵌套（如 `products: [{...}]`）可生成；**多层嵌套**需人工确认结构 | 检查生成的 `tool_params` 结构是否合法 |
+| **数组参数**（批量语义） | ✅ 支持（生成器会给单元素数组） | 注意元素结构是否符合 schema 的 `items` |
+| **整数时间戳**（epoch） | ⚠ 生成器默认给 ISO 字符串，**可能不匹配** | 在能力目录/config 里声明该参数的真实格式 |
+| **参数外壳**非 toolParams/parameters | ⚠ 需人工 | 把外壳名加进 `_01_mcp_setup.py` 的 `KNOWN_WRAPPERS` |
+| **鉴权**非单 Bearer（双 token/OAuth/签名） | ❌ 不支持 | 需扩展 executor 鉴权逻辑，或先用静态 token |
+
+### 判定原则
+
+- **命中 ✅ 行** → 放心往下走，这是常规系统。
+- **命中 ⚠ 行** → 先做**小样本验证**（挑 3~5 条相关工具的用例手工跑），确认能生成出合法参数；不能则按"要做什么"列处理。
+- **命中 ❌ 行** → **先扩展框架再生成**，否则一定是白跑。
+
+> 记住：**框架代码稳定、新系统靠配置适配**。绝大多数新 MCP 都是 ✅ 行，
+> 只有出现上表 ⚠/❌ 的**新形态**时才动框架——而现在这些形态会被**提前列出**，
+> 不再是"跑完才发现"。
+
 ## 第二步：前置条件（生成前必读）
 
 **接需求后，第一步不是生成，而是先确认被测系统的数据源**，缺了它生成的用例跟系统无关：
@@ -278,7 +416,23 @@ python scripts/_09_pipeline.py --req-type <A|B|C|D|E> [--system <系统名>] --e
 ## 后续衔接
 
 ```
-需求分析(本 skill) → 测试执行(ai-test-execution) → 报告复盘(ai-report-review)
-       ↑                                                       |
-       └──────────── 反哺补充用例 ←─────────────────────────────┘
+接入新 MCP(_01_mcp_setup.py) → 需求分析(本 skill) → 测试执行(ai-test-execution) → 报告复盘(ai-report-review)
+                                        ↑                                                       |
+                                        └──────────── 反哺补充用例 ←─────────────────────────────┘
 ```
+
+## 附：Windows 中文路径导致脚本跑不起来时
+
+若工作区路径含中文（如 `...\CodeBuddy\AI测试\...`），PowerShell 执行
+`cd <中文路径>` / `python <中文路径>\scripts\xxx.py` 时中文可能被错误重编码成乱码
+（`AI测试` → `AI娴嬭瘯`），报 `can't open file` / `找不到路径`。
+
+**通用绕过方式（与具体 MCP 无关，可复用）**：不把中文路径写进命令行，改为在 Python 内
+用 base64 解码出路径再执行：
+
+```powershell
+python -c "import base64, runpy, sys; sys.argv=['_01','--name','X','--url','...','--dry-run']; runpy.run_path(base64.b64decode('<路径的base64>').decode('utf-8'), run_name='__main__')"
+```
+
+> 生成 base64：`python -c "import base64;print(base64.b64encode(r'C:\...\scripts\_01_mcp_setup.py'.encode()).decode())"`
+> 这是**环境适配**，不是「给某个 MCP 写脚本」——同一段命令对所有脚本、所有 MCP 通用。

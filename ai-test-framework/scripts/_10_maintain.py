@@ -38,11 +38,35 @@ SYSTEMS = {
         "entities": "实体清单_RetailPOS数据查询.yaml",
         "types": ["A", "C"],
     },
+    "pocketstore": {
+        "cn": "PocketStore商家经营后台",
+        "ability": "能力目录_PocketStore.yaml",
+        "entities": "实体清单_PocketStore.yaml",
+        "types": ["A", "C"],
+    },
     "unattended": {
         "cn": "小韩面无人值守门禁",
         "ability": "能力目录_小韩面无人值守.yaml",
         "entities": "实体清单_小韩面无人值守.yaml",
         "types": ["C", "D"],
+    },
+    "posproduct": {
+        "cn": "POS 商品管理",
+        "ability": "能力目录_POS商品管理.yaml",
+        "entities": "商品清单_Test01参考.yaml",
+        "types": ["A", "B", "C", "D"],
+    },
+    "posattendance": {
+        "cn": "POS员工考勤",
+        "ability": "能力目录_POS员工考勤.yaml",
+        "entities": "实体清单_POS员工考勤.yaml",
+        "types": ["A", "B"],
+    },
+    "posreport": {
+        "cn": "POS数据报表",
+        "ability": "能力目录_POS数据报表.yaml",
+        "entities": "实体清单_POS数据报表.yaml",
+        "types": ["A", "B", "C"],
     },
 }
 

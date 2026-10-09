@@ -126,6 +126,12 @@ class _SysConfig:
         self.system_prompt_env = conn.get("system_prompt_env", "SYSTEM_PROMPT")
         # 业务字段名 / 工具名（不绑定任何系统命名，全部可由配置覆盖）
         self.company_header = cfg.get("公司ID请求头", "CompanyId")
+        # 参数外壳名：多数 MCP 要求把入参包一层（如 POS 系 toolParams / PocketStore 系 parameters）。
+        # 未配置时回退 toolParams（保持既有系统兼容）。
+        # 允许写在「连接:」下或顶层（两种放法都认，避免放错位置静默回退）。
+        self.param_wrapper = conn.get("参数包装") or cfg.get("参数包装") or "toolParams"
+        # 干跑确认位参数名：CONFIRM_DRYRUN=1 时该参数被强制 false（服务端只预览不执行）。
+        self.dryrun_param = conn.get("干跑开关参数名") or cfg.get("干跑开关参数名") or "confirm"
         self.merchant_param = cfg.get("默认上下文参数名", "merchantIds")   # 复数（列表）
         self.entity_id_param = cfg.get("实体ID参数名", "entityIds")  # 复数（列表）
         self.entity_name_param = cfg.get("实体名参数名", "entityName")
@@ -377,9 +383,12 @@ class GenericMcpExecutor(BaseExecutor):
         return stack, session
 
     async def _call_tool(self, session, name, tool_params):
-        """调用 MCP 工具，返回 (is_error, 文本, latency_ms)"""
+        """调用 MCP 工具，返回 (is_error, 文本, latency_ms)
+
+        入参按 configs 的「参数包装」包一层（新老系统外壳名不同，见 _SysConfig.param_wrapper）。
+        """
         t0 = time.monotonic()
-        result = await session.call_tool(name, {"toolParams": tool_params})
+        result = await session.call_tool(name, {self.sys.param_wrapper: tool_params})
         latency_ms = (time.monotonic() - t0) * 1000
         texts = [c.text for c in result.content if c.type == "text"]
         return result.is_error, "\n".join(texts), round(latency_ms, 1)
@@ -455,7 +464,7 @@ class GenericMcpExecutor(BaseExecutor):
         await self._resolve_entity_id(tool_name, tool_params, user_input, steps, capability)
 
         # 3. 调用真实 MCP
-        mcp_input = json.dumps({"toolParams": tool_params}, ensure_ascii=False)
+        mcp_input = json.dumps({self.sys.param_wrapper: tool_params}, ensure_ascii=False)
         try:
             stack, session = await self._session_context()
             async with stack:

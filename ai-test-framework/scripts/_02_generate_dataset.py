@@ -359,6 +359,21 @@ def _param_value(param, e):
         kl = str(k).lower()
         if len(pl) >= 3 and (pl in kl or kl in pl):
             return _as_param_value(v, pl)
+    # 1.5) 「新值」类参数：newXxx / xxxNew / updatedXxx → 剥掉前缀/后缀再匹配实体旧值
+    #     （如 newPhone → phone；否则实体无 newPhone 字段会返回空串被静默丢弃，
+    #      导致 update_store_phone 类用例缺必填参数——PocketStore 首轮 73 条根因）。
+    for pre in ("new", "updated", "update", "target"):
+        if pl.startswith(pre) and len(pl) > len(pre) + 1:
+            base = pl[len(pre):]
+            for k, v in e.items():
+                if str(k).lower() == base or (len(base) >= 3 and base in str(k).lower()):
+                    return _as_param_value(v, pl)
+    for suf in ("new", "updated", "target"):
+        if pl.endswith(suf) and len(pl) > len(suf) + 1:
+            base = pl[:-len(suf)]
+            for k, v in e.items():
+                if str(k).lower() == base or (len(base) >= 3 and base in str(k).lower()):
+                    return _as_param_value(v, pl)
     # 2) 语义别名兜底
     if "id" in pl:
         return _as_param_value(e.get("id", "1"), pl)
@@ -370,16 +385,27 @@ def _param_value(param, e):
         return _as_param_value(e.get("status", "On"), pl)
     if "category" in pl or "分类" in pl:
         return _as_param_value(e.get("categoryId", "1"), pl)
-    if "merchant" in pl or "店" in pl:
-        return _as_param_value(e.get("MerchantId", e.get("merchantId", "1")), pl)
+    if "merchant" in pl or "merch" in pl or "店" in pl or "shop" in pl or "store" in pl:
+        # 店铺 ID 字段名各系统不同（merchantId / merchId / storeId / shopId / CompanyId...），
+        # 不能写死拼写——写死会在新系统取不到值而回退假 ID（PocketStore 首轮 fake_id 根因）。
+        # 改为在实体字段里按语义找「店铺类 ID 字段」。
+        for k, v in e.items():
+            kl = str(k).lower()
+            if ("id" in kl or "ids" in kl) and any(
+                    t in kl for t in ("merch", "store", "shop", "company", "店铺")):
+                return _as_param_value(v, pl)
+        return _as_param_value(e.get("id", "1"), pl)
     if "qty" in pl or "数量" in pl or "count" in pl:
         return 10
     # 2.5) 日期/时间类参数兜底（查询系统常见，能力目录未提供具体值时）：
-    #      dateType → 业务日期(businessDate)；date/时间 → 今日
+    #      dateType → 业务日期(businessDate)；date/时间 → 当天 ISO 日期（不用中文"今日"，
+    #      避免把非法字符串发给服务端；格式统一 ISO，兼容多数系统）。
     if "type" in pl and ("date" in pl or "时间" in pl or "日期" in pl):
         return _as_param_value("businessDate", pl)
+    if "datetime" in pl or ("time" in pl and "date" not in pl):
+        return _as_param_value("12:00", pl)
     if "date" in pl or "时间" in pl or "日期" in pl:
-        return _as_param_value("今日", pl)
+        return _as_param_value("2026-01-01", pl)
     return _as_param_value(e.get(param, e.get(pl, "")), pl)
 
 
@@ -406,6 +432,13 @@ def _param_value(param, e):
 # =====================================================================
 _PARAM_ENUMS = {}      # 由 load_param_schema() 填充：{param_lower: spec}
 _PARAM_BOOL = set()    # 由 load_param_schema() 填充
+
+# 工具 schema：{工具名: (params集合, required集合)}，由 load_tool_schema() 从
+# configs/<系统>.yaml 的 mcp_tools 填充。用于「必填参数自动补全 + 缺失告警」：
+# 能力目录若漏声明某工具必填参数（如 batch_item_price 漏 merchFoodIds），
+# 生成用例会缺参 → 执行必然失败。此前无此处校验，PocketStore 首轮 73 条因此失分。
+_TOOL_SCHEMA = {}
+_MISSING_REQUIRED = []   # 生成过程中累积的「必填缺失」告警：[(工具, 缺参列表, 能力)]
 
 
 def load_param_schema(config_path):
@@ -445,6 +478,74 @@ def load_param_schema(config_path):
     for pname in (doc.get("param_bools") or []):
         bools.add(str(pname).lower())
     return enums, bools
+
+
+def load_tool_schema(config_path):
+    """从 configs/<系统>.yaml 的 mcp_tools 读「工具 → (params, required)」。
+
+    用于必填参数自动补全与缺失告警：能力目录漏声明必填参数时能及时发现。
+    配置缺失/格式异常时返回空（不做补全），不抛异常。
+    """
+    schema = {}
+    if not config_path or not os.path.exists(config_path):
+        return schema
+    try:
+        doc = yaml.safe_load(open(config_path, encoding="utf-8")) or {}
+    except Exception:
+        return schema
+    for t in (doc.get("mcp_tools") or []):
+        if isinstance(t, dict) and t.get("name"):
+            schema[str(t["name"])] = (set(t.get("params") or []),
+                                      set(t.get("required") or []))
+    return schema
+
+
+# 参数描述里的「候选枚举值」：形如 'regular' / "percentage" / "pickup", "delivery"。
+# 很多 MCP 把合法值写在参数 description 里而不放 enum 字段（PocketStore 即如此），
+# 生成器据此提取，避免给必填参数塞 'Mode' 这类会被服务端拒绝的占位串。
+_DESC_ENUM_RE = re.compile(r"[\"'`]([A-Za-z][A-Za-z0-9_\-]{1,30})[\"'`]")
+
+# 工具名 -> {参数名: [描述里提取的候选值]}；由 load_param_descriptions() 填充
+_TOOL_DESC_ENUMS = {}
+
+
+def load_param_descriptions(schema_json_path):
+    """从 results/mcp_schemas/<系统>.json（含参数描述）提取「工具.参数 → 候选值」。
+
+    优先用已落盘的原始 schema（含 description）；缺失则返回空（退回默认值）。
+    """
+    global _TOOL_DESC_ENUMS
+    _TOOL_DESC_ENUMS = {}
+    if not schema_json_path or not os.path.exists(schema_json_path):
+        return _TOOL_DESC_ENUMS
+    try:
+        data = json.load(open(schema_json_path, encoding="utf-8"))
+    except Exception:
+        return _TOOL_DESC_ENUMS
+    for t in data.get("tools") or []:
+        name = t.get("name")
+        sch = t.get("inputSchema") or {}
+        props = (sch.get("properties") or {})
+        inner = props.get("parameters") or props.get("toolParams") or {}
+        inner = inner.get("properties") if isinstance(inner, dict) else {}
+        if not name or not isinstance(inner, dict):
+            continue
+        for p, spec in inner.items():
+            if not isinstance(spec, dict):
+                continue
+            desc = str(spec.get("description") or "")
+            enum = spec.get("enum")
+            cands = []
+            if isinstance(enum, list):
+                cands = [str(v) for v in enum if v is not None]
+            else:
+                cands = _DESC_ENUM_RE.findall(desc)
+                # 去重保序
+                seen = set()
+                cands = [c for c in cands if not (c.lower() in seen or seen.add(c.lower()))]
+            if cands:
+                _TOOL_DESC_ENUMS.setdefault(name, {})[str(p).lower()] = cands
+    return _TOOL_DESC_ENUMS
 
 
 def _allowed_for(param_lower, tool):
@@ -494,6 +595,44 @@ def _coerce_param(param, value, cap):
     return value
 
 
+def _default_param_value(param, cap):
+    """为「实体里找不到」的参数生成一个合法默认值（按参数名语义 + 工具 schema 类型）。
+
+    目的：能力目录/实体清单未必覆盖所有 schema 必填参数（如 enabled/mode/stock/
+    newPhone），若不给默认值，用例会缺必填参数→执行必然失败（PocketStore 首轮 73 条
+    根因）。本函数兜底：布尔给 False、枚举给 schema 声明值、数值给合理值、文本给占位。
+    仅当实体确实无对应字段时才调用，不覆盖真实业务值。
+    """
+    pl = str(param).lower()
+    tool = cap.get("工具")
+    # 1) 描述里的候选值（最贴合服务端真实枚举，如 mode→regular、feeType→percentage）
+    desc_enum = (_TOOL_DESC_ENUMS.get(tool) or {}).get(pl)
+    if desc_enum:
+        return desc_enum[0]
+    # 2) 布尔：先看 config param_bools，再看命名特征
+    if pl in _PARAM_BOOL or pl.startswith(("is", "enable", "allow", "has", "should")):
+        return False
+    # 3) config 枚举：取该工具该参数的第一个合法值
+    allowed = _allowed_for(pl, tool)
+    if allowed:
+        return allowed[0]
+    # 4) 电话号码类
+    if "phone" in pl or "mobile" in pl or "tel" in pl:
+        return "9023162140"
+    # 5) 邮箱类
+    if "email" in pl or "mail" in pl:
+        return "test@example.com"
+    # 6) 数值类
+    if any(k in pl for k in ("price", "amount", "fee", "value", "qty", "count",
+                             "stock", "number", "rate", "percent", "minutes", "duration")):
+        return 1
+    # 7) 时间/日期
+    if "time" in pl or "date" in pl:
+        return "12:00" if "time" in pl else "2026-01-01"
+    # 8) 文本兜底
+    return pl.capitalize() if pl else "1"
+
+
 def _fill_params(cap, e, overrides=None):
     """按能力目录声明的「参数」字段从实体生成参数值（数据驱动，不写死字段名）。
 
@@ -508,6 +647,29 @@ def _fill_params(cap, e, overrides=None):
     if overrides:
         tp.update(overrides)
     tp = {p: _coerce_param(p, v, cap) for p, v in tp.items()}
+
+    # 必填参数自动补全（对照 configs 的工具 schema）：
+    #   ① 能力目录漏声明某必填参数 → 用实体数据补齐；
+    #   ② 实体也取不到 → 用 _default_param_value 生成合法默认值（布尔/枚举/数值/文本兜底）；
+    #   ③ 仍生不出 → 记入告警，供生成结束后汇总提示补能力目录/实体。
+    #   目的：让「生成即不可执行」的用例在生成阶段就被消除或显式暴露。
+    tool = cap.get("工具") or ""
+    req = _TOOL_SCHEMA.get(tool, (set(), set()))[1]
+    if req:
+        # 注意：只把「有非空值」的参数视为已满足——空串会在末尾被剔除，
+        # 若用「键存在」判断会误判为已补全（PocketStore newPhone 空串被丢弃的根因）。
+        have = {str(p).lower() for p, v in tp.items()
+                if v is not None and v != ""}
+        for rp in sorted(req):
+            if str(rp).lower() in have:
+                continue
+            v = _coerce_param(rp, _param_value(rp, e), cap)
+            if v is None or v == "":
+                v = _coerce_param(rp, _default_param_value(rp, cap), cap)
+            if v is not None and v != "":
+                tp[rp] = v
+            else:
+                _MISSING_REQUIRED.append((tool, rp, cap.get("能力")))
 
     # 互斥参数：relativePeriod 与 startAt/endAt 不能同传（服务端报 40000）
     pls = {str(p).lower() for p in params}
@@ -572,13 +734,45 @@ def _cmd_phrase(cap, idx=None):
     return None
 
 
+def _other_status(param, cap, e):
+    """状态的「翻转值」：从该工具该参数的合法值域里，挑一个不同于当前实体状态的值。
+
+    不写死 'Off'（POS 口径）——PocketStore 是 OnSale/OffSale、店铺是 open/closed、
+    有的是整数。取值域优先级：config 枚举 / 描述枚举 / 实体当前值翻转 / 通用兜底。
+    """
+    pl = str(param).lower()
+    cur = _param_value(param, e)
+    cur_s = str(cur).lower() if cur is not None else ""
+    # 候选值域
+    cands = list(_allowed_for(pl, cap.get("工具")) or [])
+    if not cands:
+        cands = list((_TOOL_DESC_ENUMS.get(cap.get("工具")) or {}).get(pl) or [])
+    if not cands:
+        # 实体当前值的「对偶」（成对常见状态）
+        pairs = [("onsale", "offsale"), ("offsale", "onsale"),
+                 ("open", "closed"), ("closed", "open"),
+                 ("active", "inactive"), ("inactive", "active"),
+                 ("on", "off"), ("off", "on"), ("true", "false"), ("false", "true")]
+        for a, b in pairs:
+            if cur_s == a:
+                cands = [b]
+                break
+    cands = [c for c in cands if str(c).lower() != cur_s] or cands
+    if cands:
+        return cands[0]
+    # 整数型状态（如 item_update.status 1=上架 0=下架）：翻转 0/1
+    if isinstance(cur, int) or cur_s in ("0", "1", ""):
+        return 0 if cur_s == "1" else 1
+    return "Off"   # 最终兜底（会被 _coerce_param 按 config 枚举收敛）
+
+
 def _update_phrase(cap, e):
     """变更类能力的自然语言输入短语 + 参数（统一出口）。
 
     优先级：
       1) 能力目录「命令句式」（动作型命令的真实话术，如 帮我开启无人值守）
       2) 含数值类参数（_value_param）→ 把 X 的{数值标签}改成 {新值}
-      3) 含状态类参数（_status_param）→ 把 X 设为 Off
+      3) 含状态类参数（_status_param）→ 翻转状态（取值不写死，见 _other_status）
       4) 无参数无句式 → 执行{能力名}（不再退化成「更新 实体名」）
 
     返回 (输入文本, 参数 dict)。
@@ -594,7 +788,9 @@ def _update_phrase(cap, e):
         return (f"把 {_entity_label(e)} 的{_value_label(cap)}改成 {new_val}",
                 _fill_params(cap, e, {vp: new_val}))
     if sp:
-        return f"把 {_entity_label(e)} 设为 Off", _fill_params(cap, e, {sp: "Off"})
+        nv = _other_status(sp, cap, e)
+        return (f"把 {_entity_label(e)} 的状态改成 {nv}",
+                _fill_params(cap, e, {sp: nv}))
     return f"执行{cap.get('能力')}", _fill_params(cap, e)
 
 
@@ -1039,11 +1235,12 @@ def _gen_param_gen(products, abilities, cap_by_name, rng):
     if status_cap and _status_param(status_cap):
         e = P[1]
         sp = _status_param(status_cap)
+        _nv = _other_status(sp, status_cap, e)
         cases.append(_normal_case(
             status_cap, "参数生成", status_cap.get("能力"),
-            _fill_params(status_cap, e, {sp: "Off"}),
-            f"正确抽取 {sp} 枚举（Off）",
-            user_input=f"把 {_entity_label(e)} 设为 Off"))
+            _fill_params(status_cap, e, {sp: _nv}),
+            f"正确抽取 {sp} 枚举（{_nv}）",
+            user_input=f"把 {_entity_label(e)} 设为 {_nv}"))
     # 参数缺失场景（应澄清或兜底，不报错）；无参数能力跳过（没有参数可缺失）
     if change and _value_param(change):
         e2 = P[2]
@@ -1103,12 +1300,13 @@ def _gen_param_e2e(products, abilities, cap_by_name, rng):
         e = P[1]
         sp = _status_param(status_cap)
         vf = status_cap.get("verify_field") or sp
+        _nv = _other_status(sp, status_cap, e)
         cases.append(_normal_case(
             status_cap, "参数端到端准确率", status_cap.get("能力"),
-            _fill_params(status_cap, e, {sp: "Off"}),
+            _fill_params(status_cap, e, {sp: _nv}),
             f"{status_cap.get('能力')} 成功",
-            verify={"field": vf, "expect": "Off"},
-            user_input=f"把 {_entity_label(e)} 设为 Off"))
+            verify={"field": vf, "expect": _nv},
+            user_input=f"把 {_entity_label(e)} 设为 {_nv}"))
     # 无参数动作型能力（如 开启/关闭无人值守）：命令句式 + 能力目录 verify 兜底
     act_cap = _pick_cap(abilities, op=_OP_UPDATE)
     if act_cap and not _value_param(act_cap) and not _status_param(act_cap):
@@ -2799,15 +2997,38 @@ def main():
     #   别名匹配；匹配不到再按需求类型兜底。
     _cfg_path = _find_config_for(ability_system or args.system, args.req_type)
     _enums, _bools = load_param_schema(_cfg_path)
-    global _PARAM_ENUMS, _PARAM_BOOL
+    global _PARAM_ENUMS, _PARAM_BOOL, _TOOL_SCHEMA
     _PARAM_ENUMS = _enums
     _PARAM_BOOL = _bools
+    _TOOL_SCHEMA = load_tool_schema(_cfg_path)
+    _MISSING_REQUIRED.clear()
+    # 参数描述里的候选枚举：从已落盘 schema（含 description）提取，提升必填参数
+    # 默认值的真实可用性（PocketStore 的 mode/feeType/target 等枚举写在描述里）。
+    # 候选文件名（按优先级）：<stem>.raw.json（完整 schema）→ <stem>.json（平铺，无描述）。
+    _stem = os.path.splitext(os.path.basename(_cfg_path))[0]
+    _sch_dir = os.path.join(_ROOT, "results", "mcp_schemas")
+    _sch_cands = [os.path.join(_sch_dir, f"{_stem}.raw.json"),
+                  os.path.join(_sch_dir, f"{_stem}.json")]
+    _desc_enums = {}
+    for _sj in _sch_cands:
+        _desc_enums = load_param_descriptions(_sj)
+        if _desc_enums:
+            print(f"参数候选值: 从 {os.path.basename(_sj)} 提取 "
+                  f"{len(_desc_enums)} 个工具的描述枚举")
+            break
+    if not _desc_enums:
+        print("⚠ 未找到含参数描述的 schema（results/mcp_schemas/<系统>.raw.json）——"
+              "必填参数默认值将退化为通用兜底")
     if _enums or _bools:
         print(f"参数取值域: 枚举 {len(_enums)} 组 / 布尔 {len(_bools)} 个"
               f"（{os.path.basename(_cfg_path)}）")
     else:
         print(f"⚠ 未加载到参数取值域配置（{os.path.basename(_cfg_path) or '无'}）——"
               f"枚举参数将不做收敛，建议在 configs/ 补 param_enums")
+    if _TOOL_SCHEMA:
+        print(f"工具 schema: 已加载 {len(_TOOL_SCHEMA)} 个工具（必填参数将自动补全）")
+    else:
+        print("⚠ 未从 configs 读到 mcp_tools——必填参数补全/缺失告警不可用")
 
     # 能力目录自检：同名能力告警（重名会导致工具路由错乱，如 A 类用例混用两个工具）
     _seen = {}
@@ -2879,6 +3100,21 @@ def main():
     print(f"分层分布: {dict(layer_cnt)} (目标 L1:{TARGET_SHARE['L1']:.0%} L2:{TARGET_SHARE['L2']:.0%})")
     print("维度覆盖:", dict(dim_cnt))
 
+    # 必填参数缺失告警：能力目录漏声明 + 实体补不出 → 用例必然不可执行。
+    # 这类缺陷应在生成阶段暴露（而非执行后靠失分反查）。
+    _mr = {}
+    for tool, rp, ab in _MISSING_REQUIRED:
+        _mr.setdefault(tool, {"missing": set(), "abilities": set()})
+        _mr[tool]["missing"].add(rp)
+        _mr[tool]["abilities"].add(ab)
+    if _mr:
+        print(f"⚠ 必填参数无法自动补全（{len(_mr)} 个工具）——用例将不可执行，请补实体/能力目录：")
+        for tool, info in sorted(_mr.items()):
+            print(f"   - {tool} 缺 {sorted(info['missing'])}"
+                  f"（能力: {'、'.join(str(a) for a in info['abilities'])}）")
+    else:
+        print("必填参数补全检查通过：所有工具必填参数均可生成")
+
     out = args.out or os.path.join(_ROOT, "datasets", f"{args.req_type}_{system}.yaml")
     # 路径安全校验：中文参数经 shell（尤其 PowerShell）传递可能被破坏为乱码，
     # 事故表现为「写出 A_POS 鍟嗗搧绠＄悊.yaml」这类看似无害的新文件，
@@ -2915,10 +3151,16 @@ def main():
         yaml.safe_dump(doc, f, allow_unicode=True, sort_keys=False, width=120)
     print(f"已写入: {out}")
 
-    # strict 模式：semantic 缺口视为生成失败（CI 防回归——缺口必须先补目录再提交）
-    if args.strict and _sem_total:
-        print(f"❌ --strict 生效：存在 {_sem_total} 处 semantic 缺口，生成未通过。"
-              f"请按上述提示补齐能力目录「成功标准:语义」后重试。")
+    # strict 模式：semantic 缺口 / 必填不可补全 视为生成失败
+    # （CI 防回归——缺口必须先补目录/实体再提交）
+    _strict_fail = []
+    if _sem_total:
+        _strict_fail.append(f"{_sem_total} 处 semantic 缺口")
+    if _mr:
+        _strict_fail.append(f"{len(_mr)} 个工具必填参数无法补全")
+    if args.strict and _strict_fail:
+        print(f"❌ --strict 生效：{'；'.join(_strict_fail)}，生成未通过。"
+              f"请按上述提示补齐能力目录/实体清单后重试。")
         sys.exit(1)
 
 

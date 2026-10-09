@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 """一条命令接入新 MCP：拉 schema -> 平铺 -> 写 .env -> 生成 configs/<系统>.yaml 骨架。
 
+产出（results/mcp_schemas/ 下）：
+    <系统名>.json            全量工具 schema（含自动探测的 wrapper 字段）
+    <系统名>.overview.md     按业务域分组的可读概览（工具数 / 必填参数）
+
+自动识别「参数外壳」（写入 config 的「参数包装」）：
+    toolParams  —— POS / 小韩面 / AutoMart / RetailPOS
+    parameters  —— PocketStore
+    （无外壳则 config 不写，executor 回退 toolParams）
+
 用法（推荐，交互模式，绕开 PowerShell 中文 argv 乱码）:
     python scripts/_01_mcp_setup.py
 
@@ -68,21 +77,38 @@ def _tool_field(t, *keys):
     return None
 
 
+# 已知的参数外壳名（properties 里只有一个壳，壳内才是真参数）
+#   toolParams —— POS / AutoMart / RetailPOS 系列
+#   parameters —— PocketStore 系列
+# 新增系统若用其它外壳名，加进这里即可，无需改别处。
+KNOWN_WRAPPERS = ("toolParams", "parameters")
+
+
+def detect_wrapper(input_schema):
+    """识别该工具的「参数外壳」名；常规（properties 直接是参数）返回 None。
+
+    返回 (wrapper_name_or_None, inner_props, inner_required)。
+    """
+    if not isinstance(input_schema, dict):
+        return None, {}, []
+    props = input_schema.get("properties") or {}
+    for shell in KNOWN_WRAPPERS:
+        node = props.get(shell)
+        if isinstance(node, dict) and isinstance(node.get("properties"), dict):
+            return shell, node.get("properties") or {}, list(node.get("required") or [])
+    return None, props, list(input_schema.get("required") or [])
+
+
 def _flatten_schema(input_schema):
     """平铺 input_schema -> (params 列表, required 列表)。
 
-    兼容两种形态:
+    兼容三种形态:
       1. 常规: properties 直接是参数, required 在顶层
       2. AutoMart 型: properties 只有 toolParams 壳, 壳内才是真参数
+      3. PocketStore 型: properties 只有 parameters 壳, 壳内才是真参数
     """
-    if not isinstance(input_schema, dict):
-        return [], []
-    props = input_schema.get("properties") or {}
-    tp = props.get("toolParams")
-    if isinstance(tp, dict) and isinstance(tp.get("properties"), dict):
-        inner = tp["properties"]
-        return list(inner.keys()), list(tp.get("required") or [])
-    return list(props.keys()), list(input_schema.get("required") or [])
+    _wrapper, inner, required = detect_wrapper(input_schema)
+    return list(inner.keys()), required
 
 
 def _one_line(text, limit=500):
@@ -109,6 +135,131 @@ def build_tools(tools):
             "required": required,
         })
     return out
+
+
+def detect_common_wrapper(raw_tools):
+    """统计全部工具，返回出现最多的参数外壳名（无外壳则 None）。
+
+    这批同类工具通常外壳一致；取「命中数最多的外壳」，少数派忽略。
+    """
+    counter = {}
+    for t in raw_tools:
+        schema = _tool_field(t, "inputSchema", "input_schema") or {}
+        wrapper, _inner, _req = detect_wrapper(schema)
+        if wrapper:
+            counter[wrapper] = counter.get(wrapper, 0) + 1
+    if not counter:
+        return None
+    return max(counter, key=counter.get)
+
+
+# 业务域分类规则（工具名关键字 -> 中文域）。通用兜底：未命中归「其他」。
+# 新系统若需更准的分类，可在 <系统>.yaml 里覆盖（未来扩展），当前够用。
+_DOMAIN_RULES = [
+    ("订单/配送", ["order", "delivery", "pickup", "takeout", "preorder",
+                "cancel", "payment", "shipping"]),
+    ("门店/店铺设置", ["store_", "shop_", "brand_story", "cover_image",
+                  "social_account", "bank_account", "third_party", "push_to_pos",
+                  "stripe", "qr", "sales_mode", "open_status", "link"]),
+    ("商品/规格", ["item_", "spec_", "food_"]),
+    ("菜单/分类", ["menu_", "category_"]),
+    ("库存", ["stock"]),
+    ("税", ["tax_"]),
+    ("小费/附加费", ["tip", "extra_fee", "utensil", "charge"]),
+    ("营销活动", ["campaign", "discount", "reward", "promotion", "coupon", "flash"]),
+    ("员工/用户/角色", ["user", "staff", "role"]),
+    ("报表/订阅", ["report", "subscription"]),
+    ("监控/摄像头", ["camera", "kitch"]),
+]
+
+
+def _classify_tool(name):
+    low = (name or "").lower()
+    for tag, keys in _DOMAIN_RULES:
+        for k in keys:
+            if k in low:
+                return tag
+    return "其他"
+
+
+def detect_shape_signals(raw_tools):
+    """扫描原始 schema，识别「可能超出当前框架默认能力」的形态信号。
+
+    返回信号列表（供 overview 展示 + Skill 预警规则解读）。纯粹描述性，不阻断。
+    这些信号是「接新 MCP 时提前知道会不会踩框架坑」的依据。
+    """
+    sig = set()
+    for t in raw_tools:
+        sch = _tool_field(t, "inputSchema", "input_schema") or {}
+        props = sch.get("properties") or {}
+        inner = None
+        for shell in KNOWN_WRAPPERS:
+            if isinstance(props.get(shell), dict):
+                inner = props[shell].get("properties")
+                break
+        inner = inner or props
+        if not isinstance(inner, dict):
+            continue
+        for p, spec in inner.items():
+            if not isinstance(spec, dict):
+                continue
+            pl = str(p).lower()
+            tp = spec.get("type")
+            # 分页：cursor / pageToken 类游标
+            if any(k in pl for k in ("cursor", "pagetoken", "nexttoken", "offset")):
+                sig.add("分页游标（cursor/pageToken），非 page/size")
+            # 嵌套对象/数组：参数是 object 或 array-of-object
+            if tp == "object" or (tp == "array" and isinstance(spec.get("items"), dict)
+                                  and spec["items"].get("type") == "object"):
+                sig.add(f"嵌套参数（{p} 为 object / array-of-object）")
+            # 数组参数（批量）
+            if tp == "array":
+                sig.add("含数组参数（批量语义，需注意元素结构）")
+            # 时间戳/日期格式
+            if tp == "integer" and any(k in pl for k in ("time", "timestamp", "at")):
+                sig.add("整数时间戳参数（时间语义为 epoch，非 ISO 字符串）")
+    return sorted(sig)
+
+
+def render_overview(name, tools, wrapper=None, raw_tools=None):
+    """生成 <系统>.overview.md：按业务域分组的可读概览（含必填参数 + 形态信号）。"""
+    groups = {}
+    for t in tools:
+        groups.setdefault(_classify_tool(t["name"]), []).append(t)
+
+    signals = detect_shape_signals(raw_tools or []) if raw_tools else []
+
+    lines = [
+        f"# {name} MCP 工具概览",
+        "",
+        f"- 工具总数：**{len(tools)}**",
+        f"- 参数外壳：`{wrapper}`" if wrapper else "- 参数外壳：无（properties 直接是参数）",
+        f"- 生成时间：{__import__('datetime').datetime.now():%Y-%m-%d %H:%M}",
+    ]
+    if signals:
+        lines.append("- **形态信号（关注是否需扩展框架）**：")
+        for s in signals:
+            lines.append(f"    - ⚠ {s}")
+    else:
+        lines.append("- 形态信号：未发现特殊形态（分页游标/嵌套参数/时间戳等）")
+    lines += [
+        "",
+        "| 业务域 | 工具数 |",
+        "|---|---|",
+    ]
+    for tag in sorted(groups, key=lambda x: -len(groups[x])):
+        lines.append(f"| {tag} | {len(groups[tag])} |")
+    lines.append("")
+
+    for tag in sorted(groups, key=lambda x: -len(groups[x])):
+        lines.append(f"## {tag}（{len(groups[tag])}）")
+        lines.append("")
+        for t in groups[tag]:
+            req = f"  **required={t['required']}**" if t["required"] else ""
+            lines.append(f"- `{t['name']}`{req}")
+            lines.append(f"    - {t['description'][:220]}")
+        lines.append("")
+    return "\n".join(lines)
 
 
 def _pick_demo_tool(tools):
@@ -155,7 +306,7 @@ def _env_prefix(name):
     return s if s else "MCP"
 
 
-def render_config(name, tools, args):
+def render_config(name, tools, args, wrapper=None):
     pre = _env_prefix(name)
     demo = _pick_demo_tool(tools)
     conn = {
@@ -171,6 +322,8 @@ def render_config(name, tools, args):
         conn["请求头"] = {args.company_header or "CompanyId": "{{company_id}}"}
     if args.company_id:
         conn["auth_header"] = "Authorization: Bearer {{token}}"
+    if wrapper:
+        conn["参数包装"] = wrapper   # executor 按此把入参包进对应外壳
 
     doc = {
         "连接": conn,
@@ -184,6 +337,7 @@ def render_config(name, tools, args):
         f"# 系统配置：{name}（mcp_setup 自动生成骨架，{__import__('datetime').datetime.now():%Y-%m-%d %H:%M}）",
         "# =====================================================================",
         "# 用途：给 generic_mcp_executor 提供「连接 + 工具 schema」。",
+        "# 注意：「参数包装」已由脚本自动探测填入，勿手改（除非后端改口径）。",
         "# 生成后请人工补：",
         "#   1. 探针事实注释（ID 参数形态/必填隐藏参数/恒空或报错的工具/真实可用时间窗等）",
         "#   2. 可选块（参考 configs/POS_商品管理.yaml / configs/RetailPOS数据查询.yaml）：",
@@ -238,7 +392,9 @@ def run(args):
     if not tools:
         print("[FAIL] list_tools 返回空（可能鉴权隐藏全部工具）")
         return 2
-    print(f"[OK] list_tools 返回 {len(tools)} 个工具：")
+    wrapper = detect_common_wrapper(raw_tools)
+    print(f"[OK] list_tools 返回 {len(tools)} 个工具"
+          f"（参数外壳: {wrapper or '无（properties 直接是参数）'}）：")
     for t in tools:
         req = f"  required={t['required']}" if t["required"] else ""
         print(f"   - {t['name']}{req}")
@@ -247,9 +403,25 @@ def run(args):
     os.makedirs(SCHEMA_DIR, exist_ok=True)
     schema_path = os.path.join(SCHEMA_DIR, f"{args.name}.json")
     with open(schema_path, "w", encoding="utf-8") as f:
-        json.dump({"name": args.name, "tools": tools}, f,
+        json.dump({"name": args.name, "wrapper": wrapper, "tools": tools}, f,
                   ensure_ascii=False, indent=1)
     print(f"[OK] schema 落盘 -> {os.path.relpath(schema_path, _ROOT)}")
+
+    # 2.1 完整原始 schema（含参数 description）另存一份 <系统>.raw.json。
+    #     生成器从描述里提取「候选枚举值」（很多 MCP 把合法值写在描述而非 enum），
+    #     用于给必填参数生成真实可用的默认值。平铺版丢失了 description，故必须单独存。
+    raw_path = os.path.join(SCHEMA_DIR, f"{args.name}.raw.json")
+    with open(raw_path, "w", encoding="utf-8") as f:
+        json.dump({"name": args.name, "wrapper": wrapper,
+                   "tool_count": len(raw_tools),
+                   "tools": raw_tools}, f, ensure_ascii=False, indent=1)
+    print(f"[OK] 原始 schema 落盘 -> {os.path.relpath(raw_path, _ROOT)}")
+
+    # 2.5 业务域概览（人眼速览，免去每次写分类脚本）
+    overview_path = os.path.join(SCHEMA_DIR, f"{args.name}.overview.md")
+    with open(overview_path, "w", encoding="utf-8") as f:
+        f.write(render_overview(args.name, tools, wrapper, raw_tools))
+    print(f"[OK] 概览落盘 -> {os.path.relpath(overview_path, _ROOT)}")
 
     if args.dry_run:
         print("[dry-run] 未写 .env / config")
@@ -276,7 +448,7 @@ def run(args):
         print("       如需重建请先删除该文件，或手动改 .env 变量")
     else:
         with open(cfg_path, "w", encoding="utf-8") as f:
-            f.write(render_config(args.name, tools, args))
+            f.write(render_config(args.name, tools, args, wrapper))
         print(f"[OK] config 骨架 -> {os.path.relpath(cfg_path, _ROOT)}")
 
     print("\n下一步（人工）:")

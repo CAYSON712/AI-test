@@ -35,6 +35,16 @@ def _allow_destructive():
     return str(os.environ.get("ALLOW_DESTRUCTIVE", "")).strip().lower() in ("1", "true", "yes")
 
 
+def _dryrun_mode():
+    """是否开启「干跑」：把所有写操作的确认位强制为 false（服务端只预览不执行）。
+
+    由环境变量 CONFIRM_DRYRUN=1 显式开启。适用于被测 MCP 自带 confirm 二段式
+    （如 PocketStore）：false=仅预览、true=真正执行。开启后执行器会把参数里的
+    确认位统一覆写为 false，从而零风险地验证「参数/协议/权限」层。
+    """
+    return str(os.environ.get("CONFIRM_DRYRUN", "")).strip().lower() in ("1", "true", "yes")
+
+
 class DirectMcpExecutor(GenericMcpExecutor):
     """直连 MCP：按用例给定的工具+参数直接调用，不经过 LLM 意图/回复。
 
@@ -64,6 +74,13 @@ class DirectMcpExecutor(GenericMcpExecutor):
             tool_params = inp.get("tool_params") or inp.get("params") or {}
         else:
             tool_name, tool_params = "", {}
+        # 干跑：CONFIRM_DRYRUN=1 时把写操作的确认位强制为 false（服务端只预览不执行）。
+        # 确认位参数名由 configs 的「干跑开关参数名」声明（默认 confirm）。
+        if _dryrun_mode() and isinstance(tool_params, dict):
+            _ck = getattr(self.sys, "dryrun_param", "confirm")
+            if _ck in tool_params:
+                tool_params = dict(tool_params)
+                tool_params[_ck] = False
         # 高危用例保护：破坏性写入（delete/batch_update 等）默认跳过，
         # 仅在显式开启 ALLOW_DESTRUCTIVE=1 且确认是隔离测试环境时才执行。
         # 背景：某 MCP 传不存在的 ID 也会真实删掉全量数据，故默认不执行。
@@ -88,7 +105,7 @@ class DirectMcpExecutor(GenericMcpExecutor):
         if not tool_name:
             tool_name = self.sys.cap_tool.get(capability, "")
 
-        mcp_input = json.dumps({"toolParams": tool_params}, ensure_ascii=False)
+        mcp_input = json.dumps({self.sys.param_wrapper: tool_params}, ensure_ascii=False)
         before = after = exists_before = exists_after = None
         try:
             stack, session = await self._session_context()

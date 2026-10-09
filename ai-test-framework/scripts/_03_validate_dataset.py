@@ -102,6 +102,13 @@ DIM_E = None
 # 检查器
 # ---------------------------------------------------------------------------
 class Checker:
+    # 类级默认，保证用 Checker.__new__ 构造（自测场景）时属性也存在
+    param_enums = {}
+    param_bools = set()
+    param_not_bools = set()
+    use_builtin_enums = True
+    _tool_schema_cache = None
+
     def __init__(self, dataset, ability_path, products_path=None, verbose=False):
         self.dataset = load_yaml(dataset)
         self.ability_path = ability_path
@@ -109,6 +116,49 @@ class Checker:
         self.cases = self.dataset.get("用例列表") or []
         self.verbose = verbose
         self.f, self.e, self.w, self.i = [], [], [], []
+        # 本系统 config 的参数取值域（config 优先于内置 PARAM_ENUMS/PARAM_BOOL）
+        self.param_enums, self.param_bools = self._load_param_domains()
+
+    def _load_param_domains(self):
+        """从 configs/<系统>.yaml 读 param_enums / param_bools。
+
+        内置 PARAM_ENUMS 是 POS/RetailPOS 老系统的口径；新系统（如 PocketStore）
+        ID 用 uuid、枚举不同，必须让 config 覆盖，否则会大面积误判。
+        """
+        enums, bools = {}, set()
+        cfg_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "configs")
+        if not os.path.isdir(cfg_dir):
+            return enums, bools
+        sys_name = self.dataset.get("系统") or ""
+        # 按「文件名 stem 是 系统名 的子串」匹配（与 check_config_consistency 同法）
+        cands = []
+        for fn in os.listdir(cfg_dir):
+            if not fn.lower().endswith((".yaml", ".yml")):
+                continue
+            stem = os.path.splitext(fn)[0]
+            if sys_name and (stem in sys_name or sys_name in stem):
+                cands.append(os.path.join(cfg_dir, fn))
+        if not cands:
+            return enums, bools
+        try:
+            cfg = load_yaml(cands[0])
+        except Exception:
+            return enums, bools
+        raw_enums = cfg.get("param_enums") or {}
+        for k, v in raw_enums.items():
+            enums[str(k).lower()] = tuple(v) if isinstance(v, list) else v
+        raw_bools = cfg.get("param_bools") or []
+        bools = {str(x).lower() for x in raw_bools}
+        # param_not_bools：显式「排除」内置布尔假设。内置 PARAM_BOOL 是 POS 口径，
+        # 若新系统某参数名（如 includeXxx/isEnabled）在该系统其实是字符串枚举，
+        # 可在此声明排除，避免被内置布尔表误判（否则布尔表只增不减，无法覆盖）。
+        self.param_not_bools = {str(x).lower() for x in (cfg.get("param_not_bools") or [])}
+        # 一旦系统 config 显式声明了 param_enums，就【完全信任 config】，
+        # 不再叠加内置 POS 口径枚举（内置表是历史遗留、只服务无 config 的老系统）。
+        # 否则新系统里"名字撞上 POS 参数"（type/paymentType/status…）会被陈旧枚举误判。
+        self.use_builtin_enums = not bool(raw_enums)
+        return enums, bools
 
     # -- 输出 --
     def fail(self, msg):
@@ -310,37 +360,79 @@ class Checker:
 
         只判定【值域/类型是否合法】，不判定业务是否存在——
         故本函数用于识别「期望正常执行却传了非法参数」的矛盾用例。
+
+        枚举/布尔取值域来源（优先级从高到低）：
+          1) 本系统 configs/<系统>.yaml 的 param_enums / param_bools
+          2) 内置 PARAM_ENUMS / PARAM_BOOL —— 仅当该系统 config【未声明 param_enums】时生效
+             （内置表是 POS/RetailPOS 历史口径，声明了 config 的新系统一律不叠加，避免误判）。
         """
         bad = []
         if not isinstance(params, dict):
             return bad
         tool = str(tool_name or "").lower()
+        use_builtin = getattr(self, "use_builtin_enums", True)
+        builtin_bool = set(self.PARAM_BOOL) if use_builtin else set()
+        bool_names = (builtin_bool | set(self.param_bools)) - \
+            getattr(self, "param_not_bools", set())
         for k, v in params.items():
             kl = str(k).lower()
             # 1) 布尔型参数：字符串/数字都非法（'1' / 0 / 'abc' 均非 bool）
-            if kl in self.PARAM_BOOL:
+            if kl in bool_names:
                 if not isinstance(v, bool):
                     bad.append(f"{k}={v!r} 非布尔值")
                 continue
-            # 2) 枚举型参数：值必须在白名单内
-            spec = self.PARAM_ENUMS.get(kl)
-            if spec is None:
-                continue
-            if kl == "type":
-                if "menu_product_category" in tool:
-                    allowed = spec["menu_report"]
+            # 2) 枚举型参数：值必须在白名单内（config 优先，其次内置）
+            allowed = self.param_enums.get(kl)
+            if allowed is None:
+                spec = self.PARAM_ENUMS.get(kl) if use_builtin else None
+                if spec is None:
+                    continue
+                if kl == "type":
+                    allowed = spec["menu_report"] if "menu_product_category" in tool \
+                        else spec["product"]
                 else:
-                    allowed = spec["product"]
-            else:
-                allowed = spec
+                    allowed = spec
+            if isinstance(allowed, dict):
+                # 允许 config 用 {tool关键字: [值...]} 细分（如 type）
+                for tk, tv in allowed.items():
+                    if str(tk).lower() in tool:
+                        allowed = tv
+                        break
+                else:
+                    allowed = next(iter(allowed.values()))
             vals = v if isinstance(v, list) else [v]
             for x in vals:
+                # 枚举值为字符串；但若 config 里是布尔枚举（如 isActive: [true,false]）需另判
+                if all(isinstance(e, bool) for e in allowed):
+                    if not isinstance(x, bool) or x not in allowed:
+                        bad.append(f"{k}={x!r} 不在合法枚举 {list(allowed)[:4]}...")
+                    continue
                 if not isinstance(x, str) or x not in allowed:
                     bad.append(f"{k}={x!r} 不在合法枚举 {list(allowed)[:4]}...")
         return bad
 
-    # ID 类参数名（含 id/ids/_id 结尾），值形态：正整数构成的字符串
+    # ID 类参数值形态：正整数串（POS/RetailPOS 系）或 UUID（PocketStore 系，见 _uuid_ok）。
+    # ⚠ 不能只认整数——不同系统 ID 口径不同，硬编码整数会把 UUID 系统全线误判。
     _ID_RE = re.compile(r"\d+$")
+    _UUID_RE = re.compile(
+        r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+        r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+
+    def _id_value_bad(self, s):
+        """判断单个 ID 字符串是否「形态明显非法」（业务不存在不算非法）。
+
+        合法形态只认两种：
+          - UUID（PocketStore 等系统 ID 为 uuid 字符串）
+          - 正整数串（POS/RetailPOS 等系统 ID 为整数）
+        其余（'abc' / '0' / '-1' / '1 OR 1=1' / 空串）一律视为明显非法。
+        """
+        if s == "":
+            return "为空串"
+        if self._UUID_RE.fullmatch(s):
+            return None                       # UUID 形态合法
+        if self._ID_RE.fullmatch(s):
+            return None if int(s) > 0 else "正整数 ID 应为正数"
+        return "非合法 ID 形态"
 
     def _id_params_illegal(self, params):
         """返回「ID 类参数值形态明显非法」的说明列表。
@@ -350,7 +442,8 @@ class Checker:
         A-L2-004 传 ['99999999999999']，都是刻意的非法 ID，期望被拒绝是正确的。
         判定标准（只认「明显非法」，业务上不存在不算非法）：
           - 空串
-          - 非正整数：'0' / '-1' / 'abc' / '1 OR 1=1'
+          - '0' / '-1' / 'abc' / '1 OR 1=1'
+          - 兼容 UUID（PocketStore 等系统 ID 为 uuid 字符串）
         """
         bad = []
         if not isinstance(params, dict):
@@ -366,11 +459,9 @@ class Checker:
                 if not isinstance(x, str):
                     bad.append(f"{k}={x!r} 非字符串")
                     continue
-                s = x.strip()
-                if s == "":
-                    bad.append(f"{k} 为空串")
-                elif not self._ID_RE.match(s) or int(s) <= 0:
-                    bad.append(f"{k}={x!r} 非正整数 ID")
+                why = self._id_value_bad(x.strip())
+                if why:
+                    bad.append(f"{k}={x!r} {why}")
         return bad
 
     def check_intent_param_consistency(self):
@@ -396,8 +487,9 @@ class Checker:
             #   否则会把有意的鲁棒性测试全打成矛盾用例。
             #   实测误报源：A-L1-116「容错」传 merchantIds=['0'] + unknown_param_malformed；
             #   D-L1-004「容错」传 _invalid:'' —— 都是正确的容错用例。
-            if any(k in dim for k in ("容错", "异常", "鲁棒", "健壮")) or \
-                    any(t in tags for t in ("容错", "鲁棒", "畸形", "参数缺失",
+            if any(k in dim for k in ("容错", "异常", "鲁棒", "健壮", "安全边界",
+                                      "写入安全")) or \
+                    any(t in tags for t in ("容错", "异常", "鲁棒", "畸形", "参数缺失",
                                             "注入对抗", "数值变异", "类型错配")):
                 continue
             # 生成器专为「容错/畸形」注入的占位参数名，本身即非业务参数，跳过
@@ -485,7 +577,10 @@ class Checker:
                     if isinstance(t, dict) and t.get("name")}
 
         # 1) 能力目录引用的工具必须在 configs 声明
-        missing = sorted({tool_of[n] for n in names if tool_of.get(n)}
+        #    豁免「*」：元能力（类型: meta，如「列出可用工具」「工具描述」）走
+        #    MCP 协议层 tools/list，不对应任何具体工具，是合法的。
+        missing = sorted({tool_of[n] for n in names
+                          if tool_of.get(n) and tool_of.get(n) != "*"}
                          - declared) if declared else []
         for t in missing:
             self.error(f"能力目录引用了 configs 未声明的工具「{t}」"
@@ -551,6 +646,152 @@ class Checker:
         if not pe and not (cfg.get("param_bools") or []):
             self.warn(f"{os.path.basename(cfg_path)} 未声明 param_enums/param_bools"
                       f"——枚举参数不会做跨域收敛（新增系统建议补上）")
+
+    # ---- 参数「真实性/完整性」硬校验（2026-10-08 新增）----
+    # 背景：PocketStore 首轮干跑 147 条失分，抽查发现**全是数据集问题**：
+    #   ① 用编造/不存在的实体 ID 跑「正常执行」用例（服务端返回 data is null）
+    #   ② 枚举值跨工具污染（set_store_open_status 被塞 status='OnSale'，
+    #      而该工具只接受 open/closed）
+    #   ③ 必填参数漏生成（batch_item_price 漏 merchFoodIds）
+    #   三者都能通过旧校验（旧校验只看「参数名是否属于该工具」），带着病出门污染结果。
+    # 本检查把它们拦在门禁处：期望正常执行(block=false)的用例必须「参数齐全 + 值合法」。
+    # 实体真实存在性无法离线确认，故此处只查「形态明显是占位/编造」的 ID（见 _fake_id_reason）。
+    _FAKE_ID_PAT = re.compile(r"^(0+|1+|9+|123+|1234567890+|00000000-0000-0000-0000-000000000000)$")
+
+    def _tool_schema(self):
+        """读 configs 的 mcp_tools -> {工具名: (params集合, required集合)}。"""
+        if getattr(self, "_tool_schema_cache", None) is not None:
+            return self._tool_schema_cache
+        cfg_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "configs")
+        sys_name = self.dataset.get("系统") or ""
+        norm = lambda s: str(s or "").replace("_", "").replace(" ", "").replace("-", "").lower()
+        best = None
+        if os.path.isdir(cfg_dir):
+            for f in sorted(os.listdir(cfg_dir)):
+                if not f.endswith(".yaml"):
+                    continue
+                p = os.path.join(cfg_dir, f)
+                try:
+                    d = load_yaml(p) or {}
+                except Exception:
+                    continue
+                fn = norm(os.path.splitext(f)[0])
+                if norm(d.get("系统")) == norm(sys_name) or \
+                        (fn and sys_name and (fn in norm(sys_name) or norm(sys_name) in fn)):
+                    best = d
+                    break
+        sch = {}
+        for t in (best or {}).get("mcp_tools") or []:
+            if isinstance(t, dict) and t.get("name"):
+                sch[t["name"]] = (set(t.get("params") or []),
+                                  set(t.get("required") or []))
+        self._tool_schema_cache = (sch, best or {})
+        return self._tool_schema_cache
+
+    def _fake_id_reason(self, v):
+        """判断 ID 值是否「明显是占位/编造」（不是合法 uuid，也不是像样的整数）。"""
+        if not isinstance(v, str):
+            return None
+        s = v.strip()
+        if s == "":
+            return "空串"
+        if self._UUID_RE.fullmatch(s):
+            return None                       # 合法 uuid
+        if self._FAKE_ID_PAT.match(s):
+            return "占位 ID（如全 0/全 9/连续数字）"
+        if re.fullmatch(r"\d{1,6}", s):
+            return "过短的数字 ID（疑占位）"
+        return None
+
+    def check_param_realism(self):
+        """期望正常执行(block=false)的用例：必填齐全 + 枚举按工具合法 + ID 非占位。"""
+        sch, cfg = self._tool_schema()
+        if not sch:
+            return
+        enums = cfg.get("param_enums") or {}
+        self.real_param_issues = {"required": [], "enum": [], "fake_id": []}
+        for i, c in enumerate(self.cases, 1):
+            uid = c.get("用例ID", f"#{i}")
+            expect = c.get("期望") or {}
+            if not isinstance(expect, dict) or expect.get("block") is not False:
+                continue                       # 只管「期望成功」的用例
+            # 豁免：容错/异常/鲁棒/边界类「正常执行」用例——它们刻意传非法值
+            #   （如 merchId='0'）以验证不崩溃，是合法用例，不是数据集缺陷。
+            dim = c.get("维度") or ""
+            tags = c.get("标签") or []
+            if any(k in dim for k in ("容错", "异常", "鲁棒", "健壮", "安全边界", "写入安全")) \
+                    or any(t in tags for t in ("容错", "异常", "鲁棒", "畸形", "边界",
+                                               "参数缺失", "注入对抗", "数值变异",
+                                               "类型错配", "越权")):
+                continue
+            inp = c.get("输入") or {}
+            if not isinstance(inp, dict):
+                continue
+            tool = inp.get("tool_name")
+            tp = inp.get("tool_params") or {}
+            if tool not in sch or not isinstance(tp, dict):
+                continue
+            names, required = sch[tool]
+            # 1) 必填齐全（豁免刻意注入的占位参数）
+            missing = sorted(required - set(tp.keys()))
+            if missing:
+                self.real_param_issues["required"].append(f"{uid}:{tool} 缺 {missing}")
+                continue
+            # 2) 枚举按【该工具】的合法域校验
+            for k, v in tp.items():
+                kl = str(k).lower()
+                allowed = self._enum_for(kl, tool, enums)
+                if not allowed:
+                    continue
+                vals = v if isinstance(v, list) else [v]
+                for x in vals:
+                    if isinstance(allowed[0], bool):
+                        if not isinstance(x, bool):
+                            self.real_param_issues["enum"].append(
+                                f"{uid}:{tool}.{k}={x!r} 应为布尔")
+                    elif str(x) not in [str(a) for a in allowed]:
+                        self.real_param_issues["enum"].append(
+                            f"{uid}:{tool}.{k}={x!r} 不在合法枚举 {list(allowed)[:4]}")
+            # 3) ID 非占位
+            for k, v in tp.items():
+                kl = str(k).lower()
+                if not (kl.endswith("id") or kl.endswith("ids")):
+                    continue
+                vals = v if isinstance(v, list) else [v]
+                for x in vals:
+                    why = self._fake_id_reason(x)
+                    if why:
+                        self.real_param_issues["fake_id"].append(f"{uid}:{tool}.{k}={x!r} {why}")
+        # 报错指引：区分「补数据」与「改期望」，避免误以为改 block=true 就行。
+        #   这类用例原意是「测正常能力」（调用正确性/返回处理等），
+        #   若改成 block=true 就变成测「异常拒绝」，测的维度就错了。
+        #   正确处置：补齐参数（能力目录对齐 schema required）或用真实实体值。
+        _HINT = ("—— 这些用例原意是「测正常能力」，block=false 是对的："
+                 "请【补参数/换真值】而非改期望。"
+                 "若确实想测「参数缺失被拒绝」，应另建一条 block=true 的异常用例")
+        for kind, label in (("required", "必填参数缺失"), ("enum", "枚举值非法"),
+                            ("fake_id", "占位/编造 ID")):
+            items = self.real_param_issues[kind]
+            if items:
+                self.error(
+                    f"{label}（期望正常执行却不可行，{len(items)} 处）: "
+                    f"{'; '.join(items[:5])}"
+                    f"{' …' if len(items) > 5 else ''} {_HINT}")
+
+    def _enum_for(self, param_lower, tool, enums):
+        """按参数名 + 工具名解析合法枚举（支持 config 的 {tools,values} 细化）。"""
+        spec = enums.get(param_lower)
+        if spec is None:
+            return None
+        if isinstance(spec, list) and spec and isinstance(spec[0], dict):
+            tl = str(tool or "").lower()
+            for r in spec:
+                tset = [str(x).lower() for x in (r.get("tools") or [])]
+                if not tset or tl in tset:
+                    return list(r.get("values") or [])
+            return None
+        return list(spec) if isinstance(spec, list) else None
 
     def check_dup(self):
         # 判定键加入「维度」：不同维度考察点不同，属有效覆盖而非重复；
@@ -642,6 +883,7 @@ class Checker:
         self.check_ids()
         self.check_fields(names, tools, tool_of)
         self.check_config_consistency(names, tools, tool_of)
+        self.check_param_realism()
         self.check_block_semantic()
         self.check_intent_param_consistency()
         self.check_sample_extra()

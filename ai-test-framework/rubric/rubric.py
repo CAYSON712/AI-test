@@ -14,6 +14,43 @@ import re
 from collections import defaultdict
 from . import semantic_verify
 
+
+def expected_block_hint(case):
+    """用例是否「期望拦截/拒绝」（block=true）。"""
+    exp = case.get("期望") if isinstance(case, dict) else None
+    return bool(isinstance(exp, dict) and exp.get("block"))
+
+
+def _preview_ok(output):
+    """判断 output 是否为「干跑成功」（服务端只预览、未执行）。
+
+    适用被测 MCP 自带 confirm 二段式（如 PocketStore）：CONFIRM_DRYRUN=1 时
+    执行器把 confirm 强制为 false，服务端返回 code=0 且 data.isPreview=true。
+    这代表「参数被接受」，是期望成功用例通过的有效证据。
+    """
+    if not isinstance(output, dict):
+        return False
+    if output.get("biz_error") or output.get("error"):
+        return False
+    txt = output.get("output")
+    if not isinstance(txt, str):
+        return False
+    try:
+        d = json.loads(txt)
+    except Exception:
+        return False
+    if not isinstance(d, dict):
+        return False
+    code = d.get("code")
+    data = d.get("data")
+    is_ok_code = code in (0, 200) or code is None
+    is_preview = isinstance(data, dict) and data.get("isPreview") is True
+    if is_preview and is_ok_code:
+        return True
+    # 兜底：文案里明确写了 Preview 且 code 正常
+    msg = str(d.get("msg") or "")
+    return is_ok_code and "preview" in msg.lower()
+
 # 5 分制评分
 SCORE_LABELS = {
     5: "优秀",
@@ -282,7 +319,11 @@ class RubricJudger:
                  "not_found", "not found", "无实体id", "id解析", "实体不存在", "无法解析",
                  "id列表", "参数缺失", "缺少必填", "对象不存在",
                  "不存在或已删除", "does not exist", "invalid id", "无效id", "找不到",
-                 "无数据", "no data")
+                 "无数据", "no data",
+                 # PocketStore 等系统「实体不存在」的报错文案（2026-10-08 补）：
+                 #   item_update(不存在的 itemId) → "Item xxx data is null"
+                 #   这类是「用例引用了不存在的实体」= 数据集问题，非 AI 决策错。
+                 "data is null", "is null", "must contain at least one")
         env_kw = ("连接", "超时", "timeout", "token", "网络", "exception", "connect",
                   "connection", "refused",
                   # ⚠ 匹配前会把文本 lower + 去空格（见下方 _norm_sp），
@@ -417,9 +458,6 @@ class RubricJudger:
 
         UNKNOWN_PAT = ("unknown_", "_unknown", "unknownparam", "nonexistent",
                        "notexist", "不存在的参数")
-        # 其他工具的典型参数：出现在「不属于它的工具」上即为多余字段。
-        # 注意：只列出语义上明确"某个工具专属"的参数，避免误伤通用参数。
-        FOREIGN = ("isenabled",)      # set_device_terminal_unattended_mode 专属
         tool = str(output.get("tool") or "").lower()
         for k in params:
             kl = str(k).lower()
@@ -427,10 +465,73 @@ class RubricJudger:
                 return True
             if kl.startswith("_"):          # 生成器注入的畸形占位参数
                 return True
-            # isEnabled 只属于写工具；出现在其他工具上即"不属于该工具的字段"
-            if kl in FOREIGN and "set_device_terminal_unattended_mode" not in tool:
+            # 「属于其他工具的字段」：通用判据——该参数【不属于本工具】，
+            # 却【声明在别的工具 schema 里】。schema 来自 configs/*.yaml 的 mcp_tools，
+            # 不写死任何具体工具名/参数名（历史实现写死 isenabled + 某工具名，每接
+            # 一个新系统都要改）。
+            if RubricJudger._param_belongs_to_other_tool(tool, kl, params):
                 return True
         return False
+
+    _SCHEMA_PARAM_CACHE = None
+
+    @classmethod
+    def _tool_param_index(cls):
+        """扫描 configs/*.yaml 的 mcp_tools，建立
+        {全小写参数名: {所属工具名集合}} 索引 + {工具名: 参数集合}。
+
+        用于判断「某参数是否属于其他工具」——通用、跨系统，无需硬编码。
+        """
+        if cls._SCHEMA_PARAM_CACHE is not None:
+            return cls._SCHEMA_PARAM_CACHE
+        import glob
+        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cfg_dir = os.path.join(here, "configs")
+        param_owner = {}      # 参数名 -> {工具名...}
+        tool_params = {}      # 工具名 -> {参数名...}
+        try:
+            import yaml as _yaml
+            for fp in glob.glob(os.path.join(cfg_dir, "*.yaml")):
+                try:
+                    doc = _yaml.safe_load(open(fp, encoding="utf-8")) or {}
+                except Exception:
+                    continue
+                for t in doc.get("mcp_tools") or []:
+                    if not isinstance(t, dict) or not t.get("name"):
+                        continue
+                    tn = str(t["name"]).lower()
+                    ps = {str(p).lower() for p in (t.get("params") or [])}
+                    tool_params[tn] = ps
+                    for p in ps:
+                        param_owner.setdefault(p, set()).add(tn)
+        except Exception:
+            pass
+        cls._SCHEMA_PARAM_CACHE = (param_owner, tool_params)
+        return cls._SCHEMA_PARAM_CACHE
+
+    @classmethod
+    def _param_belongs_to_other_tool(cls, tool, param_lower, params):
+        """该参数是否「不属于本工具、但属于别的工具」→ 期望不成立（多余字段）。
+
+        仅当能确证「本工具 schema 里没有此参数、且别的工具有」时才判 True；
+        拿不到 schema 时返回 False（宁可不判，也不误伤）。
+        """
+        param_owner, tool_params = cls._tool_param_index()
+        if not tool_params:
+            return False
+        owners = param_owner.get(param_lower)
+        if not owners:
+            return False            # 该参数不属于任何已知工具 → 不做判断
+        # 本工具的 schema 参数集（兼容工具名大小写/子串匹配）
+        mine = set()
+        for tn, ps in tool_params.items():
+            if tn == tool or tn in tool or tool in tn:
+                mine |= ps
+        if not mine:
+            return False            # 认不出本工具 schema → 不做判断
+        # 参数不属于本工具，却属于其他工具 → 多余字段
+        return param_lower not in mine and any(
+            not (tn == tool or tn in tool or tool in tn) for tn in owners)
 
     def _get_dimensions(self, req_type):
         """取某个需求类型的维度 Rubric。
@@ -547,6 +648,13 @@ class RubricJudger:
                 return None, False, (f"影响范围对账基线为 0 条（快照工具 "
                                      f"{imp.get('快照工具')} 未取到数据），无法判定")
             return None, False, "未提供影响范围对账数据（快照工具不可用或用例被跳过）"
+        # 0.5 干跑（dry-run）语义：被测 MCP 带 confirm 二段式时，CONFIRM_DRYRUN=1
+        #     会把写操作强制 confirm=false，服务端返回 code=0 + isPreview:true（仅预览）。
+        #     这是「参数被接受」的成功证明，对期望成功(block=false)的用例应判通过，
+        #     否则会被 is_biz_fail 误伤成业务失败（PocketStore 首轮干跑误判根因之一）。
+        if not expected_block_hint(case):
+            if _preview_ok(output) and dim not in ("写入安全边界",):
+                return 5, True, "干跑成功：服务端返回预览(isPreview)，参数被接受且未改动数据"
         is_biz_fail = getattr(result, "status", "") != "success" or (
             isinstance(output, dict) and output.get("biz_error")
         )

@@ -72,7 +72,7 @@
       - 能力: "查询员工考勤记录"
         操作类型: "查询"
         layer: "L1"
-        参数: [merchantIds, merchantStaffIds, startTime, endTime, page, size]
+        参数: [merchantId, merchantStaffIds, startAt, endAt, page, size]
         工具: query_staff_attendances
         口语问法:
           - "查一下考勤记录"
@@ -83,13 +83,13 @@
         负向场景:
           - 输入: "查询非授权店铺的考勤"
             工具参数:
-              merchantIds: ["99999999999999999"]
+              merchantId: "99999999999999999"
             成功标准:
               - 模式: 拒绝
       - 能力: "按员工查考勤"
         操作类型: "查询"
         layer: "L1"
-        参数: [merchantIds, merchantStaffIds]
+        参数: [merchantId, merchantStaffIds]
         工具: query_staff_attendances
         口语问法:
           - "Boss 的打卡记录"

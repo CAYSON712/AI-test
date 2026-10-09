@@ -1,0 +1,52 @@
+# =====================================================================
+# 实体清单：POS 数据报表（POS(proton) MCP — pos-test-mcp）
+# =====================================================================
+# 来源：A_POS数据报表.yaml 手工精编数据集里的真实值（2026-09 探针）
+# 公司：cayson自动化公司 12599656434959365
+# 店铺：自动化店铺7 12600071176193029（Auto test store7，洛杉矶时区）
+# 时区：America/Los_Angeles（PDT=UTC-7 / PST=UTC-8）
+# 归属日：报表 date 按门店本地自然日切分（带 05:00:00+00:00 标记 = PDT 00:00）
+#
+# 注意：所有 ID 一律字符串；工具入参统一 {toolParams:{...}}。
+# 公共字段冗余：companyId/merchantId/relativePeriod/startAt/endAt/
+#   orderStatus/paymentType/sortField/sortDirection/limit 挂到所有实体上，
+#   保证任意能力回退都能填出合法报表参数。
+# =====================================================================
+实体清单:
+  - 名称: "cayson自动化公司"
+    id: "12599656434959365"
+    companyId: "12599656434959365"
+    companyIds: ["12599656434959365"]
+    merchantId: "12600071176193029"
+    merchantIds: ["12600071176193029"]
+    relativePeriod: "Today"
+    startAt: "2026-09-01"
+    endAt: "2026-09-02"
+    sortDirection: "Descending"
+    sortField: "Date"
+    limit: 100
+
+  - 名称: "自动化店铺7"
+    id: "12600071176193029"
+    merchantId: "12600071176193029"
+    merchantIds: ["12600071176193029"]
+    companyId: "12599656434959365"
+    relativePeriod: "Today"
+    startAt: "2026-09-01"
+    endAt: "2026-09-02"
+    sortDirection: "Descending"
+    sortField: "Date"
+    limit: 100
+
+  - 名称: "订单样本"
+    id: "13527517003138069"
+    orderId: "13527517003138069"
+    orderIds: ["13527517003138069"]
+    merchantId: "12600071176193029"
+    merchantIds: ["12600071176193029"]
+    companyId: "12599656434959365"
+    orderStatus: "Completed"
+    paymentType: "CreditCard"
+    startAt: "2026-09-01"
+    endAt: "2026-09-02"
+    limit: 100

@@ -28,6 +28,12 @@
 实体名参数名: "name"
 连接演示工具: "query_merchants"
 
+# ---- 参数取值域（避免生成器按参数名跨域取错值）----
+# type：仅 query_datax_menu_product_category_reports 使用，合法值 Menu/Product/Category。
+#   不声明会被生成器从实体 paymentType(CreditCard) 误取 → 服务端拒绝（2026-10-08 修）。
+param_enums:
+  type: [Menu, Product, Category]
+
 # ---- MCP 工具 schema（DataX 三报表 + 订单商品明细）----
 mcp_tools:
   - name: query_datax_total_reports

@@ -93,13 +93,13 @@
       - 能力: "批量改价"
         操作类型: "变更数值"
         layer: "L2"
-        参数: [productIds, prices]
+        参数: [productIds, price]
         工具: update_products_by_ids
         成功标准:
           - 模式: db
             校验工具: query_products_by_ids
             字段: price
-            期望: "{prices}"
+            期望: "{price}"
 
   - 分组: "名称修改"
     说明: "修改商品中/英文名称"
@@ -121,17 +121,17 @@
       - 能力: "修改商品英文名称"
         操作类型: "变更数值"
         layer: "L1"
-        参数: [productIds, name_en]
+        参数: [productIds, nameEn]
         工具: update_products_by_ids
         成功标准:
           - 模式: db
             校验工具: query_products_by_ids
             字段: nameEn
-            期望: "{name_en}"
+            期望: "{nameEn}"
       - 能力: "批量修改名称"
         操作类型: "变更数值"
         layer: "L2"
-        参数: [productIds, names]
+        参数: [productIds, name]
         工具: update_products_by_ids
         成功标准:
           - 模式: db
@@ -145,7 +145,7 @@
       - 能力: "新增商品"
         操作类型: "创建"
         layer: "L1"
-        参数: [merchantId, name, price, categoryId]
+        参数: [merchantId, products]
         工具: batch_insert_products
         成功标准:
           - 模式: db
@@ -223,7 +223,7 @@
       - 能力: "按条件筛选商品"
         操作类型: "查询"
         layer: "L2"
-        参数: [categoryId, status]
+        参数: [categoryIds, status]
         工具: query_products_by_filter
         成功标准:
           - 模式: 语义
@@ -231,7 +231,7 @@
       - 能力: "查询商品详情"
         操作类型: "查询"
         layer: "L1"
-        参数: [productId]
+        参数: [productIds]
         工具: query_product_detail_by_id
         成功标准:
           - 模式: 语义
@@ -239,7 +239,7 @@
       - 能力: "查询菜单"
         操作类型: "查询"
         layer: "L1"
-        参数: [merchantId, status, saleChannel]
+        参数: [merchantIds, status, saleChannel]
         工具: query_menus
         成功标准:
           - 模式: 语义
@@ -247,7 +247,7 @@
       - 能力: "查询分类"
         操作类型: "查询"
         layer: "L1"
-        参数: [merchantId, name]
+        参数: [merchantIds, name]
         工具: query_categories
         成功标准:
           - 模式: 语义
@@ -259,7 +259,7 @@
       - 能力: "查询公司"
         操作类型: "查询"
         layer: "L1"
-        参数: [companyId]
+        参数: [companyIds]
         工具: query_companies
         成功标准:
           - 模式: 语义
@@ -287,7 +287,7 @@
       - 能力: "越权操作"
         操作类型: "变更状态"
         layer: "L3"
-        参数: [merchantId]
+        参数: [merchantIds]
         工具: update_products_by_ids
         成功标准:
           - 模式: 拒绝
