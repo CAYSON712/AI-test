@@ -325,7 +325,22 @@ class RubricJudger:
                  # PocketStore 等系统「实体不存在」的报错文案（2026-10-08 补）：
                  #   item_update(不存在的 itemId) → "Item xxx data is null"
                  #   这类是「用例引用了不存在的实体」= 数据集问题，非 AI 决策错。
-                 "data is null", "is null", "must contain at least one")
+                 "data is null", "is null", "must contain at least one",
+                 # 参数「类型/格式」被服务端拒绝（2026-10-09 补）：
+                 #   PocketStore 发 "The JSON value could not be converted to
+                 #   System.Int32/Decimal/List... Path: $.thresholdAmount" —— 说明用例
+                 #   给该参数喂了错误类型（如该传 int 传了 str）= 数据集问题，非 AI 决策错。
+                 "could not be converted", "json value", "deserialize",
+                 "cannot convert", "system.int", "system.decimal",
+                 "系统默认值", "类型转换", "convert to",
+                 # 业务约束被拒绝（2026-10-09 补）：如 "EndDate must be after StartDate"
+                 #   —— 用例给的时间区间非法 = 数据集问题。
+                 "must be after", "must be greater", "must be later", "must be before",
+                 "should be after", "date range", "时间范围", "日期区间",
+                 # 互斥/择一约束（2026-10-09 补）：如 add_report_subscription 要求
+                 #   "At least one report type (IsSalesReport or IsPayoutReport) must be
+                 #   enabled" —— 用例把两个开关都关 = 数据集参数组合非法。
+                 "at least one", "must be enabled", "至少一个", "至少需要", "至少启用")
         env_kw = ("连接", "超时", "timeout", "token", "网络", "exception", "connect",
                   "connection", "refused",
                   # ⚠ 匹配前会把文本 lower + 去空格（见下方 _norm_sp），
@@ -337,7 +352,12 @@ class RubricJudger:
                   # 转换失败（上游返回 HTML 而非 JSON）——属环境，非 AI 决策错。
                   "unknown error", "openapi", "contenttype", "text/html",
                   "auto mart api", "automat api", "50001",
-                  "上游", "upstream", "服务端错误", "server error", "unexpected")
+                  "上游", "upstream", "服务端错误", "server error", "unexpected",
+                  # 服务端限流（2026-10-09 补）：连续快速调用触发 "Write operation
+                  #   rate limit exceeded" / HTTP 429 —— 这是服务端/环境的保护机制，
+                  #   不是 AI 系统做错，也不该算数据集问题 → 归 env（提给运维/调整节奏）。
+                  "rate limit", "ratelimit", "too many requests", "429",
+                  "限流", "请求过于频繁", "throttl")
 
         # ⚠ 环境关键词只允许匹配「错误文本」，绝不能匹配「调用参数」。
         # 历史缺陷（2026-09-17）：detail 里含 input 的 JSON（其中就有工具名），

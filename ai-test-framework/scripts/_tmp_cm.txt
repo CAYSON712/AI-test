@@ -1,0 +1,13 @@
+修正失分归因：识别限流(env)与类型/约束错(dataset)
+
+背景：PocketStore 干跑 113 条失分被误归因「ai_system 88」，存入 raw_response 后
+离线核对发现真实原因：429 限流 60 条、参数类型/业务约束 53 条，真正 ai_system 为 0。
+
+- env_kw 补限流特征：rate limit / too many requests / 429 / 限流 / throttl
+  → 连续快速调用触发的服务端保护机制，属环境（提运维/调整节奏），非 AI 系统做错。
+- ds_kw 补数据类型/约束特征：
+  · could not be converted / json value / system.int / system.decimal（参数类型错）
+  · must be after / must be greater / date range（日期区间非法）
+  · at least one / must be enabled（择一约束未满足）
+  → 均为用例参数缺陷，归 dataset（提测试修数据）。
+- 离线重推导：ai_system 88 → 0，env 60 / dataset 53。
