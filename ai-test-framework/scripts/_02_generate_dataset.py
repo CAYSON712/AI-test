@@ -274,6 +274,9 @@ def _op_of(cap):
 # 避免 C 类 20 个维度全选中第一个查询能力（能力扎堆）或复用同一实体。
 _PICK_ROTATE = None   # {"queue": [cap...], "cursor": int, "used": set()}
 _ENTITY_ROTATE = {"cursor": 0}
+# 当前实体全集：由 build() 设定，供 _fill_params 做「跨层参数」取值
+# （如 menu_bind_categories 的 menuId 取菜单实体、categoryIds 取分类实体）。
+_CURRENT_POOL = None
 
 
 def _pick_cap(abilities, op=None, not_op=None, name_kw=None, exclude=()):
@@ -667,17 +670,57 @@ def _default_param_value(param, cap):
     return pl.capitalize() if pl else "1"
 
 
-def _fill_params(cap, e, overrides=None):
+def _layer_of_param(param):
+    """按参数名判断它属于哪一层实体（menu/category/product/store/company）。
+
+    用于「一个能力同时含两个不同层级 ID」时，各 ID 从各自层级实体取值。
+    如 menu_bind_categories 的参数 [menuId, categoryIds]：menuId 取菜单实体、
+    categoryIds 取分类实体——否则整条用例都用一个实体，两个 ID 变成同一个值
+    （PocketStore menu_bind_categories 报错的根因）。
+    """
+    pl = str(param).lower()
+    if "menuid" in pl or "menus" in pl:
+        return "menu"
+    if "categoryid" in pl or "category" in pl:
+        return "category"
+    if any(k in pl for k in ("itemid", "items", "productid", "skuid", "goodsid", "dishid")):
+        return "product"
+    if any(k in pl for k in ("merchid", "storeid", "shopid", "merchantid", "merchmanagerid")):
+        return "store"
+    if "companyid" in pl:
+        return "company"
+    return None
+
+
+def _fill_params(cap, e, overrides=None, pool=None):
     """按能力目录声明的「参数」字段从实体生成参数值（数据驱动，不写死字段名）。
 
     覆盖能力目录里写死的操作参数（如 {entityIds, price} → 从实体取 id/price）。
     overrides 里的值优先（用于边界/变异等特殊值）。
 
+    pool：可选实体全集。跨层能力（参数含两个不同层级 ID，如 menuId+categoryIds）
+    时，按各参数的层级从 pool 里取对应层级实体，避免两个 ID 取成同一个值。
+
     生成后按参数名做取值域收敛（_coerce_param）：枚举白名单校验 + 布尔型纠正 +
     互斥参数去重，避免实体清单跨域冗余导致非法参数（2026-09-17 事故）。
     """
     params = list(cap.get("参数") or [])
-    tp = {p: _param_value(p, e) for p in params}
+    if pool is None:
+        pool = _CURRENT_POOL          # 由 build() 设定的当前实体全集（跨层取值用）
+    tp = {}
+    for p in params:
+        src = e
+        if pool:
+            _pl = _layer_of_param(p)
+            # 找到 pool 里该层级的实体（其身份键与自身 id 对齐）
+            if _pl:
+                _keys = _ENTITY_ROLE_KEYS.get(_pl, [])
+                _keys = _keys if isinstance(_keys, list) else [_keys]
+                cand = [x for x in pool if any(str(x.get(k)) == str(x.get("id"))
+                                               for k in _keys)]
+                if cand:
+                    src = cand[0]
+        tp[p] = _param_value(p, src)
     if overrides:
         tp.update(overrides)
     tp = {p: _coerce_param(p, v, cap) for p, v in tp.items()}
@@ -1913,9 +1956,10 @@ def build_l1(products, abilities, req_type):
     if not products:
         return []
     # 每次生成重建能力/实体轮换状态：让各维度生成器自动铺开到不同能力/实体
-    global _PICK_ROTATE, _ENTITY_ROTATE
+    global _PICK_ROTATE, _ENTITY_ROTATE, _CURRENT_POOL
     _PICK_ROTATE = {"queue": list(abilities), "cursor": 0, "used": set()}
     _ENTITY_ROTATE = {"cursor": 0}
+    _CURRENT_POOL = products       # 跨层参数取值用（menuId 取菜单实体 / categoryIds 取分类实体）
     P = products
     rng = random.Random(20260813)
     cases = []
@@ -2170,6 +2214,8 @@ def build_a(products, abilities, req_type):
     if not abilities:
         return []
     P = products or []
+    global _CURRENT_POOL
+    _CURRENT_POOL = P        # 跨层参数取值用
     cases = []
     used_idx = 0
     def domain(c):
@@ -2477,6 +2523,8 @@ def build_d(products, abilities, req_type):
     if not abilities:
         return []
     P = products or []
+    global _CURRENT_POOL
+    _CURRENT_POOL = P        # 跨层参数取值用
     cases = []
     used_idx = 0
 

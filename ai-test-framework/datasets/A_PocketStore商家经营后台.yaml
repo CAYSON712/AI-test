@@ -75,9 +75,9 @@
     block: true
     semantic:
       contains:
-      - 权限拒绝
-      - 拒绝
       - 无权限
+      - 拒绝
+      - 权限拒绝
       - 错误
       any_of: true
   标签:
@@ -626,7 +626,7 @@
   输入:
     tool_name: item_detail
     tool_params: &id026
-      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 查询商品详情
     params: *id026
@@ -693,9 +693,9 @@
     block: true
     semantic:
       contains:
-      - 权限拒绝
-      - 拒绝
       - 无权限
+      - 拒绝
+      - 权限拒绝
       - 错误
       any_of: true
   标签:
@@ -708,7 +708,7 @@
   输入:
     tool_name: item_detail
     tool_params: &id029
-      itemId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 查询商品详情
     params: *id029
@@ -805,7 +805,7 @@
   输入:
     tool_name: item_update
     tool_params: &id033
-      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       newName: 测试订单
       price: '10.00'
   期望:
@@ -868,7 +868,7 @@
   输入:
     tool_name: item_update
     tool_params: &id035
-      itemId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       newName: 商品
       price: '10.00'
   期望:
@@ -947,7 +947,7 @@
     tool_name: item_delete
     tool_params: &id038
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      itemId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 删除商品
     params: *id038
@@ -963,7 +963,7 @@
   输入:
     tool_name: item_update_stock
     tool_params: &id039
-      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: 99999
   期望:
     intent: 修改商品库存
@@ -1023,7 +1023,7 @@
   输入:
     tool_name: item_update_stock
     tool_params: &id041
-      itemId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: 99999
   期望:
     intent: 修改商品库存
@@ -1267,7 +1267,7 @@
   输入:
     tool_name: item_bind_category
     tool_params: &id051
-      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       categoryIds: &id052
       - d2de8117-56ca-42dd-8406-eb5237756f32
   期望:
@@ -1325,9 +1325,8 @@
   输入:
     tool_name: item_bind_category
     tool_params: &id054
-      itemId: 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
-      categoryIds: &id072
-      - 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
+      categoryIds: *id052
   期望:
     intent: 商品绑定分类
     params: *id054
@@ -1470,7 +1469,7 @@
   输入:
     tool_name: menu_detail
     tool_params: &id060
-      menuId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 查询菜单详情
     params: *id060
@@ -1617,7 +1616,7 @@
   输入:
     tool_name: menu_publish
     tool_params: &id066
-      menuId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 发布菜单
     params: *id066
@@ -1689,7 +1688,7 @@
   输入:
     tool_name: menu_delete
     tool_params: &id069
-      menuId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 删除菜单
     params: *id069
@@ -1705,7 +1704,7 @@
   输入:
     tool_name: menu_bind_categories
     tool_params: &id070
-      menuId: d2de8117-56ca-42dd-8406-eb5237756f32
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       categoryIds: *id052
   期望:
     intent: 菜单绑定分类
@@ -1761,12 +1760,12 @@
   层: L1
   输入:
     tool_name: menu_bind_categories
-    tool_params: &id073
-      menuId: 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
-      categoryIds: *id072
+    tool_params: &id072
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+      categoryIds: *id052
   期望:
     intent: 菜单绑定分类
-    params: *id073
+    params: *id072
     output: 返回结构化结果
     block: false
   标签:
@@ -1777,11 +1776,11 @@
   层: L1
   输入:
     tool_name: category_list
-    tool_params: &id074
+    tool_params: &id073
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询分类列表
-    params: *id074
+    params: *id073
     output: 工具调用成功
     block: false
   标签:
@@ -1792,10 +1791,10 @@
   层: L1
   输入:
     tool_name: category_list
-    tool_params: &id075 {}
+    tool_params: &id074 {}
   期望:
     intent: 查询分类列表
-    params: *id075
+    params: *id074
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -1815,7 +1814,7 @@
       merchId: '0'
   期望:
     intent: 查询分类列表
-    params: *id074
+    params: *id073
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -1831,11 +1830,11 @@
   层: L1
   输入:
     tool_name: category_list
-    tool_params: &id076
+    tool_params: &id075
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询分类列表
-    params: *id076
+    params: *id075
     output: 返回结构化结果
     block: false
   标签:
@@ -1846,12 +1845,12 @@
   层: L1
   输入:
     tool_name: category_create
-    tool_params: &id077
+    tool_params: &id076
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: soup
   期望:
     intent: 新建分类
-    params: *id077
+    params: *id076
     output: 工具调用成功
     block: false
   标签:
@@ -1862,11 +1861,11 @@
   层: L1
   输入:
     tool_name: category_create
-    tool_params: &id078
+    tool_params: &id077
       name: soup
   期望:
     intent: 新建分类
-    params: *id078
+    params: *id077
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -1887,7 +1886,7 @@
       name: soup
   期望:
     intent: 新建分类
-    params: *id077
+    params: *id076
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -1903,12 +1902,12 @@
   层: L1
   输入:
     tool_name: category_create
-    tool_params: &id079
+    tool_params: &id078
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: popular item
   期望:
     intent: 新建分类
-    params: *id079
+    params: *id078
     output: 返回结构化结果
     block: false
   标签:
@@ -1919,12 +1918,12 @@
   层: L1
   输入:
     tool_name: category_update
-    tool_params: &id080
-      categoryId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+    tool_params: &id079
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
       newName: popular item
   期望:
     intent: 修改分类
-    params: *id080
+    params: *id079
     output: 工具调用成功
     block: false
   标签:
@@ -1936,11 +1935,11 @@
   层: L1
   输入:
     tool_name: category_update
-    tool_params: &id081
+    tool_params: &id080
       newName: popular item
   期望:
     intent: 修改分类
-    params: *id081
+    params: *id080
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -1962,7 +1961,7 @@
       newName: popular item
   期望:
     intent: 修改分类
-    params: *id080
+    params: *id079
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -1979,12 +1978,12 @@
   层: L1
   输入:
     tool_name: category_update
-    tool_params: &id082
-      categoryId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+    tool_params: &id081
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
       newName: main
   期望:
     intent: 修改分类
-    params: *id082
+    params: *id081
     output: 返回结构化结果
     block: false
   标签:
@@ -1996,11 +1995,11 @@
   层: L1
   输入:
     tool_name: category_delete
-    tool_params: &id083
+    tool_params: &id082
       categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
   期望:
     intent: 删除分类
-    params: *id083
+    params: *id082
     output: 工具调用成功
     block: false
   标签:
@@ -2012,10 +2011,10 @@
   层: L1
   输入:
     tool_name: category_delete
-    tool_params: &id084 {}
+    tool_params: &id083 {}
   期望:
     intent: 删除分类
-    params: *id084
+    params: *id083
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2036,7 +2035,7 @@
       categoryId: '0'
   期望:
     intent: 删除分类
-    params: *id083
+    params: *id082
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2053,11 +2052,11 @@
   层: L1
   输入:
     tool_name: category_delete
-    tool_params: &id085
-      categoryId: 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
+    tool_params: &id084
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
   期望:
     intent: 删除分类
-    params: *id085
+    params: *id084
     output: 返回结构化结果
     block: false
   标签:
@@ -2069,11 +2068,11 @@
   层: L1
   输入:
     tool_name: tax_list
-    tool_params: &id086
+    tool_params: &id085
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询税率列表
-    params: *id086
+    params: *id085
     output: 工具调用成功
     block: false
   标签:
@@ -2084,10 +2083,10 @@
   层: L1
   输入:
     tool_name: tax_list
-    tool_params: &id087 {}
+    tool_params: &id086 {}
   期望:
     intent: 查询税率列表
-    params: *id087
+    params: *id086
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2107,7 +2106,7 @@
       merchId: '0'
   期望:
     intent: 查询税率列表
-    params: *id086
+    params: *id085
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2123,11 +2122,11 @@
   层: L1
   输入:
     tool_name: tax_list
-    tool_params: &id088
+    tool_params: &id087
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询税率列表
-    params: *id088
+    params: *id087
     output: 返回结构化结果
     block: false
   标签:
@@ -2138,13 +2137,13 @@
   层: L1
   输入:
     tool_name: tax_create
-    tool_params: &id089
+    tool_params: &id088
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Hainan Style Chicken Noodle In Soup
       tax: 1
   期望:
     intent: 新建税率
-    params: *id089
+    params: *id088
     output: 工具调用成功
     block: false
   标签:
@@ -2155,12 +2154,12 @@
   层: L1
   输入:
     tool_name: tax_create
-    tool_params: &id090
+    tool_params: &id089
       name: Hainan Style Chicken Noodle In Soup
       tax: 1
   期望:
     intent: 新建税率
-    params: *id090
+    params: *id089
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2182,7 +2181,7 @@
       tax: 1
   期望:
     intent: 新建税率
-    params: *id089
+    params: *id088
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2198,13 +2197,13 @@
   层: L1
   输入:
     tool_name: tax_create
-    tool_params: &id091
+    tool_params: &id090
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Coke
       tax: 1
   期望:
     intent: 新建税率
-    params: *id091
+    params: *id090
     output: 返回结构化结果
     block: false
   标签:
@@ -2215,12 +2214,12 @@
   层: L1
   输入:
     tool_name: tax_update
-    tool_params: &id092
+    tool_params: &id091
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 修改税率
-    params: *id092
+    params: *id091
     output: 工具调用成功
     block: false
   标签:
@@ -2232,11 +2231,11 @@
   层: L1
   输入:
     tool_name: tax_update
-    tool_params: &id093
+    tool_params: &id092
       taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 修改税率
-    params: *id093
+    params: *id092
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2258,7 +2257,7 @@
       taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 修改税率
-    params: *id092
+    params: *id091
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2275,12 +2274,12 @@
   层: L1
   输入:
     tool_name: tax_update
-    tool_params: &id094
+    tool_params: &id093
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       taxId: 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
   期望:
     intent: 修改税率
-    params: *id094
+    params: *id093
     output: 返回结构化结果
     block: false
   标签:
@@ -2292,14 +2291,14 @@
   层: L1
   输入:
     tool_name: tax_bind_item
-    tool_params: &id095
-      merchFoodIds: &id365
+    tool_params: &id094
+      merchFoodIds: &id363
       - 23c23434-3a90-4369-93c9-2a74cb191cc8
-      taxIds: &id096
+      taxIds: &id095
       - 23c23434-3a90-4369-93c9-2a74cb191cc8
   期望:
     intent: 商品绑定税率
-    params: *id095
+    params: *id094
     output: 工具调用成功
     block: false
   标签:
@@ -2310,11 +2309,11 @@
   层: L1
   输入:
     tool_name: tax_bind_item
-    tool_params: &id097
-      taxIds: *id096
+    tool_params: &id096
+      taxIds: *id095
   期望:
     intent: 商品绑定税率
-    params: *id097
+    params: *id096
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2333,10 +2332,10 @@
     tool_params:
       merchFoodIds:
       - '0'
-      taxIds: *id096
+      taxIds: *id095
   期望:
     intent: 商品绑定税率
-    params: *id095
+    params: *id094
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2352,14 +2351,14 @@
   层: L1
   输入:
     tool_name: tax_bind_item
-    tool_params: &id098
+    tool_params: &id097
       merchFoodIds:
       - 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
       taxIds:
       - 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 商品绑定税率
-    params: *id098
+    params: *id097
     output: 返回结构化结果
     block: false
   标签:
@@ -2370,12 +2369,12 @@
   层: L1
   输入:
     tool_name: spec_create
-    tool_params: &id099
+    tool_params: &id098
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Delivery Area 1
   期望:
     intent: 新建规格组
-    params: *id099
+    params: *id098
     output: 工具调用成功
     block: false
   标签:
@@ -2386,11 +2385,11 @@
   层: L1
   输入:
     tool_name: spec_create
-    tool_params: &id100
+    tool_params: &id099
       name: Delivery Area 1
   期望:
     intent: 新建规格组
-    params: *id100
+    params: *id099
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2411,7 +2410,7 @@
       name: Delivery Area 1
   期望:
     intent: 新建规格组
-    params: *id099
+    params: *id098
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2427,12 +2426,12 @@
   层: L1
   输入:
     tool_name: spec_create
-    tool_params: &id101
+    tool_params: &id100
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: cayson店鋪4444
   期望:
     intent: 新建规格组
-    params: *id101
+    params: *id100
     output: 返回结构化结果
     block: false
   标签:
@@ -2443,14 +2442,14 @@
   层: L1
   输入:
     tool_name: spec_bind_item
-    tool_params: &id102
+    tool_params: &id101
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       specId: c8cae758-c014-4b14-a745-719dbbd70ba2
-      itemIds: &id103
-      - c8cae758-c014-4b14-a745-719dbbd70ba2
+      itemIds: &id102
+      - 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 商品绑定规格组
-    params: *id102
+    params: *id101
     output: 工具调用成功
     block: false
   标签:
@@ -2461,12 +2460,12 @@
   层: L1
   输入:
     tool_name: spec_bind_item
-    tool_params: &id104
+    tool_params: &id103
       specId: c8cae758-c014-4b14-a745-719dbbd70ba2
-      itemIds: *id103
+      itemIds: *id102
   期望:
     intent: 商品绑定规格组
-    params: *id104
+    params: *id103
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2485,10 +2484,10 @@
     tool_params:
       merchId: '0'
       specId: c8cae758-c014-4b14-a745-719dbbd70ba2
-      itemIds: *id103
+      itemIds: *id102
   期望:
     intent: 商品绑定规格组
-    params: *id102
+    params: *id101
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2504,14 +2503,14 @@
   层: L1
   输入:
     tool_name: spec_bind_item
-    tool_params: &id105
+    tool_params: &id104
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       specId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
       itemIds:
-      - ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      - 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 商品绑定规格组
-    params: *id105
+    params: *id104
     output: 返回结构化结果
     block: false
   标签:
@@ -2522,11 +2521,11 @@
   层: L1
   输入:
     tool_name: list_delivery_areas
-    tool_params: &id106
+    tool_params: &id105
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询配送区域
-    params: *id106
+    params: *id105
     output: 工具调用成功
     block: false
   标签:
@@ -2537,10 +2536,10 @@
   层: L1
   输入:
     tool_name: list_delivery_areas
-    tool_params: &id107 {}
+    tool_params: &id106 {}
   期望:
     intent: 查询配送区域
-    params: *id107
+    params: *id106
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2560,7 +2559,7 @@
       merchId: '0'
   期望:
     intent: 查询配送区域
-    params: *id106
+    params: *id105
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2576,11 +2575,11 @@
   层: L1
   输入:
     tool_name: list_delivery_areas
-    tool_params: &id108
+    tool_params: &id107
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询配送区域
-    params: *id108
+    params: *id107
     output: 返回结构化结果
     block: false
   标签:
@@ -2591,11 +2590,11 @@
   层: L1
   输入:
     tool_name: list_pickup_time_slots
-    tool_params: &id109
+    tool_params: &id108
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询自提时段
-    params: *id109
+    params: *id108
     output: 工具调用成功
     block: false
   标签:
@@ -2606,10 +2605,10 @@
   层: L1
   输入:
     tool_name: list_pickup_time_slots
-    tool_params: &id110 {}
+    tool_params: &id109 {}
   期望:
     intent: 查询自提时段
-    params: *id110
+    params: *id109
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2629,7 +2628,7 @@
       merchId: '0'
   期望:
     intent: 查询自提时段
-    params: *id109
+    params: *id108
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2645,11 +2644,11 @@
   层: L1
   输入:
     tool_name: list_pickup_time_slots
-    tool_params: &id111
+    tool_params: &id110
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询自提时段
-    params: *id111
+    params: *id110
     output: 返回结构化结果
     block: false
   标签:
@@ -2660,12 +2659,12 @@
   层: L1
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id112
+    tool_params: &id111
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关配送服务
-    params: *id112
+    params: *id111
     output: 工具调用成功
     block: false
   标签:
@@ -2676,11 +2675,11 @@
   层: L1
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id113
+    tool_params: &id112
       enabled: false
   期望:
     intent: 开关配送服务
-    params: *id113
+    params: *id112
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2701,7 +2700,7 @@
       enabled: false
   期望:
     intent: 开关配送服务
-    params: *id112
+    params: *id111
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2717,12 +2716,12 @@
   层: L1
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id114
+    tool_params: &id113
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关配送服务
-    params: *id114
+    params: *id113
     output: 返回结构化结果
     block: false
   标签:
@@ -2733,12 +2732,12 @@
   层: L1
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id115
+    tool_params: &id114
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关自提服务
-    params: *id115
+    params: *id114
     output: 工具调用成功
     block: false
   标签:
@@ -2749,11 +2748,11 @@
   层: L1
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id116
+    tool_params: &id115
       enabled: false
   期望:
     intent: 开关自提服务
-    params: *id116
+    params: *id115
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2774,7 +2773,7 @@
       enabled: false
   期望:
     intent: 开关自提服务
-    params: *id115
+    params: *id114
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2790,12 +2789,12 @@
   层: L1
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id117
+    tool_params: &id116
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关自提服务
-    params: *id117
+    params: *id116
     output: 返回结构化结果
     block: false
   标签:
@@ -2806,12 +2805,12 @@
   层: L1
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id118
+    tool_params: &id117
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开启自动接单
-    params: *id118
+    params: *id117
     output: 工具调用成功
     block: false
   标签:
@@ -2822,11 +2821,11 @@
   层: L1
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id119
+    tool_params: &id118
       enabled: false
   期望:
     intent: 开启自动接单
-    params: *id119
+    params: *id118
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2847,7 +2846,7 @@
       enabled: false
   期望:
     intent: 开启自动接单
-    params: *id118
+    params: *id117
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2863,12 +2862,12 @@
   层: L1
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id120
+    tool_params: &id119
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开启自动接单
-    params: *id120
+    params: *id119
     output: 返回结构化结果
     block: false
   标签:
@@ -2879,12 +2878,12 @@
   层: L1
   输入:
     tool_name: set_pickup_order_threshold
-    tool_params: &id121
+    tool_params: &id120
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       thresholdAmount: '13.95'
   期望:
     intent: 设置自提门槛
-    params: *id121
+    params: *id120
     output: 工具调用成功
     block: false
   标签:
@@ -2896,11 +2895,11 @@
   层: L1
   输入:
     tool_name: set_pickup_order_threshold
-    tool_params: &id122
+    tool_params: &id121
       thresholdAmount: '13.95'
   期望:
     intent: 设置自提门槛
-    params: *id122
+    params: *id121
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -2922,7 +2921,7 @@
       thresholdAmount: '13.95'
   期望:
     intent: 设置自提门槛
-    params: *id121
+    params: *id120
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -2939,12 +2938,12 @@
   层: L1
   输入:
     tool_name: set_pickup_order_threshold
-    tool_params: &id123
+    tool_params: &id122
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       thresholdAmount: '12.95'
   期望:
     intent: 设置自提门槛
-    params: *id123
+    params: *id122
     output: 返回结构化结果
     block: false
   标签:
@@ -2956,7 +2955,7 @@
   层: L1
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id124
+    tool_params: &id123
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -2964,7 +2963,7 @@
       preparationMinutes: 1
   期望:
     intent: 添加自提时段
-    params: *id124
+    params: *id123
     output: 工具调用成功
     block: false
   标签:
@@ -2976,14 +2975,14 @@
   层: L1
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id125
+    tool_params: &id124
       days: Monday
       openTime: '12:00'
       closeTime: '12:00'
       preparationMinutes: 1
   期望:
     intent: 添加自提时段
-    params: *id125
+    params: *id124
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3008,7 +3007,7 @@
       preparationMinutes: 1
   期望:
     intent: 添加自提时段
-    params: *id124
+    params: *id123
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3025,7 +3024,7 @@
   层: L1
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id126
+    tool_params: &id125
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -3033,7 +3032,7 @@
       preparationMinutes: 1
   期望:
     intent: 添加自提时段
-    params: *id126
+    params: *id125
     output: 返回结构化结果
     block: false
   标签:
@@ -3045,11 +3044,11 @@
   层: L1
   输入:
     tool_name: get_extra_fee
-    tool_params: &id127
+    tool_params: &id126
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询附加费用
-    params: *id127
+    params: *id126
     output: 工具调用成功
     block: false
   标签:
@@ -3060,10 +3059,10 @@
   层: L1
   输入:
     tool_name: get_extra_fee
-    tool_params: &id128 {}
+    tool_params: &id127 {}
   期望:
     intent: 查询附加费用
-    params: *id128
+    params: *id127
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3083,7 +3082,7 @@
       merchId: '0'
   期望:
     intent: 查询附加费用
-    params: *id127
+    params: *id126
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3099,11 +3098,11 @@
   层: L1
   输入:
     tool_name: get_extra_fee
-    tool_params: &id129
+    tool_params: &id128
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询附加费用
-    params: *id129
+    params: *id128
     output: 返回结构化结果
     block: false
   标签:
@@ -3114,7 +3113,7 @@
   层: L1
   输入:
     tool_name: add_extra_fee
-    tool_params: &id130
+    tool_params: &id129
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 晚餐
       target: pickup
@@ -3123,7 +3122,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id130
+    params: *id129
     output: 工具调用成功
     block: false
   标签:
@@ -3135,7 +3134,7 @@
   层: L1
   输入:
     tool_name: add_extra_fee
-    tool_params: &id131
+    tool_params: &id130
       name: 晚餐
       target: pickup
       feeType: percentage
@@ -3143,7 +3142,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id131
+    params: *id130
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3169,7 +3168,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id130
+    params: *id129
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3186,7 +3185,7 @@
   层: L1
   输入:
     tool_name: add_extra_fee
-    tool_params: &id132
+    tool_params: &id131
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Delivery Area 1
       target: pickup
@@ -3195,7 +3194,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id132
+    params: *id131
     output: 返回结构化结果
     block: false
   标签:
@@ -3207,12 +3206,12 @@
   层: L1
   输入:
     tool_name: delete_extra_fee
-    tool_params: &id133
+    tool_params: &id132
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除附加费用
-    params: *id133
+    params: *id132
     output: 工具调用成功
     block: false
   标签:
@@ -3224,11 +3223,11 @@
   层: L1
   输入:
     tool_name: delete_extra_fee
-    tool_params: &id134
+    tool_params: &id133
       feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除附加费用
-    params: *id134
+    params: *id133
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3250,7 +3249,7 @@
       feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除附加费用
-    params: *id133
+    params: *id132
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3267,12 +3266,12 @@
   层: L1
   输入:
     tool_name: delete_extra_fee
-    tool_params: &id135
+    tool_params: &id134
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       feeId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
   期望:
     intent: 删除附加费用
-    params: *id135
+    params: *id134
     output: 返回结构化结果
     block: false
   标签:
@@ -3284,12 +3283,12 @@
   层: L1
   输入:
     tool_name: set_tip_type
-    tool_params: &id136
+    tool_params: &id135
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       tipType: fixed
   期望:
     intent: 设置小费类型
-    params: *id136
+    params: *id135
     output: 工具调用成功
     block: false
   标签:
@@ -3301,11 +3300,11 @@
   层: L1
   输入:
     tool_name: set_tip_type
-    tool_params: &id137
+    tool_params: &id136
       tipType: fixed
   期望:
     intent: 设置小费类型
-    params: *id137
+    params: *id136
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3327,7 +3326,7 @@
       tipType: fixed
   期望:
     intent: 设置小费类型
-    params: *id136
+    params: *id135
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3344,12 +3343,12 @@
   层: L1
   输入:
     tool_name: set_tip_type
-    tool_params: &id138
+    tool_params: &id137
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       tipType: fixed
   期望:
     intent: 设置小费类型
-    params: *id138
+    params: *id137
     output: 返回结构化结果
     block: false
   标签:
@@ -3361,13 +3360,13 @@
   层: L1
   输入:
     tool_name: set_tip_options
-    tool_params: &id139
+    tool_params: &id138
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      tipValues: &id140
+      tipValues: &id139
       - ''
   期望:
     intent: 设置小费选项
-    params: *id139
+    params: *id138
     output: 工具调用成功
     block: false
   标签:
@@ -3379,11 +3378,11 @@
   层: L1
   输入:
     tool_name: set_tip_options
-    tool_params: &id141
-      tipValues: *id140
+    tool_params: &id140
+      tipValues: *id139
   期望:
     intent: 设置小费选项
-    params: *id141
+    params: *id140
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3402,10 +3401,10 @@
     tool_name: set_tip_options
     tool_params:
       merchId: '0'
-      tipValues: *id140
+      tipValues: *id139
   期望:
     intent: 设置小费选项
-    params: *id139
+    params: *id138
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3422,13 +3421,13 @@
   层: L1
   输入:
     tool_name: set_tip_options
-    tool_params: &id142
+    tool_params: &id141
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       tipValues:
       - ''
   期望:
     intent: 设置小费选项
-    params: *id142
+    params: *id141
     output: 返回结构化结果
     block: false
   标签:
@@ -3440,12 +3439,12 @@
   层: L1
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id143
+    tool_params: &id142
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关餐具选项
-    params: *id143
+    params: *id142
     output: 工具调用成功
     block: false
   标签:
@@ -3456,11 +3455,11 @@
   层: L1
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id144
+    tool_params: &id143
       enabled: false
   期望:
     intent: 开关餐具选项
-    params: *id144
+    params: *id143
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3481,7 +3480,7 @@
       enabled: false
   期望:
     intent: 开关餐具选项
-    params: *id143
+    params: *id142
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3497,12 +3496,12 @@
   层: L1
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id145
+    tool_params: &id144
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关餐具选项
-    params: *id145
+    params: *id144
     output: 返回结构化结果
     block: false
   标签:
@@ -3513,11 +3512,11 @@
   层: L1
   输入:
     tool_name: list_store_users
-    tool_params: &id146
+    tool_params: &id145
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工列表
-    params: *id146
+    params: *id145
     output: 工具调用成功
     block: false
   标签:
@@ -3528,10 +3527,10 @@
   层: L1
   输入:
     tool_name: list_store_users
-    tool_params: &id147 {}
+    tool_params: &id146 {}
   期望:
     intent: 查询员工列表
-    params: *id147
+    params: *id146
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3551,7 +3550,7 @@
       merchId: '0'
   期望:
     intent: 查询员工列表
-    params: *id146
+    params: *id145
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3567,11 +3566,11 @@
   层: L1
   输入:
     tool_name: list_store_users
-    tool_params: &id148
+    tool_params: &id147
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工列表
-    params: *id148
+    params: *id147
     output: 返回结构化结果
     block: false
   标签:
@@ -3582,12 +3581,12 @@
   层: L1
   输入:
     tool_name: get_user_detail
-    tool_params: &id149
+    tool_params: &id148
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工详情
-    params: *id149
+    params: *id148
     output: 工具调用成功
     block: false
   标签:
@@ -3598,11 +3597,11 @@
   层: L1
   输入:
     tool_name: get_user_detail
-    tool_params: &id150
-      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+    tool_params: &id149
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工详情
-    params: *id150
+    params: *id149
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3620,10 +3619,10 @@
     tool_name: get_user_detail
     tool_params:
       merchId: '0'
-      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工详情
-    params: *id149
+    params: *id148
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3639,12 +3638,12 @@
   层: L1
   输入:
     tool_name: get_user_detail
-    tool_params: &id151
+    tool_params: &id150
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工详情
-    params: *id151
+    params: *id150
     output: 返回结构化结果
     block: false
   标签:
@@ -3655,11 +3654,11 @@
   层: L1
   输入:
     tool_name: list_merchant_roles
-    tool_params: &id152
+    tool_params: &id151
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询可用角色
-    params: *id152
+    params: *id151
     output: 工具调用成功
     block: false
   标签:
@@ -3670,10 +3669,10 @@
   层: L1
   输入:
     tool_name: list_merchant_roles
-    tool_params: &id153 {}
+    tool_params: &id152 {}
   期望:
     intent: 查询可用角色
-    params: *id153
+    params: *id152
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3693,7 +3692,7 @@
       merchId: '0'
   期望:
     intent: 查询可用角色
-    params: *id152
+    params: *id151
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3709,11 +3708,11 @@
   层: L1
   输入:
     tool_name: list_merchant_roles
-    tool_params: &id154
+    tool_params: &id153
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询可用角色
-    params: *id154
+    params: *id153
     output: 返回结构化结果
     block: false
   标签:
@@ -3724,13 +3723,13 @@
   层: L1
   输入:
     tool_name: add_store_user
-    tool_params: &id155
+    tool_params: &id154
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
       roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 新增员工
-    params: *id155
+    params: *id154
     output: 工具调用成功
     block: false
   标签:
@@ -3742,12 +3741,12 @@
   层: L1
   输入:
     tool_name: add_store_user
-    tool_params: &id156
+    tool_params: &id155
       phone: '9023162140'
       roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 新增员工
-    params: *id156
+    params: *id155
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3770,7 +3769,7 @@
       roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 新增员工
-    params: *id155
+    params: *id154
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3787,13 +3786,13 @@
   层: L1
   输入:
     tool_name: add_store_user
-    tool_params: &id157
+    tool_params: &id156
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
       roleId: 15fbc43d-3650-4e8e-9929-42798462c7a1
   期望:
     intent: 新增员工
-    params: *id157
+    params: *id156
     output: 返回结构化结果
     block: false
   标签:
@@ -3805,13 +3804,13 @@
   层: L1
   输入:
     tool_name: update_user_status
-    tool_params: &id158
+    tool_params: &id157
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: false
   期望:
     intent: 启用停用员工
-    params: *id158
+    params: *id157
     output: 工具调用成功
     block: false
   标签:
@@ -3822,12 +3821,12 @@
   层: L1
   输入:
     tool_name: update_user_status
-    tool_params: &id159
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+    tool_params: &id158
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: false
   期望:
     intent: 启用停用员工
-    params: *id159
+    params: *id158
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3845,11 +3844,11 @@
     tool_name: update_user_status
     tool_params:
       merchId: '0'
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: false
   期望:
     intent: 启用停用员工
-    params: *id158
+    params: *id157
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3865,13 +3864,13 @@
   层: L1
   输入:
     tool_name: update_user_status
-    tool_params: &id160
+    tool_params: &id159
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: false
   期望:
     intent: 启用停用员工
-    params: *id160
+    params: *id159
     output: 返回结构化结果
     block: false
   标签:
@@ -3882,12 +3881,12 @@
   层: L1
   输入:
     tool_name: delete_store_user
-    tool_params: &id161
+    tool_params: &id160
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除员工
-    params: *id161
+    params: *id160
     output: 工具调用成功
     block: false
   标签:
@@ -3899,11 +3898,11 @@
   层: L1
   输入:
     tool_name: delete_store_user
-    tool_params: &id162
-      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+    tool_params: &id161
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除员工
-    params: *id162
+    params: *id161
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -3922,10 +3921,10 @@
     tool_name: delete_store_user
     tool_params:
       merchId: '0'
-      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除员工
-    params: *id161
+    params: *id160
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -3942,12 +3941,12 @@
   层: L1
   输入:
     tool_name: delete_store_user
-    tool_params: &id163
+    tool_params: &id162
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除员工
-    params: *id163
+    params: *id162
     output: 返回结构化结果
     block: false
   标签:
@@ -3959,13 +3958,13 @@
   层: L1
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id164
+    tool_params: &id163
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: true
   期望:
     intent: 查询全部活动
-    params: *id164
+    params: *id163
     output: 工具调用成功
     block: false
   标签:
@@ -3976,12 +3975,12 @@
   层: L1
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id165
+    tool_params: &id164
       type: MerchPromotion
       status: true
   期望:
     intent: 查询全部活动
-    params: *id165
+    params: *id164
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4003,7 +4002,7 @@
       status: true
   期望:
     intent: 查询全部活动
-    params: *id164
+    params: *id163
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4019,13 +4018,13 @@
   层: L1
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id166
+    tool_params: &id165
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: true
   期望:
     intent: 查询全部活动
-    params: *id166
+    params: *id165
     output: 返回结构化结果
     block: false
   标签:
@@ -4036,12 +4035,12 @@
   层: L1
   输入:
     tool_name: list_discount_campaigns
-    tool_params: &id167
+    tool_params: &id166
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       filterType: All
   期望:
     intent: 查询满减活动
-    params: *id167
+    params: *id166
     output: 工具调用成功
     block: false
   标签:
@@ -4052,11 +4051,11 @@
   层: L1
   输入:
     tool_name: list_discount_campaigns
-    tool_params: &id168
+    tool_params: &id167
       filterType: All
   期望:
     intent: 查询满减活动
-    params: *id168
+    params: *id167
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4077,7 +4076,7 @@
       filterType: All
   期望:
     intent: 查询满减活动
-    params: *id167
+    params: *id166
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4093,12 +4092,12 @@
   层: L1
   输入:
     tool_name: list_discount_campaigns
-    tool_params: &id169
+    tool_params: &id168
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       filterType: All
   期望:
     intent: 查询满减活动
-    params: *id169
+    params: *id168
     output: 返回结构化结果
     block: false
   标签:
@@ -4109,14 +4108,14 @@
   层: L1
   输入:
     tool_name: create_discount_campaign
-    tool_params: &id170
+    tool_params: &id169
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Spicy Beef Tripe & Tendon Noodle In Soup
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建满减活动
-    params: *id170
+    params: *id169
     output: 工具调用成功
     block: false
   标签:
@@ -4128,13 +4127,13 @@
   层: L1
   输入:
     tool_name: create_discount_campaign
-    tool_params: &id171
+    tool_params: &id170
       name: Spicy Beef Tripe & Tendon Noodle In Soup
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建满减活动
-    params: *id171
+    params: *id170
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4158,7 +4157,7 @@
       endDate: '2026-01-01'
   期望:
     intent: 创建满减活动
-    params: *id170
+    params: *id169
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4175,14 +4174,14 @@
   层: L1
   输入:
     tool_name: create_discount_campaign
-    tool_params: &id172
+    tool_params: &id171
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Iced Ribera w. Lemon
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建满减活动
-    params: *id172
+    params: *id171
     output: 返回结构化结果
     block: false
   标签:
@@ -4194,11 +4193,11 @@
   层: L1
   输入:
     tool_name: list_reward_campaigns
-    tool_params: &id173
+    tool_params: &id172
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询优惠券活动
-    params: *id173
+    params: *id172
     output: 工具调用成功
     block: false
   标签:
@@ -4209,10 +4208,10 @@
   层: L1
   输入:
     tool_name: list_reward_campaigns
-    tool_params: &id174 {}
+    tool_params: &id173 {}
   期望:
     intent: 查询优惠券活动
-    params: *id174
+    params: *id173
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4232,7 +4231,7 @@
       merchId: '0'
   期望:
     intent: 查询优惠券活动
-    params: *id173
+    params: *id172
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4248,11 +4247,11 @@
   层: L1
   输入:
     tool_name: list_reward_campaigns
-    tool_params: &id175
+    tool_params: &id174
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询优惠券活动
-    params: *id175
+    params: *id174
     output: 返回结构化结果
     block: false
   标签:
@@ -4263,13 +4262,13 @@
   层: L1
   输入:
     tool_name: create_reward_campaign
-    tool_params: &id176
+    tool_params: &id175
       name: popular item
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建优惠券活动
-    params: *id176
+    params: *id175
     output: 工具调用成功
     block: false
   标签:
@@ -4281,12 +4280,12 @@
   层: L1
   输入:
     tool_name: create_reward_campaign
-    tool_params: &id177
+    tool_params: &id176
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建优惠券活动
-    params: *id177
+    params: *id176
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4309,7 +4308,7 @@
       endDate: '2026-01-01'
   期望:
     intent: 创建优惠券活动
-    params: *id176
+    params: *id175
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4326,13 +4325,13 @@
   层: L1
   输入:
     tool_name: create_reward_campaign
-    tool_params: &id178
+    tool_params: &id177
       name: 全天菜单
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建优惠券活动
-    params: *id178
+    params: *id177
     output: 返回结构化结果
     block: false
   标签:
@@ -4344,13 +4343,13 @@
   层: L1
   输入:
     tool_name: add_report_subscription
-    tool_params: &id179
+    tool_params: &id178
       email: 944600294123@qq.com
       isSalesReport: false
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id179
+    params: *id178
     output: 工具调用成功
     block: false
   标签:
@@ -4362,12 +4361,12 @@
   层: L1
   输入:
     tool_name: add_report_subscription
-    tool_params: &id180
+    tool_params: &id179
       isSalesReport: false
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id180
+    params: *id179
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4390,7 +4389,7 @@
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id179
+    params: *id178
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4407,13 +4406,13 @@
   层: L1
   输入:
     tool_name: add_report_subscription
-    tool_params: &id181
+    tool_params: &id180
       email: 944600294123@qq.com
       isSalesReport: false
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id181
+    params: *id180
     output: 返回结构化结果
     block: false
   标签:
@@ -4425,11 +4424,11 @@
   层: L1
   输入:
     tool_name: list_order_notification_emails
-    tool_params: &id182
+    tool_params: &id181
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询订单通知邮箱
-    params: *id182
+    params: *id181
     output: 工具调用成功
     block: false
   标签:
@@ -4440,10 +4439,10 @@
   层: L1
   输入:
     tool_name: list_order_notification_emails
-    tool_params: &id183 {}
+    tool_params: &id182 {}
   期望:
     intent: 查询订单通知邮箱
-    params: *id183
+    params: *id182
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4463,7 +4462,7 @@
       merchId: '0'
   期望:
     intent: 查询订单通知邮箱
-    params: *id182
+    params: *id181
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4479,11 +4478,11 @@
   层: L1
   输入:
     tool_name: list_order_notification_emails
-    tool_params: &id184
+    tool_params: &id183
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询订单通知邮箱
-    params: *id184
+    params: *id183
     output: 返回结构化结果
     block: false
   标签:
@@ -4494,12 +4493,12 @@
   层: L1
   输入:
     tool_name: add_order_notification_email
-    tool_params: &id185
+    tool_params: &id184
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       email: test@example.com
   期望:
     intent: 添加订单通知邮箱
-    params: *id185
+    params: *id184
     output: 工具调用成功
     block: false
   标签:
@@ -4511,11 +4510,11 @@
   层: L1
   输入:
     tool_name: add_order_notification_email
-    tool_params: &id186
+    tool_params: &id185
       email: test@example.com
   期望:
     intent: 添加订单通知邮箱
-    params: *id186
+    params: *id185
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4537,7 +4536,7 @@
       email: test@example.com
   期望:
     intent: 添加订单通知邮箱
-    params: *id185
+    params: *id184
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4554,12 +4553,12 @@
   层: L1
   输入:
     tool_name: add_order_notification_email
-    tool_params: &id187
+    tool_params: &id186
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       email: test@example.com
   期望:
     intent: 添加订单通知邮箱
-    params: *id187
+    params: *id186
     output: 返回结构化结果
     block: false
   标签:
@@ -4571,11 +4570,11 @@
   层: L1
   输入:
     tool_name: get_payment_methods
-    tool_params: &id188
+    tool_params: &id187
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询支付方式
-    params: *id188
+    params: *id187
     output: 工具调用成功
     block: false
   标签:
@@ -4586,10 +4585,10 @@
   层: L1
   输入:
     tool_name: get_payment_methods
-    tool_params: &id189 {}
+    tool_params: &id188 {}
   期望:
     intent: 查询支付方式
-    params: *id189
+    params: *id188
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4609,7 +4608,7 @@
       merchId: '0'
   期望:
     intent: 查询支付方式
-    params: *id188
+    params: *id187
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4625,11 +4624,11 @@
   层: L1
   输入:
     tool_name: get_payment_methods
-    tool_params: &id190
+    tool_params: &id189
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询支付方式
-    params: *id190
+    params: *id189
     output: 返回结构化结果
     block: false
   标签:
@@ -4640,13 +4639,13 @@
   层: L1
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id191
+    tool_params: &id190
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: false
   期望:
     intent: 开关支付方式
-    params: *id191
+    params: *id190
     output: 工具调用成功
     block: false
   标签:
@@ -4657,12 +4656,12 @@
   层: L1
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id192
+    tool_params: &id191
       paymentType: proton_pay
       enabled: false
   期望:
     intent: 开关支付方式
-    params: *id192
+    params: *id191
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4684,7 +4683,7 @@
       enabled: false
   期望:
     intent: 开关支付方式
-    params: *id191
+    params: *id190
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4700,13 +4699,13 @@
   层: L1
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id193
+    tool_params: &id192
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: false
   期望:
     intent: 开关支付方式
-    params: *id193
+    params: *id192
     output: 返回结构化结果
     block: false
   标签:
@@ -4717,11 +4716,11 @@
   层: L1
   输入:
     tool_name: get_third_party_integrations
-    tool_params: &id194
+    tool_params: &id193
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询第三方集成
-    params: *id194
+    params: *id193
     output: 工具调用成功
     block: false
   标签:
@@ -4732,10 +4731,10 @@
   层: L1
   输入:
     tool_name: get_third_party_integrations
-    tool_params: &id195 {}
+    tool_params: &id194 {}
   期望:
     intent: 查询第三方集成
-    params: *id195
+    params: *id194
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4755,7 +4754,7 @@
       merchId: '0'
   期望:
     intent: 查询第三方集成
-    params: *id194
+    params: *id193
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4771,11 +4770,11 @@
   层: L1
   输入:
     tool_name: get_third_party_integrations
-    tool_params: &id196
+    tool_params: &id195
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询第三方集成
-    params: *id196
+    params: *id195
     output: 返回结构化结果
     block: false
   标签:
@@ -4786,11 +4785,11 @@
   层: L1
   输入:
     tool_name: get_store_info
-    tool_params: &id197
+    tool_params: &id196
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺经营概况
-    params: *id197
+    params: *id196
     output: 工具调用成功
     block: false
     semantic:
@@ -4805,10 +4804,10 @@
   层: L1
   输入:
     tool_name: get_store_info
-    tool_params: &id198 {}
+    tool_params: &id197 {}
   期望:
     intent: 查询店铺经营概况
-    params: *id198
+    params: *id197
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4828,7 +4827,7 @@
       merchId: '0'
   期望:
     intent: 查询店铺经营概况
-    params: *id197
+    params: *id196
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4844,11 +4843,11 @@
   层: L1
   输入:
     tool_name: get_store_info
-    tool_params: &id199
+    tool_params: &id198
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺经营概况
-    params: *id199
+    params: *id198
     output: 返回结构化结果
     block: false
     semantic:
@@ -4863,11 +4862,11 @@
   层: L1
   输入:
     tool_name: item_list
-    tool_params: &id200
+    tool_params: &id199
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺商品结构
-    params: *id200
+    params: *id199
     output: 工具调用成功
     block: false
     semantic:
@@ -4884,10 +4883,10 @@
   层: L1
   输入:
     tool_name: item_list
-    tool_params: &id201 {}
+    tool_params: &id200 {}
   期望:
     intent: 查询店铺商品结构
-    params: *id201
+    params: *id200
     output: 参数校验失败，返回错误
     block: true
     semantic:
@@ -4907,7 +4906,7 @@
       merchId: '0'
   期望:
     intent: 查询店铺商品结构
-    params: *id200
+    params: *id199
     output: 非法参数被拒绝
     block: true
     semantic:
@@ -4923,11 +4922,11 @@
   层: L1
   输入:
     tool_name: item_list
-    tool_params: &id202
+    tool_params: &id201
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺商品结构
-    params: *id202
+    params: *id201
     output: 返回结构化结果
     block: false
     semantic:
@@ -4979,11 +4978,11 @@
   层: L1
   输入:
     tool_name: get_store_info
-    tool_params: &id203
+    tool_params: &id202
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺信息
-    params: *id203
+    params: *id202
     output: 工具可正常调用
     block: false
   标签:
@@ -4994,11 +4993,11 @@
   层: L1
   输入:
     tool_name: get_store_info
-    tool_params: &id204
+    tool_params: &id203
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺信息
-    params: *id204
+    params: *id203
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -5082,12 +5081,12 @@
   层: L1
   输入:
     tool_name: update_store_name
-    tool_params: &id205
+    tool_params: &id204
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       newName: popular item
   期望:
     intent: 修改店铺名称
-    params: *id205
+    params: *id204
     output: 工具可正常调用
     block: false
   标签:
@@ -5099,12 +5098,12 @@
   层: L1
   输入:
     tool_name: update_store_name
-    tool_params: &id206
+    tool_params: &id205
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       newName: 全天菜单
   期望:
     intent: 修改店铺名称
-    params: *id206
+    params: *id205
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -5190,12 +5189,12 @@
   层: L1
   输入:
     tool_name: update_store_phone
-    tool_params: &id207
+    tool_params: &id206
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       newPhone: '9023162140'
   期望:
     intent: 修改店铺电话
-    params: *id207
+    params: *id206
     output: 工具可正常调用
     block: false
   标签:
@@ -5207,12 +5206,12 @@
   层: L1
   输入:
     tool_name: update_store_phone
-    tool_params: &id208
+    tool_params: &id207
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       newPhone: '9023162140'
   期望:
     intent: 修改店铺电话
-    params: *id208
+    params: *id207
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -5297,12 +5296,12 @@
   层: L1
   输入:
     tool_name: set_store_open_status
-    tool_params: &id209
+    tool_params: &id208
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       status: open
   期望:
     intent: 切换营业状态
-    params: *id209
+    params: *id208
     output: 工具可正常调用
     block: false
   标签:
@@ -5313,12 +5312,12 @@
   层: L1
   输入:
     tool_name: set_store_open_status
-    tool_params: &id210
+    tool_params: &id209
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       status: open
   期望:
     intent: 切换营业状态
-    params: *id210
+    params: *id209
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -5401,12 +5400,12 @@
   层: L1
   输入:
     tool_name: set_sales_mode
-    tool_params: &id211
+    tool_params: &id210
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       mode: regular
   期望:
     intent: 切换销售模式
-    params: *id211
+    params: *id210
     output: 工具可正常调用
     block: false
   标签:
@@ -5417,12 +5416,12 @@
   层: L1
   输入:
     tool_name: set_sales_mode
-    tool_params: &id212
+    tool_params: &id211
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       mode: regular
   期望:
     intent: 切换销售模式
-    params: *id212
+    params: *id211
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -5505,11 +5504,11 @@
   层: L1
   输入:
     tool_name: get_store_link
-    tool_params: &id213
+    tool_params: &id212
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺链接
-    params: *id213
+    params: *id212
     output: 工具可正常调用
     block: false
   标签:
@@ -5520,11 +5519,11 @@
   层: L1
   输入:
     tool_name: get_store_link
-    tool_params: &id214
+    tool_params: &id213
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺链接
-    params: *id214
+    params: *id213
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -5607,11 +5606,11 @@
   层: L1
   输入:
     tool_name: get_bank_account_info
-    tool_params: &id215
+    tool_params: &id214
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询收款账户
-    params: *id215
+    params: *id214
     output: 工具可正常调用
     block: false
   标签:
@@ -5622,11 +5621,11 @@
   层: L1
   输入:
     tool_name: get_bank_account_info
-    tool_params: &id216
+    tool_params: &id215
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询收款账户
-    params: *id216
+    params: *id215
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -5709,11 +5708,11 @@
   层: L1
   输入:
     tool_name: item_list
-    tool_params: &id217
+    tool_params: &id216
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询商品列表
-    params: *id217
+    params: *id216
     output: 工具可正常调用
     block: false
     semantic:
@@ -5731,11 +5730,11 @@
   层: L1
   输入:
     tool_name: item_list
-    tool_params: &id218
+    tool_params: &id217
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询商品列表
-    params: *id218
+    params: *id217
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -5825,11 +5824,11 @@
   层: L1
   输入:
     tool_name: item_detail
-    tool_params: &id219
-      itemId: f67011c7-71f6-49ba-b1ac-309a4c0539bb
+    tool_params: &id218
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 查询商品详情
-    params: *id219
+    params: *id218
     output: 工具可正常调用
     block: false
     semantic:
@@ -5845,11 +5844,11 @@
   层: L1
   输入:
     tool_name: item_detail
-    tool_params: &id220
-      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+    tool_params: &id219
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 查询商品详情
-    params: *id220
+    params: *id219
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -5937,13 +5936,13 @@
   层: L1
   输入:
     tool_name: item_create
-    tool_params: &id221
+    tool_params: &id220
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Hainan Style Chicken Noodle In Soup
       price: '12.95'
   期望:
     intent: 新建商品
-    params: *id221
+    params: *id220
     output: 工具可正常调用
     block: false
   标签:
@@ -5954,13 +5953,13 @@
   层: L1
   输入:
     tool_name: item_create
-    tool_params: &id222
+    tool_params: &id221
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Iced Ribera w. Lemon
       price: '4.95'
   期望:
     intent: 新建商品
-    params: *id222
+    params: *id221
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6008,16 +6007,16 @@
   层: L1
   输入:
     tool_name: item_create
-    tool_params: &id223
+    tool_params: &id222
       merchId: '0000000000000000'
       name: Hainan Style Chicken Noodle In Soup
       price: '12.95'
   期望:
     intent: 新建商品
-    params: *id223
+    params: *id222
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id224
+    影响范围对账: &id223
       快照工具: item_detail
       快照参数:
         itemId: ''
@@ -6028,7 +6027,7 @@
           merchId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
         目标ID: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
     高危: true
-  影响范围对账: *id224
+  影响范围对账: *id223
   高危: true
   标签:
   - 异常
@@ -6075,13 +6074,13 @@
   层: L1
   输入:
     tool_name: item_update
-    tool_params: &id225
-      itemId: 15fbc43d-3650-4e8e-9929-42798462c7a1
+    tool_params: &id224
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       newName: Coke
       price: '2.95'
   期望:
     intent: 修改商品信息
-    params: *id225
+    params: *id224
     output: 工具可正常调用
     block: false
   标签:
@@ -6093,13 +6092,13 @@
   层: L1
   输入:
     tool_name: item_update
-    tool_params: &id226
-      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+    tool_params: &id225
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       newName: 测试订单
       price: '10.00'
   期望:
     intent: 修改商品信息
-    params: *id226
+    params: *id225
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6185,12 +6184,12 @@
   层: L1
   输入:
     tool_name: item_delete
-    tool_params: &id227
+    tool_params: &id226
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      itemId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 删除商品
-    params: *id227
+    params: *id226
     output: 工具可正常调用
     block: false
   标签:
@@ -6202,12 +6201,12 @@
   层: L1
   输入:
     tool_name: item_delete
-    tool_params: &id228
+    tool_params: &id227
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 删除商品
-    params: *id228
+    params: *id227
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6257,15 +6256,15 @@
   层: L1
   输入:
     tool_name: item_delete
-    tool_params: &id229
+    tool_params: &id228
       merchId: '0000000000000000'
       itemId: '0000000000000000'
   期望:
     intent: 删除商品
-    params: *id229
+    params: *id228
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id230
+    影响范围对账: &id229
       快照工具: item_detail
       快照参数:
         itemId: ''
@@ -6276,7 +6275,7 @@
           itemId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
         目标ID: ca8f94be-ac00-4b25-9c80-5e6aabffd601
     高危: true
-  影响范围对账: *id230
+  影响范围对账: *id229
   高危: true
   标签:
   - 异常
@@ -6323,12 +6322,12 @@
   层: L1
   输入:
     tool_name: item_update_stock
-    tool_params: &id231
-      itemId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
+    tool_params: &id230
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: 99999
   期望:
     intent: 修改商品库存
-    params: *id231
+    params: *id230
     output: 工具可正常调用
     block: false
   标签:
@@ -6340,12 +6339,12 @@
   层: L1
   输入:
     tool_name: item_update_stock
-    tool_params: &id232
-      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+    tool_params: &id231
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: 99999
   期望:
     intent: 修改商品库存
-    params: *id232
+    params: *id231
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6431,12 +6430,12 @@
   层: L1
   输入:
     tool_name: batch_item_price
-    tool_params: &id233
+    tool_params: &id232
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       price: '13.95'
   期望:
     intent: 批量修改商品价格
-    params: *id233
+    params: *id232
     output: 工具可正常调用
     block: false
   标签:
@@ -6448,12 +6447,12 @@
   层: L1
   输入:
     tool_name: batch_item_price
-    tool_params: &id234
+    tool_params: &id233
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       price: '13.95'
   期望:
     intent: 批量修改商品价格
-    params: *id234
+    params: *id233
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6539,12 +6538,12 @@
   层: L1
   输入:
     tool_name: batch_item_stock
-    tool_params: &id235
+    tool_params: &id234
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 99999
   期望:
     intent: 批量修改商品库存
-    params: *id235
+    params: *id234
     output: 工具可正常调用
     block: false
   标签:
@@ -6556,12 +6555,12 @@
   层: L1
   输入:
     tool_name: batch_item_stock
-    tool_params: &id236
+    tool_params: &id235
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 99999
   期望:
     intent: 批量修改商品库存
-    params: *id236
+    params: *id235
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6646,12 +6645,12 @@
   层: L1
   输入:
     tool_name: batch_item_status
-    tool_params: &id237
+    tool_params: &id236
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       status: OnSale
   期望:
     intent: 批量上下架商品
-    params: *id237
+    params: *id236
     output: 工具可正常调用
     block: false
   标签:
@@ -6662,12 +6661,12 @@
   层: L1
   输入:
     tool_name: batch_item_status
-    tool_params: &id238
+    tool_params: &id237
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       status: OnSale
   期望:
     intent: 批量上下架商品
-    params: *id238
+    params: *id237
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6750,13 +6749,12 @@
   层: L1
   输入:
     tool_name: item_bind_category
-    tool_params: &id239
-      itemId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
-      categoryIds: &id255
-      - 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+    tool_params: &id238
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
+      categoryIds: *id052
   期望:
     intent: 商品绑定分类
-    params: *id239
+    params: *id238
     output: 工具可正常调用
     block: false
   标签:
@@ -6767,12 +6765,12 @@
   层: L1
   输入:
     tool_name: item_bind_category
-    tool_params: &id240
-      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
+    tool_params: &id239
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       categoryIds: *id052
   期望:
     intent: 商品绑定分类
-    params: *id240
+    params: *id239
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6855,11 +6853,11 @@
   层: L1
   输入:
     tool_name: menu_list
-    tool_params: &id241
+    tool_params: &id240
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询菜单列表
-    params: *id241
+    params: *id240
     output: 工具可正常调用
     block: false
   标签:
@@ -6870,11 +6868,11 @@
   层: L1
   输入:
     tool_name: menu_list
-    tool_params: &id242
+    tool_params: &id241
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询菜单列表
-    params: *id242
+    params: *id241
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -6957,11 +6955,11 @@
   层: L1
   输入:
     tool_name: menu_detail
-    tool_params: &id243
-      menuId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+    tool_params: &id242
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 查询菜单详情
-    params: *id243
+    params: *id242
     output: 工具可正常调用
     block: false
     semantic:
@@ -6977,11 +6975,11 @@
   层: L1
   输入:
     tool_name: menu_detail
-    tool_params: &id244
+    tool_params: &id243
       menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 查询菜单详情
-    params: *id244
+    params: *id243
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -7069,12 +7067,12 @@
   层: L1
   输入:
     tool_name: menu_create
-    tool_params: &id245
+    tool_params: &id244
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Pork Chop Cutlet w. Curry Sauce
   期望:
     intent: 新建菜单
-    params: *id245
+    params: *id244
     output: 工具可正常调用
     block: false
   标签:
@@ -7085,12 +7083,12 @@
   层: L1
   输入:
     tool_name: menu_create
-    tool_params: &id246
+    tool_params: &id245
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Curry Beef Brisket Flank
   期望:
     intent: 新建菜单
-    params: *id246
+    params: *id245
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -7138,15 +7136,15 @@
   层: L1
   输入:
     tool_name: menu_create
-    tool_params: &id247
+    tool_params: &id246
       merchId: '0000000000000000'
       name: Pork Chop Cutlet w. Curry Sauce
   期望:
     intent: 新建菜单
-    params: *id247
+    params: *id246
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id248
+    影响范围对账: &id247
       快照工具: menu_list
       快照参数:
         merchId: ''
@@ -7157,7 +7155,7 @@
           merchId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
         目标ID: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
     高危: true
-  影响范围对账: *id248
+  影响范围对账: *id247
   高危: true
   标签:
   - 异常
@@ -7203,11 +7201,11 @@
   层: L1
   输入:
     tool_name: menu_publish
-    tool_params: &id249
-      menuId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+    tool_params: &id248
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 发布菜单
-    params: *id249
+    params: *id248
     output: 工具可正常调用
     block: false
   标签:
@@ -7218,11 +7216,11 @@
   层: L1
   输入:
     tool_name: menu_publish
-    tool_params: &id250
+    tool_params: &id249
       menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 发布菜单
-    params: *id250
+    params: *id249
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -7306,11 +7304,11 @@
   层: L1
   输入:
     tool_name: menu_delete
-    tool_params: &id251
-      menuId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
+    tool_params: &id250
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 删除菜单
-    params: *id251
+    params: *id250
     output: 工具可正常调用
     block: false
   标签:
@@ -7322,11 +7320,11 @@
   层: L1
   输入:
     tool_name: menu_delete
-    tool_params: &id252
+    tool_params: &id251
       menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
   期望:
     intent: 删除菜单
-    params: *id252
+    params: *id251
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -7376,14 +7374,14 @@
   层: L1
   输入:
     tool_name: menu_delete
-    tool_params: &id253
+    tool_params: &id252
       menuId: '0000000000000000'
   期望:
     intent: 删除菜单
-    params: *id253
+    params: *id252
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id254
+    影响范围对账: &id253
       快照工具: menu_list
       快照参数:
         merchId: ''
@@ -7394,7 +7392,7 @@
           merchId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
         目标ID: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
     高危: true
-  影响范围对账: *id254
+  影响范围对账: *id253
   高危: true
   标签:
   - 异常
@@ -7440,12 +7438,12 @@
   层: L1
   输入:
     tool_name: menu_bind_categories
-    tool_params: &id256
-      menuId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
-      categoryIds: *id255
+    tool_params: &id254
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
+      categoryIds: *id052
   期望:
     intent: 菜单绑定分类
-    params: *id256
+    params: *id254
     output: 工具可正常调用
     block: false
   标签:
@@ -7456,12 +7454,12 @@
   层: L1
   输入:
     tool_name: menu_bind_categories
-    tool_params: &id257
-      menuId: d2de8117-56ca-42dd-8406-eb5237756f32
+    tool_params: &id255
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       categoryIds: *id052
   期望:
     intent: 菜单绑定分类
-    params: *id257
+    params: *id255
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -7544,11 +7542,11 @@
   层: L1
   输入:
     tool_name: category_list
-    tool_params: &id258
+    tool_params: &id256
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询分类列表
-    params: *id258
+    params: *id256
     output: 工具可正常调用
     block: false
   标签:
@@ -7559,11 +7557,11 @@
   层: L1
   输入:
     tool_name: category_list
-    tool_params: &id259
+    tool_params: &id257
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询分类列表
-    params: *id259
+    params: *id257
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -7646,12 +7644,12 @@
   层: L1
   输入:
     tool_name: category_create
-    tool_params: &id260
+    tool_params: &id258
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Pork Chop w. Curry Sauce
   期望:
     intent: 新建分类
-    params: *id260
+    params: *id258
     output: 工具可正常调用
     block: false
   标签:
@@ -7662,12 +7660,12 @@
   层: L1
   输入:
     tool_name: category_create
-    tool_params: &id261
+    tool_params: &id259
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Curry Chicken
   期望:
     intent: 新建分类
-    params: *id261
+    params: *id259
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -7715,15 +7713,15 @@
   层: L1
   输入:
     tool_name: category_create
-    tool_params: &id262
+    tool_params: &id260
       merchId: '0000000000000000'
       name: Pork Chop w. Curry Sauce
   期望:
     intent: 新建分类
-    params: *id262
+    params: *id260
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id263
+    影响范围对账: &id261
       快照工具: category_list
       快照参数:
         merchId: ''
@@ -7734,7 +7732,7 @@
           merchId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
         目标ID: 5fd6f2b9-431f-442f-81e8-d960af93ded9
     高危: true
-  影响范围对账: *id263
+  影响范围对账: *id261
   高危: true
   标签:
   - 异常
@@ -7781,12 +7779,12 @@
   层: L1
   输入:
     tool_name: category_update
-    tool_params: &id264
-      categoryId: 9ea3a3e1-fea1-4f7b-96a4-1c78d541fdc1
+    tool_params: &id262
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
       newName: lunch special
   期望:
     intent: 修改分类
-    params: *id264
+    params: *id262
     output: 工具可正常调用
     block: false
   标签:
@@ -7798,12 +7796,12 @@
   层: L1
   输入:
     tool_name: category_update
-    tool_params: &id265
-      categoryId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+    tool_params: &id263
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
       newName: popular item
   期望:
     intent: 修改分类
-    params: *id265
+    params: *id263
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -7889,11 +7887,11 @@
   层: L1
   输入:
     tool_name: category_delete
-    tool_params: &id266
-      categoryId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+    tool_params: &id264
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
   期望:
     intent: 删除分类
-    params: *id266
+    params: *id264
     output: 工具可正常调用
     block: false
   标签:
@@ -7905,11 +7903,11 @@
   层: L1
   输入:
     tool_name: category_delete
-    tool_params: &id267
+    tool_params: &id265
       categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
   期望:
     intent: 删除分类
-    params: *id267
+    params: *id265
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -7959,14 +7957,14 @@
   层: L1
   输入:
     tool_name: category_delete
-    tool_params: &id268
+    tool_params: &id266
       categoryId: '0000000000000000'
   期望:
     intent: 删除分类
-    params: *id268
+    params: *id266
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id269
+    影响范围对账: &id267
       快照工具: category_list
       快照参数:
         merchId: ''
@@ -7977,7 +7975,7 @@
           merchId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
         目标ID: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
     高危: true
-  影响范围对账: *id269
+  影响范围对账: *id267
   高危: true
   标签:
   - 异常
@@ -8023,11 +8021,11 @@
   层: L1
   输入:
     tool_name: tax_list
-    tool_params: &id270
+    tool_params: &id268
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询税率列表
-    params: *id270
+    params: *id268
     output: 工具可正常调用
     block: false
   标签:
@@ -8038,11 +8036,11 @@
   层: L1
   输入:
     tool_name: tax_list
-    tool_params: &id271
+    tool_params: &id269
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询税率列表
-    params: *id271
+    params: *id269
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -8125,13 +8123,13 @@
   层: L1
   输入:
     tool_name: tax_create
-    tool_params: &id272
+    tool_params: &id270
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 晚餐
       tax: 1
   期望:
     intent: 新建税率
-    params: *id272
+    params: *id270
     output: 工具可正常调用
     block: false
   标签:
@@ -8142,13 +8140,13 @@
   层: L1
   输入:
     tool_name: tax_create
-    tool_params: &id273
+    tool_params: &id271
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Delivery Area 1
       tax: 1
   期望:
     intent: 新建税率
-    params: *id273
+    params: *id271
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -8196,16 +8194,16 @@
   层: L1
   输入:
     tool_name: tax_create
-    tool_params: &id274
+    tool_params: &id272
       merchId: '0000000000000000'
       name: 晚餐
       tax: 1
   期望:
     intent: 新建税率
-    params: *id274
+    params: *id272
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id275
+    影响范围对账: &id273
       快照工具: tax_list
       快照参数:
         merchId: ''
@@ -8216,7 +8214,7 @@
           merchId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
         目标ID: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
     高危: true
-  影响范围对账: *id275
+  影响范围对账: *id273
   高危: true
   标签:
   - 异常
@@ -8263,12 +8261,12 @@
   层: L1
   输入:
     tool_name: tax_update
-    tool_params: &id276
+    tool_params: &id274
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       taxId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 修改税率
-    params: *id276
+    params: *id274
     output: 工具可正常调用
     block: false
   标签:
@@ -8280,12 +8278,12 @@
   层: L1
   输入:
     tool_name: tax_update
-    tool_params: &id277
+    tool_params: &id275
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       taxId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
   期望:
     intent: 修改税率
-    params: *id277
+    params: *id275
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -8370,14 +8368,14 @@
   层: L1
   输入:
     tool_name: tax_bind_item
-    tool_params: &id278
+    tool_params: &id276
       merchFoodIds:
       - f67011c7-71f6-49ba-b1ac-309a4c0539bb
       taxIds:
       - f67011c7-71f6-49ba-b1ac-309a4c0539bb
   期望:
     intent: 商品绑定税率
-    params: *id278
+    params: *id276
     output: 工具可正常调用
     block: false
   标签:
@@ -8388,14 +8386,14 @@
   层: L1
   输入:
     tool_name: tax_bind_item
-    tool_params: &id279
+    tool_params: &id277
       merchFoodIds:
       - 23c23434-3a90-4369-93c9-2a74cb191cc8
       taxIds:
       - 23c23434-3a90-4369-93c9-2a74cb191cc8
   期望:
     intent: 商品绑定税率
-    params: *id279
+    params: *id277
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -8478,12 +8476,12 @@
   层: L1
   输入:
     tool_name: spec_create
-    tool_params: &id280
+    tool_params: &id278
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Iced Ribera w. Lemon
   期望:
     intent: 新建规格组
-    params: *id280
+    params: *id278
     output: 工具可正常调用
     block: false
   标签:
@@ -8494,12 +8492,12 @@
   层: L1
   输入:
     tool_name: spec_create
-    tool_params: &id281
+    tool_params: &id279
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 测试订单
   期望:
     intent: 新建规格组
-    params: *id281
+    params: *id279
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -8547,15 +8545,15 @@
   层: L1
   输入:
     tool_name: spec_create
-    tool_params: &id282
+    tool_params: &id280
       merchId: '0000000000000000'
       name: Iced Ribera w. Lemon
   期望:
     intent: 新建规格组
-    params: *id282
+    params: *id280
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id283
+    影响范围对账: &id281
       快照工具: tax_list
       快照参数:
         merchId: ''
@@ -8566,7 +8564,7 @@
           merchId: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
         目标ID: c4e41fcf-5ad9-4bd5-908a-fe421bf6ba8b
     高危: true
-  影响范围对账: *id283
+  影响范围对账: *id281
   高危: true
   标签:
   - 异常
@@ -8612,14 +8610,14 @@
   层: L1
   输入:
     tool_name: spec_bind_item
-    tool_params: &id284
+    tool_params: &id282
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       specId: 15fbc43d-3650-4e8e-9929-42798462c7a1
       itemIds:
-      - 15fbc43d-3650-4e8e-9929-42798462c7a1
+      - 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 商品绑定规格组
-    params: *id284
+    params: *id282
     output: 工具可正常调用
     block: false
   标签:
@@ -8630,14 +8628,14 @@
   层: L1
   输入:
     tool_name: spec_bind_item
-    tool_params: &id285
+    tool_params: &id283
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       specId: c8cae758-c014-4b14-a745-719dbbd70ba2
       itemIds:
-      - c8cae758-c014-4b14-a745-719dbbd70ba2
+      - 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 商品绑定规格组
-    params: *id285
+    params: *id283
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -8720,11 +8718,11 @@
   层: L1
   输入:
     tool_name: list_delivery_areas
-    tool_params: &id286
+    tool_params: &id284
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询配送区域
-    params: *id286
+    params: *id284
     output: 工具可正常调用
     block: false
   标签:
@@ -8735,11 +8733,11 @@
   层: L1
   输入:
     tool_name: list_delivery_areas
-    tool_params: &id287
+    tool_params: &id285
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询配送区域
-    params: *id287
+    params: *id285
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -8822,11 +8820,11 @@
   层: L1
   输入:
     tool_name: list_pickup_time_slots
-    tool_params: &id288
+    tool_params: &id286
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询自提时段
-    params: *id288
+    params: *id286
     output: 工具可正常调用
     block: false
   标签:
@@ -8837,11 +8835,11 @@
   层: L1
   输入:
     tool_name: list_pickup_time_slots
-    tool_params: &id289
+    tool_params: &id287
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询自提时段
-    params: *id289
+    params: *id287
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -8924,12 +8922,12 @@
   层: L1
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id290
+    tool_params: &id288
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关配送服务
-    params: *id290
+    params: *id288
     output: 工具可正常调用
     block: false
   标签:
@@ -8940,12 +8938,12 @@
   层: L1
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id291
+    tool_params: &id289
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关配送服务
-    params: *id291
+    params: *id289
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9028,12 +9026,12 @@
   层: L1
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id292
+    tool_params: &id290
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关自提服务
-    params: *id292
+    params: *id290
     output: 工具可正常调用
     block: false
   标签:
@@ -9044,12 +9042,12 @@
   层: L1
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id293
+    tool_params: &id291
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关自提服务
-    params: *id293
+    params: *id291
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9132,12 +9130,12 @@
   层: L1
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id294
+    tool_params: &id292
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开启自动接单
-    params: *id294
+    params: *id292
     output: 工具可正常调用
     block: false
   标签:
@@ -9148,12 +9146,12 @@
   层: L1
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id295
+    tool_params: &id293
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开启自动接单
-    params: *id295
+    params: *id293
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9237,12 +9235,12 @@
   层: L1
   输入:
     tool_name: set_pickup_order_threshold
-    tool_params: &id296
+    tool_params: &id294
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       thresholdAmount: 10
   期望:
     intent: 设置自提门槛
-    params: *id296
+    params: *id294
     output: 工具可正常调用
     block: false
   标签:
@@ -9254,12 +9252,12 @@
   层: L1
   输入:
     tool_name: set_pickup_order_threshold
-    tool_params: &id297
+    tool_params: &id295
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       thresholdAmount: 10
   期望:
     intent: 设置自提门槛
-    params: *id297
+    params: *id295
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9345,7 +9343,7 @@
   层: L1
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id298
+    tool_params: &id296
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -9353,7 +9351,7 @@
       preparationMinutes: 1
   期望:
     intent: 添加自提时段
-    params: *id298
+    params: *id296
     output: 工具可正常调用
     block: false
   标签:
@@ -9365,7 +9363,7 @@
   层: L1
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id299
+    tool_params: &id297
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -9373,7 +9371,7 @@
       preparationMinutes: 1
   期望:
     intent: 添加自提时段
-    params: *id299
+    params: *id297
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9423,7 +9421,7 @@
   层: L1
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id300
+    tool_params: &id298
       merchId: '0000000000000000'
       days: Monday
       openTime: '12:00'
@@ -9431,10 +9429,10 @@
       preparationMinutes: 1
   期望:
     intent: 添加自提时段
-    params: *id300
+    params: *id298
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id301
+    影响范围对账: &id299
       快照工具: list_pickup_time_slots
       快照参数:
         merchId: ''
@@ -9445,7 +9443,7 @@
           merchId: 4feb93b4-3283-4580-ac65-6b4d0212d6f3
         目标ID: 4feb93b4-3283-4580-ac65-6b4d0212d6f3
     高危: true
-  影响范围对账: *id301
+  影响范围对账: *id299
   高危: true
   标签:
   - 异常
@@ -9491,11 +9489,11 @@
   层: L1
   输入:
     tool_name: get_extra_fee
-    tool_params: &id302
+    tool_params: &id300
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询附加费用
-    params: *id302
+    params: *id300
     output: 工具可正常调用
     block: false
   标签:
@@ -9506,11 +9504,11 @@
   层: L1
   输入:
     tool_name: get_extra_fee
-    tool_params: &id303
+    tool_params: &id301
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询附加费用
-    params: *id303
+    params: *id301
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9594,7 +9592,7 @@
   层: L1
   输入:
     tool_name: add_extra_fee
-    tool_params: &id304
+    tool_params: &id302
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Spicy Beef Tripe & Tendon Noodle In Soup
       target: pickup
@@ -9603,7 +9601,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id304
+    params: *id302
     output: 工具可正常调用
     block: false
   标签:
@@ -9615,7 +9613,7 @@
   层: L1
   输入:
     tool_name: add_extra_fee
-    tool_params: &id305
+    tool_params: &id303
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Iced Ribera w. Lemon
       target: pickup
@@ -9624,7 +9622,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id305
+    params: *id303
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9674,7 +9672,7 @@
   层: L1
   输入:
     tool_name: add_extra_fee
-    tool_params: &id306
+    tool_params: &id304
       merchId: '0000000000000000'
       name: Spicy Beef Tripe & Tendon Noodle In Soup
       target: pickup
@@ -9683,10 +9681,10 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id306
+    params: *id304
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id307
+    影响范围对账: &id305
       快照工具: get_extra_fee
       快照参数:
         merchId: ''
@@ -9697,7 +9695,7 @@
           merchId: 23c23434-3a90-4369-93c9-2a74cb191cc8
         目标ID: 23c23434-3a90-4369-93c9-2a74cb191cc8
     高危: true
-  影响范围对账: *id307
+  影响范围对账: *id305
   高危: true
   标签:
   - 异常
@@ -9744,12 +9742,12 @@
   层: L1
   输入:
     tool_name: delete_extra_fee
-    tool_params: &id308
+    tool_params: &id306
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       feeId: c8cae758-c014-4b14-a745-719dbbd70ba2
   期望:
     intent: 删除附加费用
-    params: *id308
+    params: *id306
     output: 工具可正常调用
     block: false
   标签:
@@ -9761,12 +9759,12 @@
   层: L1
   输入:
     tool_name: delete_extra_fee
-    tool_params: &id309
+    tool_params: &id307
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       feeId: d2de8117-56ca-42dd-8406-eb5237756f32
   期望:
     intent: 删除附加费用
-    params: *id309
+    params: *id307
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9816,15 +9814,15 @@
   层: L1
   输入:
     tool_name: delete_extra_fee
-    tool_params: &id310
+    tool_params: &id308
       merchId: '0000000000000000'
       feeId: '0000000000000000'
   期望:
     intent: 删除附加费用
-    params: *id310
+    params: *id308
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id311
+    影响范围对账: &id309
       快照工具: get_extra_fee
       快照参数:
         merchId: ''
@@ -9835,7 +9833,7 @@
           merchId: c8cae758-c014-4b14-a745-719dbbd70ba2
         目标ID: c8cae758-c014-4b14-a745-719dbbd70ba2
     高危: true
-  影响范围对账: *id311
+  影响范围对账: *id309
   高危: true
   标签:
   - 异常
@@ -9882,12 +9880,12 @@
   层: L1
   输入:
     tool_name: set_tip_type
-    tool_params: &id312
+    tool_params: &id310
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       tipType: fixed
   期望:
     intent: 设置小费类型
-    params: *id312
+    params: *id310
     output: 工具可正常调用
     block: false
   标签:
@@ -9899,12 +9897,12 @@
   层: L1
   输入:
     tool_name: set_tip_type
-    tool_params: &id313
+    tool_params: &id311
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       tipType: fixed
   期望:
     intent: 设置小费类型
-    params: *id313
+    params: *id311
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -9990,13 +9988,13 @@
   层: L1
   输入:
     tool_name: set_tip_options
-    tool_params: &id314
+    tool_params: &id312
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       tipValues:
       - ''
   期望:
     intent: 设置小费选项
-    params: *id314
+    params: *id312
     output: 工具可正常调用
     block: false
   标签:
@@ -10008,13 +10006,13 @@
   层: L1
   输入:
     tool_name: set_tip_options
-    tool_params: &id315
+    tool_params: &id313
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       tipValues:
       - ''
   期望:
     intent: 设置小费选项
-    params: *id315
+    params: *id313
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -10099,12 +10097,12 @@
   层: L1
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id316
+    tool_params: &id314
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关餐具选项
-    params: *id316
+    params: *id314
     output: 工具可正常调用
     block: false
   标签:
@@ -10115,12 +10113,12 @@
   层: L1
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id317
+    tool_params: &id315
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
   期望:
     intent: 开关餐具选项
-    params: *id317
+    params: *id315
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -10203,11 +10201,11 @@
   层: L1
   输入:
     tool_name: list_store_users
-    tool_params: &id318
+    tool_params: &id316
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工列表
-    params: *id318
+    params: *id316
     output: 工具可正常调用
     block: false
   标签:
@@ -10218,11 +10216,11 @@
   层: L1
   输入:
     tool_name: list_store_users
-    tool_params: &id319
+    tool_params: &id317
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工列表
-    params: *id319
+    params: *id317
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -10305,12 +10303,12 @@
   层: L1
   输入:
     tool_name: get_user_detail
-    tool_params: &id320
+    tool_params: &id318
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 15fbc43d-3650-4e8e-9929-42798462c7a1
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工详情
-    params: *id320
+    params: *id318
     output: 工具可正常调用
     block: false
   标签:
@@ -10321,12 +10319,12 @@
   层: L1
   输入:
     tool_name: get_user_detail
-    tool_params: &id321
+    tool_params: &id319
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工详情
-    params: *id321
+    params: *id319
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -10409,11 +10407,11 @@
   层: L1
   输入:
     tool_name: list_merchant_roles
-    tool_params: &id322
+    tool_params: &id320
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询可用角色
-    params: *id322
+    params: *id320
     output: 工具可正常调用
     block: false
   标签:
@@ -10424,11 +10422,11 @@
   层: L1
   输入:
     tool_name: list_merchant_roles
-    tool_params: &id323
+    tool_params: &id321
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询可用角色
-    params: *id323
+    params: *id321
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -10512,13 +10510,13 @@
   层: L1
   输入:
     tool_name: add_store_user
-    tool_params: &id324
+    tool_params: &id322
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
       roleId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
   期望:
     intent: 新增员工
-    params: *id324
+    params: *id322
     output: 工具可正常调用
     block: false
   标签:
@@ -10530,13 +10528,13 @@
   层: L1
   输入:
     tool_name: add_store_user
-    tool_params: &id325
+    tool_params: &id323
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
       roleId: 4feb93b4-3283-4580-ac65-6b4d0212d6f3
   期望:
     intent: 新增员工
-    params: *id325
+    params: *id323
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -10586,16 +10584,16 @@
   层: L1
   输入:
     tool_name: add_store_user
-    tool_params: &id326
+    tool_params: &id324
       merchId: '0000000000000000'
       phone: '9023162140'
       roleId: '0000000000000000'
   期望:
     intent: 新增员工
-    params: *id326
+    params: *id324
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id327
+    影响范围对账: &id325
       快照工具: get_user_detail
       快照参数:
         merchId: ''
@@ -10607,7 +10605,7 @@
           merchId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
         目标ID: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
     高危: true
-  影响范围对账: *id327
+  影响范围对账: *id325
   高危: true
   标签:
   - 异常
@@ -10653,13 +10651,13 @@
   层: L1
   输入:
     tool_name: update_user_status
-    tool_params: &id328
+    tool_params: &id326
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: false
   期望:
     intent: 启用停用员工
-    params: *id328
+    params: *id326
     output: 工具可正常调用
     block: false
   标签:
@@ -10670,13 +10668,13 @@
   层: L1
   输入:
     tool_name: update_user_status
-    tool_params: &id329
+    tool_params: &id327
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 2e6c6a3c-d7ef-40d0-a940-98f10cb9b590
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: false
   期望:
     intent: 启用停用员工
-    params: *id329
+    params: *id327
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -10760,12 +10758,12 @@
   层: L1
   输入:
     tool_name: delete_store_user
-    tool_params: &id330
+    tool_params: &id328
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除员工
-    params: *id330
+    params: *id328
     output: 工具可正常调用
     block: false
   标签:
@@ -10777,12 +10775,12 @@
   层: L1
   输入:
     tool_name: delete_store_user
-    tool_params: &id331
+    tool_params: &id329
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除员工
-    params: *id331
+    params: *id329
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -10832,15 +10830,15 @@
   层: L1
   输入:
     tool_name: delete_store_user
-    tool_params: &id332
+    tool_params: &id330
       merchId: '0000000000000000'
       merchManagerId: '0000000000000000'
   期望:
     intent: 删除员工
-    params: *id332
+    params: *id330
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id333
+    影响范围对账: &id331
       快照工具: get_user_detail
       快照参数:
         merchId: ''
@@ -10852,7 +10850,7 @@
           merchId: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
         目标ID: 333c0f81-9fa4-4eb0-a40c-c5dbba5129a4
     高危: true
-  影响范围对账: *id333
+  影响范围对账: *id331
   高危: true
   标签:
   - 异常
@@ -10898,13 +10896,13 @@
   层: L1
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id334
+    tool_params: &id332
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: true
   期望:
     intent: 查询全部活动
-    params: *id334
+    params: *id332
     output: 工具可正常调用
     block: false
   标签:
@@ -10915,13 +10913,13 @@
   层: L1
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id335
+    tool_params: &id333
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: true
   期望:
     intent: 查询全部活动
-    params: *id335
+    params: *id333
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11004,12 +11002,12 @@
   层: L1
   输入:
     tool_name: list_discount_campaigns
-    tool_params: &id336
+    tool_params: &id334
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       filterType: All
   期望:
     intent: 查询满减活动
-    params: *id336
+    params: *id334
     output: 工具可正常调用
     block: false
   标签:
@@ -11020,12 +11018,12 @@
   层: L1
   输入:
     tool_name: list_discount_campaigns
-    tool_params: &id337
+    tool_params: &id335
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       filterType: All
   期望:
     intent: 查询满减活动
-    params: *id337
+    params: *id335
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11109,14 +11107,14 @@
   层: L1
   输入:
     tool_name: create_discount_campaign
-    tool_params: &id338
+    tool_params: &id336
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 全天菜单
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建满减活动
-    params: *id338
+    params: *id336
     output: 工具可正常调用
     block: false
   标签:
@@ -11128,14 +11126,14 @@
   层: L1
   输入:
     tool_name: create_discount_campaign
-    tool_params: &id339
+    tool_params: &id337
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 0税率
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建满减活动
-    params: *id339
+    params: *id337
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11185,17 +11183,17 @@
   层: L1
   输入:
     tool_name: create_discount_campaign
-    tool_params: &id340
+    tool_params: &id338
       merchId: '0000000000000000'
       name: 全天菜单
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建满减活动
-    params: *id340
+    params: *id338
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id341
+    影响范围对账: &id339
       快照工具: list_discount_campaigns
       快照参数:
         merchId: ''
@@ -11207,7 +11205,7 @@
           merchId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
         目标ID: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
     高危: true
-  影响范围对账: *id341
+  影响范围对账: *id339
   高危: true
   标签:
   - 异常
@@ -11253,11 +11251,11 @@
   层: L1
   输入:
     tool_name: list_reward_campaigns
-    tool_params: &id342
+    tool_params: &id340
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询优惠券活动
-    params: *id342
+    params: *id340
     output: 工具可正常调用
     block: false
   标签:
@@ -11268,11 +11266,11 @@
   层: L1
   输入:
     tool_name: list_reward_campaigns
-    tool_params: &id343
+    tool_params: &id341
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询优惠券活动
-    params: *id343
+    params: *id341
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11356,13 +11354,13 @@
   层: L1
   输入:
     tool_name: create_reward_campaign
-    tool_params: &id344
+    tool_params: &id342
       name: Curry Chicken
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建优惠券活动
-    params: *id344
+    params: *id342
     output: 工具可正常调用
     block: false
   标签:
@@ -11374,13 +11372,13 @@
   层: L1
   输入:
     tool_name: create_reward_campaign
-    tool_params: &id345
+    tool_params: &id343
       name: Seafood Fried Rice
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
     intent: 创建优惠券活动
-    params: *id345
+    params: *id343
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11534,13 +11532,13 @@
   层: L1
   输入:
     tool_name: add_report_subscription
-    tool_params: &id346
+    tool_params: &id344
       email: 944600294123@qq.com
       isSalesReport: false
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id346
+    params: *id344
     output: 工具可正常调用
     block: false
   标签:
@@ -11552,13 +11550,13 @@
   层: L1
   输入:
     tool_name: add_report_subscription
-    tool_params: &id347
+    tool_params: &id345
       email: 944600294123@qq.com
       isSalesReport: false
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id347
+    params: *id345
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11641,11 +11639,11 @@
   层: L1
   输入:
     tool_name: list_order_notification_emails
-    tool_params: &id348
+    tool_params: &id346
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询订单通知邮箱
-    params: *id348
+    params: *id346
     output: 工具可正常调用
     block: false
   标签:
@@ -11656,11 +11654,11 @@
   层: L1
   输入:
     tool_name: list_order_notification_emails
-    tool_params: &id349
+    tool_params: &id347
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询订单通知邮箱
-    params: *id349
+    params: *id347
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11744,12 +11742,12 @@
   层: L1
   输入:
     tool_name: add_order_notification_email
-    tool_params: &id350
+    tool_params: &id348
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       email: test@example.com
   期望:
     intent: 添加订单通知邮箱
-    params: *id350
+    params: *id348
     output: 工具可正常调用
     block: false
   标签:
@@ -11761,12 +11759,12 @@
   层: L1
   输入:
     tool_name: add_order_notification_email
-    tool_params: &id351
+    tool_params: &id349
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       email: test@example.com
   期望:
     intent: 添加订单通知邮箱
-    params: *id351
+    params: *id349
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11816,15 +11814,15 @@
   层: L1
   输入:
     tool_name: add_order_notification_email
-    tool_params: &id352
+    tool_params: &id350
       merchId: '0000000000000000'
       email: test@example.com
   期望:
     intent: 添加订单通知邮箱
-    params: *id352
+    params: *id350
     output: 目标不存在时影响 0 条，不得越范围改删其他数据
     block: false
-    影响范围对账: &id353
+    影响范围对账: &id351
       快照工具: list_order_notification_emails
       快照参数:
         merchId: ''
@@ -11835,7 +11833,7 @@
           merchId: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
         目标ID: 409d9253-83d5-4ce9-9eb1-5ed76ca9e056
     高危: true
-  影响范围对账: *id353
+  影响范围对账: *id351
   高危: true
   标签:
   - 异常
@@ -11881,11 +11879,11 @@
   层: L1
   输入:
     tool_name: get_payment_methods
-    tool_params: &id354
+    tool_params: &id352
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询支付方式
-    params: *id354
+    params: *id352
     output: 工具可正常调用
     block: false
   标签:
@@ -11896,11 +11894,11 @@
   层: L1
   输入:
     tool_name: get_payment_methods
-    tool_params: &id355
+    tool_params: &id353
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询支付方式
-    params: *id355
+    params: *id353
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -11983,13 +11981,13 @@
   层: L1
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id356
+    tool_params: &id354
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: false
   期望:
     intent: 开关支付方式
-    params: *id356
+    params: *id354
     output: 工具可正常调用
     block: false
   标签:
@@ -12000,13 +11998,13 @@
   层: L1
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id357
+    tool_params: &id355
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: false
   期望:
     intent: 开关支付方式
-    params: *id357
+    params: *id355
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -12089,11 +12087,11 @@
   层: L1
   输入:
     tool_name: get_third_party_integrations
-    tool_params: &id358
+    tool_params: &id356
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询第三方集成
-    params: *id358
+    params: *id356
     output: 工具可正常调用
     block: false
   标签:
@@ -12104,11 +12102,11 @@
   层: L1
   输入:
     tool_name: get_third_party_integrations
-    tool_params: &id359
+    tool_params: &id357
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询第三方集成
-    params: *id359
+    params: *id357
     output: 单次调用延迟可接受
     block: false
   标签:
@@ -12191,11 +12189,11 @@
   层: L1
   输入:
     tool_name: get_store_info
-    tool_params: &id360
+    tool_params: &id358
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺经营概况
-    params: *id360
+    params: *id358
     output: 工具可正常调用
     block: false
     semantic:
@@ -12210,11 +12208,11 @@
   层: L1
   输入:
     tool_name: get_store_info
-    tool_params: &id361
+    tool_params: &id359
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺经营概况
-    params: *id361
+    params: *id359
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -12301,11 +12299,11 @@
   层: L1
   输入:
     tool_name: item_list
-    tool_params: &id362
+    tool_params: &id360
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺商品结构
-    params: *id362
+    params: *id360
     output: 工具可正常调用
     block: false
     semantic:
@@ -12322,11 +12320,11 @@
   层: L1
   输入:
     tool_name: item_list
-    tool_params: &id363
+    tool_params: &id361
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺商品结构
-    params: *id363
+    params: *id361
     output: 单次调用延迟可接受
     block: false
     semantic:
@@ -12385,7 +12383,7 @@
       feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除附加费用
-    params: *id133
+    params: *id132
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -12408,7 +12406,7 @@
       roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
   期望:
     intent: 新增员工
-    params: *id155
+    params: *id154
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -12425,12 +12423,12 @@
   层: L2
   输入:
     tool_name: list_reward_campaigns
-    tool_params: &id364
+    tool_params: &id362
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询优惠券活动
-    params: *id364
+    params: *id362
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12461,13 +12459,13 @@
   层: L2
   输入:
     tool_name: tax_bind_item
-    tool_params: &id366
-      merchFoodIds: *id365
-      taxIds: *id096
+    tool_params: &id364
+      merchFoodIds: *id363
+      taxIds: *id095
       unknown_param: x
   期望:
     intent: 商品绑定税率
-    params: *id366
+    params: *id364
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12498,13 +12496,13 @@
   层: L2
   输入:
     tool_name: delete_store_user
-    tool_params: &id367
+    tool_params: &id365
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 删除员工
-    params: *id367
+    params: *id365
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12537,7 +12535,7 @@
   输入:
     tool_name: item_update_typo
     tool_params:
-      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       newName: 测试订单
       price: '10.00'
   期望:
@@ -12563,7 +12561,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询附加费用
-    params: *id127
+    params: *id126
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -12579,12 +12577,12 @@
   层: L2
   输入:
     tool_name: menu_publish
-    tool_params: &id368
+    tool_params: &id366
       menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       unknown_param: x
   期望:
     intent: 发布菜单
-    params: *id368
+    params: *id366
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12615,7 +12613,7 @@
   层: L2
   输入:
     tool_name: create_discount_campaign
-    tool_params: &id369
+    tool_params: &id367
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Spicy Beef Tripe & Tendon Noodle In Soup
       startDate: '2026-01-01'
@@ -12623,7 +12621,7 @@
       unknown_param: x
   期望:
     intent: 创建满减活动
-    params: *id369
+    params: *id367
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12655,12 +12653,12 @@
   层: L2
   输入:
     tool_name: category_delete
-    tool_params: &id370
+    tool_params: &id368
       categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
       unknown_param: x
   期望:
     intent: 删除分类
-    params: *id370
+    params: *id368
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12692,12 +12690,12 @@
   层: L2
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id371
+    tool_params: &id369
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: -1
   期望:
     intent: 开关配送服务
-    params: *id371
+    params: *id369
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -12735,12 +12733,12 @@
   层: L2
   输入:
     tool_name: get_extra_fee
-    tool_params: &id372
+    tool_params: &id370
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询附加费用
-    params: *id372
+    params: *id370
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12771,13 +12769,13 @@
   层: L2
   输入:
     tool_name: tax_update
-    tool_params: &id373
+    tool_params: &id371
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
       unknown_param: x
   期望:
     intent: 修改税率
-    params: *id373
+    params: *id371
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12811,11 +12809,11 @@
     tool_name: update_user_status_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: false
   期望:
     intent: 启用停用员工
-    params: *id158
+    params: *id157
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -12831,13 +12829,13 @@
   层: L2
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id374
+    tool_params: &id372
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
       unknown_param: x
   期望:
     intent: 开启自动接单
-    params: *id374
+    params: *id372
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12868,13 +12866,13 @@
   层: L2
   输入:
     tool_name: update_user_status
-    tool_params: &id375
+    tool_params: &id373
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: 9999999999999999
   期望:
     intent: 启用停用员工
-    params: *id375
+    params: *id373
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -12890,13 +12888,13 @@
   层: L2
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id376
+    tool_params: &id374
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: abc
   期望:
     intent: 查询全部活动
-    params: *id376
+    params: *id374
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -12912,13 +12910,13 @@
   层: L2
   输入:
     tool_name: tax_create
-    tool_params: &id377
+    tool_params: &id375
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Hainan Style Chicken Noodle In Soup
       tax: 0
   期望:
     intent: 新建税率
-    params: *id377
+    params: *id375
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -12934,13 +12932,13 @@
   层: L2
   输入:
     tool_name: update_store_name
-    tool_params: &id378
+    tool_params: &id376
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       newName: Curry Beef Brisket Flank
       unknown_param: x
   期望:
     intent: 修改店铺名称
-    params: *id378
+    params: *id376
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -12972,12 +12970,12 @@
   层: L2
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id379
+    tool_params: &id377
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: 0
   期望:
     intent: 开关餐具选项
-    params: *id379
+    params: *id377
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -12993,13 +12991,13 @@
   层: L2
   输入:
     tool_name: category_create
-    tool_params: &id380
+    tool_params: &id378
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: soup
       unknown_param: x
   期望:
     intent: 新建分类
-    params: *id380
+    params: *id378
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13030,13 +13028,13 @@
   层: L2
   输入:
     tool_name: menu_create
-    tool_params: &id381
+    tool_params: &id379
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: lunch special
       unknown_param: x
   期望:
     intent: 新建菜单
-    params: *id381
+    params: *id379
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13067,13 +13065,13 @@
   层: L2
   输入:
     tool_name: set_tip_type
-    tool_params: &id382
+    tool_params: &id380
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       tipType: fixed
       unknown_param: x
   期望:
     intent: 设置小费类型
-    params: *id382
+    params: *id380
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13127,13 +13125,13 @@
   层: L2
   输入:
     tool_name: batch_item_status
-    tool_params: &id383
+    tool_params: &id381
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       status: OnSale
       unknown_param: x
   期望:
     intent: 批量上下架商品
-    params: *id383
+    params: *id381
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13164,12 +13162,12 @@
   层: L2
   输入:
     tool_name: get_store_info
-    tool_params: &id384
+    tool_params: &id382
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询店铺信息
-    params: *id384
+    params: *id382
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13200,12 +13198,12 @@
   层: L2
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id385
+    tool_params: &id383
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: 9999999999999999
   期望:
     intent: 开关自提服务
-    params: *id385
+    params: *id383
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -13221,13 +13219,13 @@
   层: L2
   输入:
     tool_name: tax_create
-    tool_params: &id386
+    tool_params: &id384
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Hainan Style Chicken Noodle In Soup
       tax: -1
   期望:
     intent: 新建税率
-    params: *id386
+    params: *id384
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -13243,14 +13241,14 @@
   层: L2
   输入:
     tool_name: item_create
-    tool_params: &id387
+    tool_params: &id385
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Iced Ribera w. Lemon
       price: '4.95'
       unknown_param: x
   期望:
     intent: 新建商品
-    params: *id387
+    params: *id385
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13281,12 +13279,12 @@
   层: L2
   输入:
     tool_name: item_list
-    tool_params: &id388
+    tool_params: &id386
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询商品列表
-    params: *id388
+    params: *id386
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13317,13 +13315,13 @@
   层: L2
   输入:
     tool_name: set_store_open_status
-    tool_params: &id389
+    tool_params: &id387
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       status: open
       unknown_param: x
   期望:
     intent: 切换营业状态
-    params: *id389
+    params: *id387
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13358,7 +13356,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询支付方式
-    params: *id188
+    params: *id187
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -13379,7 +13377,7 @@
       thresholdAmount: '13.95'
   期望:
     intent: 设置自提门槛
-    params: *id121
+    params: *id120
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -13401,7 +13399,7 @@
       enabled: false
   期望:
     intent: 开关餐具选项
-    params: *id143
+    params: *id142
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -13418,7 +13416,7 @@
   输入:
     tool_name: item_bind_category_typo
     tool_params:
-      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       categoryIds: *id052
   期望:
     intent: 商品绑定分类
@@ -13438,12 +13436,12 @@
   层: L2
   输入:
     tool_name: batch_item_stock
-    tool_params: &id390
+    tool_params: &id388
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: -1
   期望:
     intent: 批量修改商品库存
-    params: *id390
+    params: *id388
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -13460,13 +13458,13 @@
   层: L2
   输入:
     tool_name: set_pickup_order_threshold
-    tool_params: &id391
+    tool_params: &id389
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       thresholdAmount: '13.95'
       unknown_param: x
   期望:
     intent: 设置自提门槛
-    params: *id391
+    params: *id389
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13499,7 +13497,7 @@
   输入:
     tool_name: menu_bind_categories_typo
     tool_params:
-      menuId: d2de8117-56ca-42dd-8406-eb5237756f32
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       categoryIds: *id052
   期望:
     intent: 菜单绑定分类
@@ -13519,13 +13517,13 @@
   层: L2
   输入:
     tool_name: add_report_subscription
-    tool_params: &id392
+    tool_params: &id390
       email: 944600294123@qq.com
       isSalesReport: abc
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id392
+    params: *id390
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -13542,12 +13540,12 @@
   层: L2
   输入:
     tool_name: list_pickup_time_slots
-    tool_params: &id393
+    tool_params: &id391
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询自提时段
-    params: *id393
+    params: *id391
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13578,13 +13576,13 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id394
+    tool_params: &id392
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: -1
   期望:
     intent: 开关支付方式
-    params: *id394
+    params: *id392
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -13600,13 +13598,13 @@
   层: L2
   输入:
     tool_name: update_user_status
-    tool_params: &id395
+    tool_params: &id393
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: -1
   期望:
     intent: 启用停用员工
-    params: *id395
+    params: *id393
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -13622,12 +13620,12 @@
   层: L2
   输入:
     tool_name: category_list
-    tool_params: &id396
+    tool_params: &id394
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询分类列表
-    params: *id396
+    params: *id394
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13658,13 +13656,13 @@
   层: L2
   输入:
     tool_name: item_bind_category
-    tool_params: &id397
-      itemId: d2de8117-56ca-42dd-8406-eb5237756f32
+    tool_params: &id395
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       categoryIds: *id052
       unknown_param: x
   期望:
     intent: 商品绑定分类
-    params: *id397
+    params: *id395
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13698,10 +13696,10 @@
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       specId: c8cae758-c014-4b14-a745-719dbbd70ba2
-      itemIds: *id103
+      itemIds: *id102
   期望:
     intent: 商品绑定规格组
-    params: *id102
+    params: *id101
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -13718,7 +13716,7 @@
   输入:
     tool_name: item_update_stock_typo
     tool_params:
-      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: 99999
   期望:
     intent: 修改商品库存
@@ -13759,12 +13757,12 @@
   层: L2
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id398
+    tool_params: &id396
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: abc
   期望:
     intent: 开关餐具选项
-    params: *id398
+    params: *id396
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -13780,13 +13778,13 @@
   层: L2
   输入:
     tool_name: spec_create
-    tool_params: &id399
+    tool_params: &id397
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Delivery Area 1
       unknown_param: x
   期望:
     intent: 新建规格组
-    params: *id399
+    params: *id397
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13817,12 +13815,12 @@
   层: L2
   输入:
     tool_name: item_detail
-    tool_params: &id400
-      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+    tool_params: &id398
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       unknown_param: x
   期望:
     intent: 查询商品详情
-    params: *id400
+    params: *id398
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13873,13 +13871,13 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id401
+    tool_params: &id399
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: 0
   期望:
     intent: 开关支付方式
-    params: *id401
+    params: *id399
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -13895,12 +13893,12 @@
   层: L2
   输入:
     tool_name: menu_detail
-    tool_params: &id402
+    tool_params: &id400
       menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       unknown_param: x
   期望:
     intent: 查询菜单详情
-    params: *id402
+    params: *id400
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -13935,7 +13933,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询可用角色
-    params: *id152
+    params: *id151
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -13951,12 +13949,12 @@
   层: L2
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id403
+    tool_params: &id401
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: abc
   期望:
     intent: 开启自动接单
-    params: *id403
+    params: *id401
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -13972,12 +13970,12 @@
   层: L2
   输入:
     tool_name: menu_list
-    tool_params: &id404
+    tool_params: &id402
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询菜单列表
-    params: *id404
+    params: *id402
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14008,7 +14006,7 @@
   层: L2
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id405
+    tool_params: &id403
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -14016,7 +14014,7 @@
       preparationMinutes: 9999999999999999
   期望:
     intent: 添加自提时段
-    params: *id405
+    params: *id403
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14053,12 +14051,12 @@
   层: L2
   输入:
     tool_name: list_order_notification_emails
-    tool_params: &id406
+    tool_params: &id404
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询订单通知邮箱
-    params: *id406
+    params: *id404
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14089,13 +14087,13 @@
   层: L2
   输入:
     tool_name: set_tip_options
-    tool_params: &id407
+    tool_params: &id405
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      tipValues: *id140
+      tipValues: *id139
       unknown_param: x
   期望:
     intent: 设置小费选项
-    params: *id407
+    params: *id405
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14127,12 +14125,12 @@
   层: L2
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id408
+    tool_params: &id406
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: -1
   期望:
     intent: 开启自动接单
-    params: *id408
+    params: *id406
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14148,12 +14146,12 @@
   层: L2
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id409
+    tool_params: &id407
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: 0
   期望:
     intent: 开关自提服务
-    params: *id409
+    params: *id407
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14169,12 +14167,12 @@
   层: L2
   输入:
     tool_name: item_list
-    tool_params: &id410
+    tool_params: &id408
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询店铺商品结构
-    params: *id410
+    params: *id408
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14205,12 +14203,12 @@
   层: L2
   输入:
     tool_name: item_update_stock
-    tool_params: &id411
-      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+    tool_params: &id409
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: 0
   期望:
     intent: 修改商品库存
-    params: *id411
+    params: *id409
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14227,12 +14225,12 @@
   层: L2
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id412
+    tool_params: &id410
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: abc
   期望:
     intent: 开关自提服务
-    params: *id412
+    params: *id410
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -14248,13 +14246,13 @@
   层: L2
   输入:
     tool_name: delete_extra_fee
-    tool_params: &id413
+    tool_params: &id411
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       feeId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 删除附加费用
-    params: *id413
+    params: *id411
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14286,13 +14284,13 @@
   层: L2
   输入:
     tool_name: add_order_notification_email
-    tool_params: &id414
+    tool_params: &id412
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       email: test@example.com
       unknown_param: x
   期望:
     intent: 添加订单通知邮箱
-    params: *id414
+    params: *id412
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14324,13 +14322,13 @@
   层: L2
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id415
+    tool_params: &id413
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: 0
   期望:
     intent: 查询全部活动
-    params: *id415
+    params: *id413
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14351,7 +14349,7 @@
       enabled: false
   期望:
     intent: 开启自动接单
-    params: *id118
+    params: *id117
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14367,13 +14365,13 @@
   层: L2
   输入:
     tool_name: update_store_phone
-    tool_params: &id416
+    tool_params: &id414
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       newPhone: '9023162140'
       unknown_param: x
   期望:
     intent: 修改店铺电话
-    params: *id416
+    params: *id414
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14405,13 +14403,13 @@
   层: L2
   输入:
     tool_name: set_sales_mode
-    tool_params: &id417
+    tool_params: &id415
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       mode: regular
       unknown_param: x
   期望:
     intent: 切换销售模式
-    params: *id417
+    params: *id415
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14442,13 +14440,13 @@
   层: L2
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id418
+    tool_params: &id416
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
       unknown_param: x
   期望:
     intent: 开关配送服务
-    params: *id418
+    params: *id416
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14483,7 +14481,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询分类列表
-    params: *id074
+    params: *id073
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14499,12 +14497,12 @@
   层: L2
   输入:
     tool_name: list_store_users
-    tool_params: &id419
+    tool_params: &id417
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询员工列表
-    params: *id419
+    params: *id417
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14535,7 +14533,7 @@
   层: L2
   输入:
     tool_name: add_extra_fee
-    tool_params: &id420
+    tool_params: &id418
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 晚餐
       target: pickup
@@ -14544,7 +14542,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id420
+    params: *id418
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14561,7 +14559,7 @@
   层: L2
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id421
+    tool_params: &id419
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -14570,7 +14568,7 @@
       unknown_param: x
   期望:
     intent: 添加自提时段
-    params: *id421
+    params: *id419
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14602,14 +14600,14 @@
   层: L2
   输入:
     tool_name: create_reward_campaign
-    tool_params: &id422
+    tool_params: &id420
       name: popular item
       startDate: '2026-01-01'
       endDate: '2026-01-01'
       unknown_param: x
   期望:
     intent: 创建优惠券活动
-    params: *id422
+    params: *id420
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14645,7 +14643,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询税率列表
-    params: *id086
+    params: *id085
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14661,14 +14659,14 @@
   层: L2
   输入:
     tool_name: tax_create
-    tool_params: &id423
+    tool_params: &id421
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Hainan Style Chicken Noodle In Soup
       tax: 1
       unknown_param: x
   期望:
     intent: 新建税率
-    params: *id423
+    params: *id421
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14704,7 +14702,7 @@
       enabled: false
   期望:
     intent: 开关配送服务
-    params: *id112
+    params: *id111
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14720,14 +14718,14 @@
   层: L2
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id424
+    tool_params: &id422
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: true
       unknown_param: x
   期望:
     intent: 查询全部活动
-    params: *id424
+    params: *id422
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14762,7 +14760,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工列表
-    params: *id146
+    params: *id145
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14778,7 +14776,7 @@
   层: L2
   输入:
     tool_name: add_extra_fee
-    tool_params: &id425
+    tool_params: &id423
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 晚餐
       target: pickup
@@ -14787,7 +14785,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id425
+    params: *id423
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14809,7 +14807,7 @@
       tipType: fixed
   期望:
     intent: 设置小费类型
-    params: *id136
+    params: *id135
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14826,14 +14824,14 @@
   层: L2
   输入:
     tool_name: item_update
-    tool_params: &id426
-      itemId: c8cae758-c014-4b14-a745-719dbbd70ba2
+    tool_params: &id424
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       newName: 测试订单
       price: '10.00'
       unknown_param: x
   期望:
     intent: 修改商品信息
-    params: *id426
+    params: *id424
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -14869,7 +14867,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺经营概况
-    params: *id197
+    params: *id196
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14889,7 +14887,7 @@
       categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
   期望:
     intent: 删除分类
-    params: *id083
+    params: *id082
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14906,12 +14904,12 @@
   层: L2
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id427
+    tool_params: &id425
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: 9999999999999999
   期望:
     intent: 开关配送服务
-    params: *id427
+    params: *id425
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -14933,7 +14931,7 @@
       tax: 1
   期望:
     intent: 新建税率
-    params: *id089
+    params: *id088
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -14991,13 +14989,13 @@
   层: L2
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id428
+    tool_params: &id426
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: 9999999999999999
   期望:
     intent: 查询全部活动
-    params: *id428
+    params: *id426
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15013,12 +15011,12 @@
   层: L2
   输入:
     tool_name: batch_item_stock
-    tool_params: &id429
+    tool_params: &id427
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 0
   期望:
     intent: 批量修改商品库存
-    params: *id429
+    params: *id427
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15035,12 +15033,12 @@
   层: L2
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id430
+    tool_params: &id428
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: abc
   期望:
     intent: 开关配送服务
-    params: *id430
+    params: *id428
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -15056,13 +15054,13 @@
   层: L2
   输入:
     tool_name: get_user_detail
-    tool_params: &id431
+    tool_params: &id429
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询员工详情
-    params: *id431
+    params: *id429
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15093,13 +15091,13 @@
   层: L2
   输入:
     tool_name: tax_create
-    tool_params: &id432
+    tool_params: &id430
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Hainan Style Chicken Noodle In Soup
       tax: abc
   期望:
     intent: 新建税率
-    params: *id432
+    params: *id430
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -15115,12 +15113,12 @@
   层: L2
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id433
+    tool_params: &id431
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: -1
   期望:
     intent: 开关自提服务
-    params: *id433
+    params: *id431
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15136,12 +15134,12 @@
   层: L2
   输入:
     tool_name: item_update_stock
-    tool_params: &id434
-      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+    tool_params: &id432
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: -1
   期望:
     intent: 修改商品库存
-    params: *id434
+    params: *id432
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15179,13 +15177,13 @@
   层: L2
   输入:
     tool_name: add_report_subscription
-    tool_params: &id435
+    tool_params: &id433
       email: 944600294123@qq.com
       isSalesReport: -1
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id435
+    params: *id433
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15202,12 +15200,12 @@
   层: L2
   输入:
     tool_name: set_delivery_enabled
-    tool_params: &id436
+    tool_params: &id434
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: 0
   期望:
     intent: 开关配送服务
-    params: *id436
+    params: *id434
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15223,12 +15221,12 @@
   层: L2
   输入:
     tool_name: item_update_stock
-    tool_params: &id437
-      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+    tool_params: &id435
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: abc
   期望:
     intent: 修改商品库存
-    params: *id437
+    params: *id435
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -15251,7 +15249,7 @@
       enabled: false
   期望:
     intent: 开关支付方式
-    params: *id191
+    params: *id190
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15272,7 +15270,7 @@
       name: Delivery Area 1
   期望:
     intent: 新建规格组
-    params: *id099
+    params: *id098
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15294,7 +15292,7 @@
       status: true
   期望:
     intent: 查询全部活动
-    params: *id164
+    params: *id163
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15330,12 +15328,12 @@
   层: L2
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id438
+    tool_params: &id436
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: 9999999999999999
   期望:
     intent: 开关餐具选项
-    params: *id438
+    params: *id436
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15351,7 +15349,7 @@
   层: L2
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id439
+    tool_params: &id437
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -15359,7 +15357,7 @@
       preparationMinutes: -1
   期望:
     intent: 添加自提时段
-    params: *id439
+    params: *id437
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15378,10 +15376,10 @@
     tool_name: get_user_detail_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 6b3e1ccd-37c3-11f1-94d6-00224808ba53
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询员工详情
-    params: *id149
+    params: *id148
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15397,13 +15395,13 @@
   层: L2
   输入:
     tool_name: menu_bind_categories
-    tool_params: &id440
-      menuId: d2de8117-56ca-42dd-8406-eb5237756f32
+    tool_params: &id438
+      menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       categoryIds: *id052
       unknown_param: x
   期望:
     intent: 菜单绑定分类
-    params: *id440
+    params: *id438
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15434,12 +15432,12 @@
   层: L2
   输入:
     tool_name: menu_delete
-    tool_params: &id441
+    tool_params: &id439
       menuId: 9e8ad0d4-57bc-4a79-bc49-9afc6df5f83f
       unknown_param: x
   期望:
     intent: 删除菜单
-    params: *id441
+    params: *id439
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15471,12 +15469,12 @@
   层: L2
   输入:
     tool_name: get_payment_methods
-    tool_params: &id442
+    tool_params: &id440
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询支付方式
-    params: *id442
+    params: *id440
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15507,13 +15505,13 @@
   层: L2
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id443
+    tool_params: &id441
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
       unknown_param: x
   期望:
     intent: 开关餐具选项
-    params: *id443
+    params: *id441
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15551,7 +15549,7 @@
       endDate: '2026-01-01'
   期望:
     intent: 创建满减活动
-    params: *id170
+    params: *id169
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15593,7 +15591,7 @@
       name: soup
   期望:
     intent: 新建分类
-    params: *id077
+    params: *id076
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15609,12 +15607,12 @@
   层: L2
   输入:
     tool_name: item_update_stock
-    tool_params: &id444
-      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+    tool_params: &id442
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: 9999999999999999
   期望:
     intent: 修改商品库存
-    params: *id444
+    params: *id442
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15656,7 +15654,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询自提时段
-    params: *id109
+    params: *id108
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15673,11 +15671,11 @@
   输入:
     tool_name: tax_bind_item_typo
     tool_params:
-      merchFoodIds: *id365
-      taxIds: *id096
+      merchFoodIds: *id363
+      taxIds: *id095
   期望:
     intent: 商品绑定税率
-    params: *id095
+    params: *id094
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15693,13 +15691,13 @@
   层: L2
   输入:
     tool_name: add_report_subscription
-    tool_params: &id445
+    tool_params: &id443
       email: 944600294123@qq.com
       isSalesReport: 0
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id445
+    params: *id443
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -15716,13 +15714,13 @@
   层: L2
   输入:
     tool_name: item_delete
-    tool_params: &id446
+    tool_params: &id444
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       unknown_param: x
   期望:
     intent: 删除商品
-    params: *id446
+    params: *id444
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15756,10 +15754,10 @@
     tool_name: set_tip_options_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      tipValues: *id140
+      tipValues: *id139
   期望:
     intent: 设置小费选项
-    params: *id139
+    params: *id138
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15784,7 +15782,7 @@
       preparationMinutes: 1
   期望:
     intent: 添加自提时段
-    params: *id124
+    params: *id123
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -15801,12 +15799,12 @@
   层: L2
   输入:
     tool_name: get_store_info
-    tool_params: &id447
+    tool_params: &id445
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询店铺经营概况
-    params: *id447
+    params: *id445
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15859,13 +15857,13 @@
   层: L2
   输入:
     tool_name: list_discount_campaigns
-    tool_params: &id448
+    tool_params: &id446
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       filterType: All
       unknown_param: x
   期望:
     intent: 查询满减活动
-    params: *id448
+    params: *id446
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15918,12 +15916,12 @@
   层: L2
   输入:
     tool_name: list_merchant_roles
-    tool_params: &id449
+    tool_params: &id447
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询可用角色
-    params: *id449
+    params: *id447
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15954,14 +15952,14 @@
   层: L2
   输入:
     tool_name: spec_bind_item
-    tool_params: &id450
+    tool_params: &id448
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       specId: c8cae758-c014-4b14-a745-719dbbd70ba2
-      itemIds: *id103
+      itemIds: *id102
       unknown_param: x
   期望:
     intent: 商品绑定规格组
-    params: *id450
+    params: *id448
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -15992,14 +15990,14 @@
   层: L2
   输入:
     tool_name: add_store_user
-    tool_params: &id451
+    tool_params: &id449
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       phone: '9023162140'
       roleId: 54d27d4c-ab49-410f-bdda-a1b0b5c36cef
       unknown_param: x
   期望:
     intent: 新增员工
-    params: *id451
+    params: *id449
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16033,10 +16031,10 @@
     tool_name: delete_store_user_typo
     tool_params:
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: 27615b48-f411-4f41-91e0-e5e9ddd8e22f
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 删除员工
-    params: *id161
+    params: *id160
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16075,13 +16073,13 @@
   层: L2
   输入:
     tool_name: list_all_campaigns
-    tool_params: &id452
+    tool_params: &id450
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       type: MerchPromotion
       status: -1
   期望:
     intent: 查询全部活动
-    params: *id452
+    params: *id450
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16103,7 +16101,7 @@
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id179
+    params: *id178
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16120,13 +16118,13 @@
   层: L2
   输入:
     tool_name: tax_create
-    tool_params: &id453
+    tool_params: &id451
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: Hainan Style Chicken Noodle In Soup
       tax: 9999999999999999
   期望:
     intent: 新建税率
-    params: *id453
+    params: *id451
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16143,11 +16141,11 @@
   输入:
     tool_name: category_update_typo
     tool_params:
-      categoryId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
       newName: popular item
   期望:
     intent: 修改分类
-    params: *id080
+    params: *id079
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16165,7 +16163,7 @@
   输入:
     tool_name: item_detail_typo
     tool_params:
-      itemId: 23c23434-3a90-4369-93c9-2a74cb191cc8
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
   期望:
     intent: 查询商品详情
     params: *id026
@@ -16184,12 +16182,12 @@
   层: L2
   输入:
     tool_name: list_delivery_areas
-    tool_params: &id454
+    tool_params: &id452
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询配送区域
-    params: *id454
+    params: *id452
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16225,7 +16223,7 @@
       enabled: false
   期望:
     intent: 开关自提服务
-    params: *id115
+    params: *id114
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16247,7 +16245,7 @@
       endDate: '2026-01-01'
   期望:
     intent: 创建优惠券活动
-    params: *id176
+    params: *id175
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16264,7 +16262,7 @@
   层: L2
   输入:
     tool_name: add_extra_fee
-    tool_params: &id455
+    tool_params: &id453
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 晚餐
       target: pickup
@@ -16273,7 +16271,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id455
+    params: *id453
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -16290,12 +16288,12 @@
   层: L2
   输入:
     tool_name: batch_item_stock
-    tool_params: &id456
+    tool_params: &id454
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: abc
   期望:
     intent: 批量修改商品库存
-    params: *id456
+    params: *id454
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -16312,12 +16310,12 @@
   层: L2
   输入:
     tool_name: set_utensil_option_enabled
-    tool_params: &id457
+    tool_params: &id455
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: -1
   期望:
     intent: 开关餐具选项
-    params: *id457
+    params: *id455
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16333,13 +16331,13 @@
   层: L2
   输入:
     tool_name: add_report_subscription
-    tool_params: &id458
+    tool_params: &id456
       email: 944600294123@qq.com
       isSalesReport: 9999999999999999
       isPayoutReport: false
   期望:
     intent: 添加报表订阅
-    params: *id458
+    params: *id456
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16356,13 +16354,13 @@
   层: L2
   输入:
     tool_name: batch_item_stock
-    tool_params: &id459
+    tool_params: &id457
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 99999
       unknown_param: x
   期望:
     intent: 批量修改商品库存
-    params: *id459
+    params: *id457
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16394,12 +16392,12 @@
   层: L2
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id460
+    tool_params: &id458
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: 9999999999999999
   期望:
     intent: 开启自动接单
-    params: *id460
+    params: *id458
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16415,13 +16413,13 @@
   层: L2
   输入:
     tool_name: set_pickup_enabled
-    tool_params: &id461
+    tool_params: &id459
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: false
       unknown_param: x
   期望:
     intent: 开关自提服务
-    params: *id461
+    params: *id459
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16456,7 +16454,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询第三方集成
-    params: *id194
+    params: *id193
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16476,7 +16474,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询优惠券活动
-    params: *id173
+    params: *id172
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16492,7 +16490,7 @@
   层: L2
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id462
+    tool_params: &id460
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -16500,7 +16498,7 @@
       preparationMinutes: abc
   期望:
     intent: 添加自提时段
-    params: *id462
+    params: *id460
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -16538,7 +16536,7 @@
   层: L2
   输入:
     tool_name: add_extra_fee
-    tool_params: &id463
+    tool_params: &id461
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 晚餐
       target: pickup
@@ -16548,7 +16546,7 @@
       unknown_param: x
   期望:
     intent: 添加附加费用
-    params: *id463
+    params: *id461
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16580,13 +16578,13 @@
   层: L2
   输入:
     tool_name: category_update
-    tool_params: &id464
-      categoryId: f8f2d07d-6fe4-4db9-a094-037feec3a5a4
+    tool_params: &id462
+      categoryId: d2de8117-56ca-42dd-8406-eb5237756f32
       newName: popular item
       unknown_param: x
   期望:
     intent: 修改分类
-    params: *id464
+    params: *id462
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16622,7 +16620,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询订单通知邮箱
-    params: *id182
+    params: *id181
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16638,12 +16636,12 @@
   层: L2
   输入:
     tool_name: get_store_link
-    tool_params: &id465
+    tool_params: &id463
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询店铺链接
-    params: *id465
+    params: *id463
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16674,12 +16672,12 @@
   层: L2
   输入:
     tool_name: get_bank_account_info
-    tool_params: &id466
+    tool_params: &id464
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询收款账户
-    params: *id466
+    params: *id464
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16710,12 +16708,12 @@
   层: L2
   输入:
     tool_name: tax_list
-    tool_params: &id467
+    tool_params: &id465
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询税率列表
-    params: *id467
+    params: *id465
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16746,7 +16744,7 @@
   层: L2
   输入:
     tool_name: add_pickup_time_slot
-    tool_params: &id468
+    tool_params: &id466
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       days: Monday
       openTime: '12:00'
@@ -16754,7 +16752,7 @@
       preparationMinutes: 0
   期望:
     intent: 添加自提时段
-    params: *id468
+    params: *id466
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16771,12 +16769,12 @@
   层: L2
   输入:
     tool_name: set_auto_accept_orders
-    tool_params: &id469
+    tool_params: &id467
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       enabled: 0
   期望:
     intent: 开启自动接单
-    params: *id469
+    params: *id467
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16792,14 +16790,14 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id470
+    tool_params: &id468
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: false
       unknown_param: x
   期望:
     intent: 开关支付方式
-    params: *id470
+    params: *id468
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16830,13 +16828,13 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id471
+    tool_params: &id469
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: abc
   期望:
     intent: 开关支付方式
-    params: *id471
+    params: *id469
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -16852,13 +16850,13 @@
   层: L2
   输入:
     tool_name: update_user_status
-    tool_params: &id472
+    tool_params: &id470
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: abc
   期望:
     intent: 启用停用员工
-    params: *id472
+    params: *id470
     output: 参数类型错误被拒绝/提示
     block: true
     semantic:
@@ -16874,13 +16872,13 @@
   层: L2
   输入:
     tool_name: batch_item_price
-    tool_params: &id473
+    tool_params: &id471
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       price: '13.95'
       unknown_param: x
   期望:
     intent: 批量修改商品价格
-    params: *id473
+    params: *id471
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16916,7 +16914,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询配送区域
-    params: *id106
+    params: *id105
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -16932,13 +16930,13 @@
   层: L2
   输入:
     tool_name: set_payment_method_enabled
-    tool_params: &id474
+    tool_params: &id472
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       paymentType: proton_pay
       enabled: 9999999999999999
   期望:
     intent: 开关支付方式
-    params: *id474
+    params: *id472
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -16954,14 +16952,14 @@
   层: L2
   输入:
     tool_name: add_report_subscription
-    tool_params: &id475
+    tool_params: &id473
       email: 944600294123@qq.com
       isSalesReport: false
       isPayoutReport: false
       unknown_param: x
   期望:
     intent: 添加报表订阅
-    params: *id475
+    params: *id473
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -16997,7 +16995,7 @@
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
   期望:
     intent: 查询店铺商品结构
-    params: *id200
+    params: *id199
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -17013,14 +17011,14 @@
   层: L2
   输入:
     tool_name: update_user_status
-    tool_params: &id476
+    tool_params: &id474
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: false
       unknown_param: x
   期望:
     intent: 启用停用员工
-    params: *id476
+    params: *id474
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -17051,7 +17049,7 @@
   层: L2
   输入:
     tool_name: add_extra_fee
-    tool_params: &id477
+    tool_params: &id475
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       name: 晚餐
       target: pickup
@@ -17060,7 +17058,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id477
+    params: *id475
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -17082,7 +17080,7 @@
       filterType: All
   期望:
     intent: 查询满减活动
-    params: *id167
+    params: *id166
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -17103,7 +17101,7 @@
       email: test@example.com
   期望:
     intent: 添加订单通知邮箱
-    params: *id185
+    params: *id184
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -17120,13 +17118,13 @@
   层: L2
   输入:
     tool_name: item_update_stock
-    tool_params: &id478
-      itemId: bf557267-c42b-40ce-9cf6-27962472b0fb
+    tool_params: &id476
+      itemId: 5fd6f2b9-431f-442f-81e8-d960af93ded9
       stock: 99999
       unknown_param: x
   期望:
     intent: 修改商品库存
-    params: *id478
+    params: *id476
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -17179,12 +17177,12 @@
   层: L2
   输入:
     tool_name: batch_item_stock
-    tool_params: &id479
+    tool_params: &id477
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       stock: 9999999999999999
   期望:
     intent: 批量修改商品库存
-    params: *id479
+    params: *id477
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -17230,7 +17228,7 @@
       isTaxable: false
   期望:
     intent: 添加附加费用
-    params: *id130
+    params: *id129
     output: 工具无效，拒绝触发
     block: true
     semantic:
@@ -17247,12 +17245,12 @@
   层: L2
   输入:
     tool_name: get_third_party_integrations
-    tool_params: &id480
+    tool_params: &id478
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       unknown_param: x
   期望:
     intent: 查询第三方集成
-    params: *id480
+    params: *id478
     output: 未知参数被忽略并正常执行（或结构化校验响应）
     block: false
     semantic:
@@ -17283,13 +17281,13 @@
   层: L2
   输入:
     tool_name: update_user_status
-    tool_params: &id481
+    tool_params: &id479
       merchId: 202c2fe7-aa2f-424c-867f-26524a197dfa
-      merchManagerId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
+      merchManagerId: 202c2fe7-aa2f-424c-867f-26524a197dfa
       isActive: 0
   期望:
     intent: 启用停用员工
-    params: *id481
+    params: *id479
     output: 越界参数被拒绝/提示
     block: true
     semantic:
@@ -17310,7 +17308,7 @@
       taxId: ca8f94be-ac00-4b25-9c80-5e6aabffd601
   期望:
     intent: 修改税率
-    params: *id092
+    params: *id091
     output: 工具无效，拒绝触发
     block: true
     semantic:

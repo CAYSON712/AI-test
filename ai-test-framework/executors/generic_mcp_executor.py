@@ -386,7 +386,13 @@ class GenericMcpExecutor(BaseExecutor):
         """调用 MCP 工具，返回 (is_error, 文本, latency_ms)
 
         入参按 configs 的「参数包装」包一层（新老系统外壳名不同，见 _SysConfig.param_wrapper）。
+        限流友好：每次调用前可选 sleep 一个间隔（环境变量 REQUEST_INTERVAL_MS 控制，
+        默认 0 不等待）。多轮采样（--runs>1）时建议设 200~500ms，避免触发服务端
+        「rate limit exceeded」（PocketStore 5 次采样实测会大量 429）。
         """
+        _interval = float(os.environ.get("REQUEST_INTERVAL_MS", "0") or 0) / 1000.0
+        if _interval > 0:
+            await asyncio.sleep(_interval)
         t0 = time.monotonic()
         result = await session.call_tool(name, {self.sys.param_wrapper: tool_params})
         latency_ms = (time.monotonic() - t0) * 1000

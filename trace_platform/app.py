@@ -121,43 +121,38 @@ def list_traces(limit: int = 1000):
 
 
 @app.get("/api/traces/batches")
-def list_batches(limit: int = 1000, q: str = ""):
-    """按「批次」分组返回 trace 列表（一次 run_test = 一个批次）。
-    批次信息从 traces.metadata 提取（batch_id/dataset/batch_time）。
-    q: 可选搜索关键词，按 trace 的 name/input 模糊匹配。
+def list_batches(q: str = ""):
+    """返回【批次摘要】列表（不含 trace 明细），供左侧批次列表展示。
+
+    性能（2026-10-14）：原实现把每条 trace 明细都塞进返回体，一次拉几千条
+    → 前端卡顿且超过 1000 条看不见。现改为：只做批次聚合（遍历全部行、只取
+    轻量字段），明细由 /api/traces/batch/{batch_id} 按批次分页获取（点开才拉）。
+    q: 可选搜索关键词，按 trace 的 name/input 模糊匹配（命中即该批次入选）。
     """
     conn = get_conn()
     c = conn.cursor()
-    c.execute("SELECT * FROM traces ORDER BY timestamp DESC LIMIT ?", (limit,))
+    # 只取分组必需字段（不含 output 等大字段）；不再限制行数，保证批次统计准确
+    c.execute("SELECT id, name, input, metadata, timestamp FROM traces")
     rows = c.fetchall()
     conn.close()
 
     import json
-    # 搜索过滤（若提供 q）
     if q:
         q = q.strip().lower()
-        filtered = []
-        for r in rows:
-            d = dict(r)
-            _hay = (d.get("name") or "") + " " + (d.get("input") or "")
-            if q in _hay.lower():
-                filtered.append(r)
-        rows = filtered
+        rows = [r for r in rows
+                if q in ((r["name"] or "") + " " + (r["input"] or "")).lower()]
 
-    batches = {}  # batch_id -> {batch_id, dataset, batch_time, traces:[]}
-    ungrouped = []
+    batches = {}
+    ungrouped = 0
     for r in rows:
         d = dict(r)
-        meta = {}
         try:
             meta = json.loads(d.get("metadata") or "{}")
         except Exception:
             meta = {}
-        # 解析 trace 级别（对齐 Langfuse）：ERROR=真异常红 / WARNING=业务拒绝黄 / 其他正常
-        d["_level"] = meta.get("level", "") or ""
-        d["_error_summary"] = meta.get("error_summary", "") or ""
-        d["_is_error"] = (d["_level"] == "ERROR")
-        d["_is_warn"] = (d["_level"] == "WARNING")
+        level = meta.get("level", "") or ""
+        is_err = (level == "ERROR")
+        is_warn = (level == "WARNING")
         bid = meta.get("batch_id") or ""
         if bid:
             b = batches.setdefault(bid, {
@@ -166,47 +161,80 @@ def list_batches(limit: int = 1000, q: str = ""):
                 "batch_time": meta.get("batch_time", ""),
                 "system": meta.get("system", ""),
                 "req_type": meta.get("req_type", ""),
-                "count": 0,
-                "traces": [],
+                "count": 0, "error_count": 0, "warn_count": 0,
             })
-            b["traces"].append(d)
             b["count"] += 1
+            b["error_count"] += 1 if is_err else 0
+            b["warn_count"] += 1 if is_warn else 0
+            b["_ts"] = max(b.get("_ts", ""), d.get("timestamp") or "")
         else:
-            ungrouped.append(d)
+            ungrouped += 1
 
-    # 按 batch_time 降序（新的在前）
     blist = list(batches.values())
-    blist.sort(key=lambda b: b["batch_time"] or "", reverse=True)
-    # 每个批次内：ERROR 置顶 → WARNING 次之 → 正常；并统计红/黄/正常数 + 通过率
+    blist.sort(key=lambda b: (b.get("batch_time") or "", b.get("_ts") or ""), reverse=True)
     for b in blist:
-        _prio = lambda t: (0 if t.get("_is_error") else 1 if t.get("_is_warn") else 2)
-        b["traces"].sort(key=lambda t: (_prio(t), t.get("timestamp") or ""))
-        b["error_count"] = sum(1 for t in b["traces"] if t.get("_is_error"))
-        b["warn_count"] = sum(1 for t in b["traces"] if t.get("_is_warn"))
         b["pass_count"] = max(0, b["count"] - b["error_count"] - b["warn_count"])
         b["pass_rate"] = round(b["pass_count"] / b["count"], 3) if b["count"] else 0
-    # 未分组（旧数据）放到最前
+        b.pop("_ts", None)
+    # 未分组仅在真有「无批次」数据时才展示，避免出现空的 (未分组) 条目
     if ungrouped:
-        _prio = lambda t: (0 if t.get("_is_error") else 1 if t.get("_is_warn") else 2)
-        ungrouped.sort(key=lambda t: (_prio(t), t.get("timestamp") or ""))
-        blist.insert(0, {
-            "batch_id": "",
-            "dataset": "(未分组)",
-            "batch_time": "",
-            "system": "",
-            "req_type": "",
-            "count": len(ungrouped),
-            "error_count": sum(1 for t in ungrouped if t.get("_is_error")),
-            "warn_count": sum(1 for t in ungrouped if t.get("_is_warn")),
-            "pass_count": max(0, len(ungrouped)
-                              - sum(1 for t in ungrouped if t.get("_is_error"))
-                              - sum(1 for t in ungrouped if t.get("_is_warn"))),
-            "pass_rate": round(max(0, len(ungrouped)
-                                   - sum(1 for t in ungrouped if t.get("_is_error"))
-                                   - sum(1 for t in ungrouped if t.get("_is_warn"))) / len(ungrouped), 3) if ungrouped else 0,
-            "traces": ungrouped,
+        blist.append({
+            "batch_id": "", "dataset": "(未分组)", "batch_time": "",
+            "system": "", "req_type": "", "count": ungrouped,
+            "error_count": 0, "warn_count": 0, "pass_count": ungrouped,
+            "pass_rate": 1.0,
         })
     return {"batches": blist}
+
+
+@app.get("/api/traces/batch/{batch_id}")
+def list_batch_traces(batch_id: str, offset: int = 0, limit: int = 200,
+                      filter: str = "all"):
+    """按批次【分页】返回 trace 明细（点开批次才拉，每页 ≤200 条）。
+
+    filter: all / err / warn / ok —— 在服务端过滤，保证分页计数正确。
+    """
+    import json
+    conn = get_conn()
+    c = conn.cursor()
+    if batch_id:
+        # SQLite 里用 LIKE 粗筛该批次，再在 Python 里精确比对 batch_id
+        c.execute("SELECT * FROM traces WHERE metadata LIKE ? "
+                  "ORDER BY timestamp DESC", (f"%{batch_id}%",))
+        rows_all = [dict(r) for r in c.fetchall()
+                    if json.loads((r["metadata"] or "{}") or "{}").get("batch_id") == batch_id]
+    else:
+        c.execute("SELECT * FROM traces ORDER BY timestamp DESC")
+        rows_all = [dict(r) for r in c.fetchall()
+                    if not json.loads((r["metadata"] or "{}") or "{}").get("batch_id")]
+    conn.close()
+
+    # 解析级别 + 排序（ERROR 置顶 → WARNING → 正常）
+    for d in rows_all:
+        try:
+            meta = json.loads(d.get("metadata") or "{}")
+        except Exception:
+            meta = {}
+        d["_level"] = meta.get("level", "") or ""
+        d["_error_summary"] = meta.get("error_summary", "") or ""
+        d["_is_error"] = (d["_level"] == "ERROR")
+        d["_is_warn"] = (d["_level"] == "WARNING")
+    _prio = lambda t: (0 if t.get("_is_error") else 1 if t.get("_is_warn") else 2)
+    rows_all.sort(key=lambda t: (_prio(t), t.get("timestamp") or ""))
+
+    if filter == "err":
+        rows_all = [t for t in rows_all if t["_is_error"]]
+    elif filter == "warn":
+        rows_all = [t for t in rows_all if t["_is_warn"]]
+    elif filter == "ok":
+        rows_all = [t for t in rows_all if not t["_is_error"] and not t["_is_warn"]]
+
+    total = len(rows_all)
+    limit = max(1, min(int(limit or 200), 200))     # 硬上限 200 条/页
+    offset = max(0, int(offset or 0))
+    page = rows_all[offset:offset + limit]
+    return {"traces": page, "total": total, "offset": offset,
+            "limit": limit, "has_more": offset + len(page) < total}
 
 
 @app.get("/api/traces/{trace_id}")
@@ -490,6 +518,15 @@ INDEX_HTML = """<!DOCTYPE html>
   .search-box:focus { outline: none; border-color: #3498db; }
   .filter-btn { border: 1px solid #ddd; background: #fff; color: #555; padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; }
   .filter-btn.active { background: #3498db; color: #fff; border-color: #3498db; }
+  .filter-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .pager { display: flex; align-items: center; gap: 8px; justify-content: center;
+           flex-wrap: wrap; padding: 10px 0; border-top: 1px solid #eee; margin-top: 8px; }
+  .page-btn { min-width: 30px; padding: 4px 8px; }
+  .page-gap { color: #999; padding: 0 2px; }
+  .pager-jump { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
+  .jump-input { width: 56px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 6px;
+                font-size: 12px; text-align: center; }
+  .jump-input:focus { outline: none; border-color: #3498db; }
 </style>
 </head>
 <body>
@@ -514,6 +551,7 @@ async function loadBatches(q) {
   const d = await r.json();
   const c = document.getElementById('batchList');
   if (!d.batches.length) { c.innerHTML = '(暂无 trace)'; return; }
+  window._batches = d.batches;      // 缓存批次摘要，showBatch 取用（不再全量拉明细）
   c.innerHTML = d.batches.map(b => {
     const pr = Math.round((b.pass_rate || 0) * 100);
     return `<div class="batch-item" onclick="showBatch('${b.batch_id}')">
@@ -530,25 +568,30 @@ async function loadBatches(q) {
 
 let currentBatch = null;
 let currentFilter = 'all';
+let currentOffset = 0;
+const PAGE_SIZE = 200;          // 每页最多 200 条（服务端也会限制 ≤200）
 
-async function showBatch(batchId) {
-  const r = await fetch('/api/traces/batches');
-  const d = await r.json();
-  const b = d.batches.find(x => x.batch_id === batchId);
-  currentBatch = b;
+async function showBatch(batchId, offset) {
+  if (offset === undefined) offset = 0;
+  currentOffset = offset;
+  // 从左侧已加载的批次摘要里取当前批次（不再全量拉明细）
+  const b = (window._batches || []).find(x => x.batch_id === batchId);
+  currentBatch = b || { batch_id: batchId, dataset: '(未分组)', count: 0 };
   const panel = document.getElementById('tracePanel');
-  if (!b) { panel.innerHTML = '(批次不存在)'; return; }
-  const shown = b.traces.filter(t => {
-    if (currentFilter === 'err') return t._is_error;
-    if (currentFilter === 'warn') return t._is_warn;
-    if (currentFilter === 'ok') return !t._is_error && !t._is_warn;
-    return true;
-  });
+  panel.innerHTML = '<div class="hint">加载中…</div>';
+  const url = `/api/traces/batch/${encodeURIComponent(batchId)}`
+            + `?offset=${offset}&limit=${PAGE_SIZE}&filter=${currentFilter}`;
+  const r = await fetch(url);
+  const d = await r.json();
+  const shown = d.traces || [];
+  const total = d.total || 0;
+  const from = total ? offset + 1 : 0;
+  const to = offset + shown.length;
   panel.innerHTML = `<div class="panel-head">
-      <div><h3>${b.dataset || '(未分组)'}</h3>
-      <span class="batch-meta">${b.batch_time || ''} · ${b.count} 条 ·
-        <span class="txt-err">${b.error_count||0}异常</span> ·
-        <span class="txt-warn">${b.warn_count||0}拒绝</span></span></div>
+      <div><h3>${currentBatch.dataset || '(未分组)'}</h3>
+      <span class="batch-meta">${currentBatch.batch_time || ''} · 共 ${total} 条 ·
+        <span class="txt-err">${currentBatch.error_count||0}异常</span> ·
+        <span class="txt-warn">${currentBatch.warn_count||0}拒绝</span></span></div>
       <div class="filter-bar">
         <button class="filter-btn ${currentFilter==='all'?'active':''}" onclick="setFilter('all')">全部</button>
         <button class="filter-btn ${currentFilter==='err'?'active':''}" onclick="setFilter('err')">异常</button>
@@ -568,12 +611,61 @@ async function showBatch(batchId) {
         </div>
         <div class="trace-detail" id="detail-${t.id}" style="display:none"></div>
       </div>`).join('') : '<div class="hint">无符合条件的 trace</div>'}
+    </div>
+    <div class="pager" onclick="event.stopPropagation()">
+      <button class="filter-btn" ${offset<=0?'disabled':''}
+        onclick="showBatch('${batchId}', ${Math.max(0, offset-PAGE_SIZE)})">← 上一页</button>
+      ${renderPageButtons(batchId, offset, total)}
+      <button class="filter-btn" ${d.has_more?'':'disabled'}
+        onclick="showBatch('${batchId}', ${offset+PAGE_SIZE})">下一页 →</button>
+      <span class="pager-jump" onclick="event.stopPropagation()">
+        第 <input id="jumpPageInput" class="jump-input" type="text"
+                 autocomplete="off"
+                 data-batch="${batchId}" data-total="${total}"
+                 placeholder="${total? Math.floor(offset/PAGE_SIZE)+1 : 1}">
+        页
+        <button class="filter-btn" onclick="event.stopPropagation();jumpPage('${batchId}', ${total})">跳转</button>
+      </span>
+      <span class="batch-meta">第 ${from}-${to} 条 / 共 ${total} 条
+        · 共 ${Math.max(1, Math.ceil(total/PAGE_SIZE))} 页</span>
     </div>`;
+}
+
+// 页码按钮：当前页高亮；首尾常显，中间用省略号收敛，避免页数过多撑爆。
+function renderPageButtons(batchId, offset, total) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const cur = Math.floor(offset / PAGE_SIZE) + 1;
+  const nums = [];
+  const push = (n) => { if (n >= 1 && n <= pages && !nums.includes(n)) nums.push(n); };
+  push(1); push(2);
+  push(cur - 1); push(cur); push(cur + 1);
+  push(pages - 1); push(pages);
+  nums.sort((a, b) => a - b);
+  let html = '';
+  let prev = 0;
+  for (const n of nums) {
+    if (prev && n - prev > 1) html += '<span class="page-gap">…</span>';
+    html += `<button class="filter-btn page-btn ${n===cur?'active':''}"
+      onclick="showBatch('${batchId}', ${(n-1)*PAGE_SIZE})">${n}</button>`;
+    prev = n;
+  }
+  return html;
+}
+
+// 自定义页码跳转：读输入框 → 转成 offset（越界自动夹到 [1, 总页数]）。
+// 支持回车触发（见 input 的 onkeydown）。
+function jumpPage(batchId, total) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const el = document.getElementById('jumpPageInput');
+  let n = parseInt((el && el.value || '').replace(/[^0-9]/g, ''), 10);
+  if (!n || isNaN(n)) { if (el) { el.value = ''; el.focus(); } return; }
+  n = Math.min(Math.max(1, n), pages);
+  showBatch(batchId, (n - 1) * PAGE_SIZE);
 }
 
 function setFilter(f) {
   currentFilter = f;
-  if (currentBatch) showBatch(currentBatch.batch_id);
+  if (currentBatch) showBatch(currentBatch.batch_id, 0);   // 切筛选回到第一页
 }
 
 let searchTimer = null;
@@ -739,6 +831,20 @@ function renderScore(s) {
     ${s.name} = ${s.value}<span class="via ${viaCls}">${viaTxt}</span>
   </span>`;
 }
+
+// 页码跳转输入框：只用「事件委托」处理键盘，避免内联 onkeydown 受模板转义影响。
+// 关键：只对 Enter 做 preventDefault；Backspace/Delete/方向键/数字键 → 一律放行，
+// 保证退格能正常删字符（此前内联 onkeydown 在重建面板后行为异常）。
+document.addEventListener('keydown', function (e) {
+  const el = e.target;
+  if (!el || el.id !== 'jumpPageInput') return;
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    jumpPage(el.getAttribute('data-batch') || '',
+             parseInt(el.getAttribute('data-total') || '0', 10) || 0);
+  }
+  // 其余键（含 Backspace）不拦截，交由浏览器默认行为处理
+}, true);
 
 loadBatches();
 </script>
