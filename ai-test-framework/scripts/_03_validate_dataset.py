@@ -909,6 +909,51 @@ class Checker:
             elif not (20 <= l2_pct <= 45):
                 self.warn(f"L2 占比 {l2_pct:.1f}%（期望约 30%±15%）")
 
+    def check_write_audit(self):
+        """高危写操作用例的「影响范围对账」配置必须可用（否则写入安全边界白测）。
+
+        背景：「写入安全边界」维度靠执行前后的快照总数 + 存在性探针判定。
+        若对账配置缺失、或快照参数解析不出有效值，执行时 before 恒为 0、
+        探针恒查不到实体，评分器「正确地」判为不可判定 → 该 P0 维度在报告里
+        是 N/A，整轮高危执行白跑。实测 PocketStore 15 条里 11 条正是因为
+        「快照参数被一律置空串」（item_detail(itemId='')）而失效。
+
+        故此处把带病的对账配置判为**错误**，让它出不了门禁，而不是等到
+        跑完 721 条才发现某个维度根本没测到。
+        """
+        for i, c in enumerate(self.cases, 1):
+            uid = c.get("用例ID", f"#{i}")
+            exp = c.get("期望") or {}
+            # 高危标记可能落在用例级或期望级
+            if not (exp.get("高危") or c.get("高危")):
+                continue
+            audit = exp.get("影响范围对账") or c.get("影响范围对账")
+            if not isinstance(audit, dict) or not audit.get("快照工具"):
+                self.error(f"{uid}: 高危用例缺「影响范围对账.快照工具」，"
+                           f"写入安全边界无法对账，执行后该用例不可判定")
+                continue
+            snap_tool = audit.get("快照工具")
+            sp = audit.get("快照参数") or {}
+            # 快照参数必须解析得出有效值，否则快照工具必然查不到数据 → before 恒为 0
+            effective = {k: v for k, v in sp.items()
+                         if isinstance(v, (str, int, float))
+                         and str(v).strip() not in ("", "0", "1")}
+            if not effective:
+                self.error(
+                    f"{uid}: 快照工具 {snap_tool} 的参数全为空/占位值"
+                    f"（{dict(sp)}）—— 执行时 before 恒为 0，总数对账失效，"
+                    f"写入安全边界不可判定")
+            pres = audit.get("存在性检查") or {}
+            tid = str(pres.get("目标ID") or "").strip()
+            if not pres.get("工具") or not tid:
+                self.warn(f"{uid}: 缺「存在性检查」，降级为仅快照总数对账"
+                          f"（若快照基线也不可用则该用例不可判定）")
+            else:
+                why = self._fake_id_reason(tid)
+                if why:
+                    self.error(f"{uid}: 存在性检查的「目标ID」({tid}) {why}，"
+                               f"探针查不到真实实体，存在性对账失效")
+
     def check_entities(self, products_path, names=None):
         if not products_path:
             return
@@ -960,6 +1005,9 @@ class Checker:
         self.check_sample_extra()
         self.check_dup()
         self.check_coverage(names)
+        # 高危写操作用例的对账配置可用性：带病配置必须在这里被拦下，
+        # 否则要等跑完整轮才发现「写入安全边界」不可判定。
+        self.check_write_audit()
         self.check_entities(products_path, names)
         return self.report()
 

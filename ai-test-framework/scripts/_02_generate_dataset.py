@@ -2253,8 +2253,18 @@ def build_a(products, abilities, req_type):
         # 探出来的实体跟本次操作动的不是同一批数据，存在性对账失去意义。
         same_domain = [c for c in cand if domain(c) and domain(c) == mine_d]
         pool = same_domain or cand
+
+        # 【修复】详情型工具优先。判定方式是「在探针返回正文里搜目标 ID」，
+        # 列表型工具（item_list(merchId=X)）返回的集合体里未必包含查询所用的那个
+        # ID，导致 eb=False（查不到 ≠ 被删，探针自伤）。详情型工具返回单个实体，
+        # 其正文必然包含被查的那条 ID，存在性对账才成立。
+        def _is_detail_tool(c):
+            t = str(c.get("工具") or "").lower()
+            return ("detail" in t or t.startswith("get_") or "info" in t
+                    or t.endswith("_by_id"))
+
         return sorted(
-            pool, key=lambda c: (0 if "ids" in str(c.get("工具") or "").lower() else 1,
+            pool, key=lambda c: (0 if _is_detail_tool(c) else 1,
                                  -len(tokens(c) & mine_t),
                                  len(c.get("参数") or [])))[0]
 
@@ -2472,10 +2482,20 @@ def build_a(products, abilities, req_type):
                     # 高危标记：破坏性写入可能真实改删数据，执行器默认跳过，
                     # 仅在显式开启 ALLOW_DESTRUCTIVE=1（且为隔离测试环境）时才执行。
                     snap_params = _fill_params(snap_cap, e)
-                    # 对账需要全量计数：字符串型参数（名称/关键字）置空串，
-                    # 避免按具体值过滤导致基线恒为 0（Δ 恒为 0 会让缺陷漏网）
-                    snap_params = {k: ("" if isinstance(v, str) else v)
-                                   for k, v in snap_params.items()}
+                    # 对账需要全量计数：只把「名称/关键字」类字符串参数置空串，
+                    # 避免按具体值过滤导致基线恒为 0（Δ 恒为 0 会让缺陷漏网）。
+                    # 【修复】此前把**所有**字符串参数一律置空，连 merchId/itemId
+                    # 这类必填过滤条件也成了空串 —— 快照工具必然失败
+                    # （item_detail(itemId='') / menu_list(merchId='') → 取不到数据），
+                    # before 恒为 0，总数对账的证据 B 整条链路失效。
+                    # 实测 15 条写入安全边界用例因此 11 条不可判定。
+                    # 规则：含 "id" 的参数是实体/租户过滤条件，必须保留真实值；
+                    #       其余（名称、关键字、类型等）置空以取全量。
+                    snap_params = {
+                        k: ("" if (isinstance(v, str) and "id" not in str(k).lower())
+                            else v)
+                        for k, v in snap_params.items()
+                    }
                     # 允许的最大影响条数按操作类型区分：传入的是「不存在的 ID」，
                     # 删除/更新应当影响 0 条（不存在的目标不能带来任何变更）；
                     # 但创建类操作本来就会新增数据，硬写 0 会把正确行为判成越范围，
@@ -2491,12 +2511,20 @@ def build_a(products, abilities, req_type):
                     pres_cap = pick_presence_cap(cap)
                     real_id = str(e.get("id") or "").strip()
                     if pres_cap and real_id and real_id not in ("0", "1"):
-                        for p in (pres_cap.get("参数") or []):
-                            if "id" in str(p).lower():
+                        # 【修复】探针参数必须按「参数名所属层级」取对应的真实 ID，
+                        # 不能一律把写操作实体的 id 塞进探针的第一个 id 参数 ——
+                        # 那会产生 item_list(merchId=<商品ID>) 这类层级错配，
+                        # 探针查不到数据被误读成「实体被删」或「查无此物」。
+                        # 复用 _fill_params 的层级解析（_layer_of_param），
+                        # 与目标 ID 保持一致，探针判定才成立。
+                        _pres_params = _fill_params(pres_cap, e)
+                        for p, pv in _pres_params.items():
+                            _pv = str(pv).strip()
+                            if "id" in str(p).lower() and _pv and _pv not in ("0", "1"):
                                 audit["存在性检查"] = {
                                     "工具": pres_cap.get("工具"),
-                                    "参数": {p: _as_param_value(real_id, str(p).lower())},
-                                    "目标ID": real_id,
+                                    "参数": {p: pv},
+                                    "目标ID": _pv,
                                 }
                                 break
                     exp_wb = build_expect(
