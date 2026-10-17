@@ -401,9 +401,9 @@ class GenericMcpExecutor(BaseExecutor):
 
     # ---- 主流程 ----
     def handle(self, capability, user_input, inp, expected):
-        return asyncio.run(self._call_capability(capability, user_input, expected))
+        return asyncio.run(self._call_capability(capability, user_input, expected, inp))
 
-    async def _call_capability(self, capability, user_input, expected):
+    async def _call_capability(self, capability, user_input, expected, inp=None):
         steps = []
         cap_tool = self.sys.cap_tool.get(capability, "")
 
@@ -470,24 +470,52 @@ class GenericMcpExecutor(BaseExecutor):
         await self._resolve_entity_id(tool_name, tool_params, user_input, steps, capability)
 
         # 3. 调用真实 MCP
+        # 影响范围对账配置（「写入安全边界」维度）：执行前后各取一次快照总数
+        # 与存在性探针。此前 generic 执行器不采集，导致该维度 15 条全部
+        # judgeable=False，评分器却回退「默认 3 分」→ 报告出现「0 条用例得 3.00 分」
+        # 的假分数。补齐后 auto 模式与 direct 模式判定能力对齐。
+        audit = None
+        for _src in (inp if isinstance(inp, dict) else {},
+                     expected if isinstance(expected, dict) else {}):
+            _a = _src.get("影响范围对账")
+            if isinstance(_a, dict) and _a.get("快照工具"):
+                audit = _a
+                break
         mcp_input = json.dumps({self.sys.param_wrapper: tool_params}, ensure_ascii=False)
+        before = after = exists_before = exists_after = None
         try:
             stack, session = await self._session_context()
             async with stack:
+                before = await self._snapshot_count(session, audit)
+                exists_before = await self._presence(session, audit)
                 is_error, text, mcp_latency = await self._call_tool(session, tool_name, tool_params)
+                after = await self._snapshot_count(session, audit)
+                exists_after = await self._presence(session, audit)
         except Exception as e:
             steps.append({
                 "name": f"MCP-{tool_name}", "type": "SPAN", "input": mcp_input,
                 "output": f"EXCEPTION: {e}",
                 "metadata": {"mcp": self.sys.system, "tool": tool_name},
             })
-            return {"error": f"MCP 调用失败: {e}", "block": True, "steps": steps}
+            return {"error": f"MCP 调用失败: {e}", "block": True, "steps": steps,
+                    "impact": None}
 
         steps.append({
             "name": f"MCP-{tool_name}", "type": "SPAN", "input": mcp_input,
             "output": text, "metadata": {"mcp": self.sys.system, "tool": tool_name,
                                          "latency_ms": mcp_latency},
         })
+        # 影响范围对账（写入安全边界）：① 存在性对账（真实目标实体操作后是否仍在）
+        # ② 快照总数对账（|Δ| ≤ 传入目标数）。两项证据都写入 impact，交评分器判定。
+        impact = None
+        if audit:
+            delta = (abs(after - before)
+                     if (before is not None and after is not None) else None)
+            impact = {"快照工具": audit.get("快照工具"), "before": before, "after": after,
+                      "delta": delta,
+                      "最大影响条数": audit.get("最大影响条数", 0),
+                      "存在性目标ID": (audit.get("存在性检查") or {}).get("目标ID"),
+                      "exists_before": exists_before, "exists_after": exists_after}
         if is_error:
             # is_error 分类：
             #   - 服务端/传输真异常（internal server / timeout / connection 等）→ ERROR
@@ -499,7 +527,8 @@ class GenericMcpExecutor(BaseExecutor):
                                "timed out", "timeout", "connection refused",
                                "connection reset", "bad gateway", "service unavailable"))
             if _server_err:
-                return {"error": text, "block": True, "level": "ERROR", "steps": steps}
+                return {"error": text, "block": True, "level": "ERROR", "steps": steps,
+                        "impact": impact}
             _reject = (text or "tool invocation rejected by system")[:200]
             steps.append({
                 "name": f"MCP-{tool_name}(WARNING)", "type": "SPAN",
@@ -512,7 +541,7 @@ class GenericMcpExecutor(BaseExecutor):
                     "block": True, "level": "WARNING", "steps": steps,
                     "llm_tool": llm_tool, "tool_correct": tool_correct,
                     "intent_correct": intent_correct, "param_correct": param_correct,
-                    "llm_intent": llm_intent,
+                    "llm_intent": llm_intent, "impact": impact,
                     "expected_tool": cap_tool, "expected_intent": exp_intent}
 
         # 3.5 业务层结果检测：code != 0 或 success=false 视为业务拒绝/异常
@@ -546,7 +575,7 @@ class GenericMcpExecutor(BaseExecutor):
                     "block": True, "level": biz_level, "steps": steps,
                     "llm_tool": llm_tool, "tool_correct": tool_correct,
                     "intent_correct": intent_correct, "param_correct": param_correct,
-                    "llm_intent": llm_intent,
+                    "llm_intent": llm_intent, "impact": impact,
                     "expected_tool": cap_tool, "expected_intent": exp_intent}
 
         # 4. 操作后实时校验
@@ -578,8 +607,68 @@ class GenericMcpExecutor(BaseExecutor):
                 "reply": reply, "verify": verify, "steps": steps,
                 "llm_tool": llm_tool, "tool_correct": tool_correct,
                 "intent_correct": intent_correct, "param_correct": param_correct,
-                "llm_intent": llm_intent,
+                "llm_intent": llm_intent, "impact": impact,
                 "expected_tool": cap_tool, "expected_intent": exp_intent}
+
+    # ---- 影响范围对账（「写入安全边界」维度）----
+    @staticmethod
+    def _count_items(text):
+        """统计 MCP 返回中的条目总数（所有 list 长度之和），用于影响范围对账。"""
+        try:
+            data = json.loads(text)
+        except Exception:
+            return None
+
+        def walk(o):
+            if isinstance(o, list):
+                return len(o) + sum(walk(x) for x in o if isinstance(x, (list, dict)))
+            if isinstance(o, dict):
+                return sum(walk(v) for v in o.values())
+            return 0
+        return walk(data)
+
+    async def _snapshot_count(self, session, audit):
+        """调只读快照工具取当前条目总数；无对账配置或失败返回 None。"""
+        if not audit:
+            return None
+        try:
+            _, text, _ = await self._call_tool(
+                session, audit.get("快照工具"), audit.get("快照参数") or {})
+        except Exception:
+            return None
+        return self._count_items(text)
+
+    async def _presence(self, session, audit):
+        """存在性探针：查「本次操作的真实目标实体」当前是否仍在。
+
+        返回 True（仍在）/ False（已不存在，即被越范围改删）/ None（无配置或探针
+        自身失败，不作为证据）。探针报业务错误码时返回 None —— 否则会把
+        「探针查不到」误读成「数据被删」，制造假失败。
+        """
+        if not audit:
+            return None
+        cfg = audit.get("存在性检查") or {}
+        tool, params = cfg.get("工具"), cfg.get("参数") or {}
+        target = str(cfg.get("目标ID") or "")
+        if not tool or not target:
+            return None
+        try:
+            _, text, _ = await self._call_tool(session, tool, params)
+        except Exception:
+            return None
+        if not text:
+            return None
+        try:
+            data = json.loads(text)
+        except Exception:
+            data = None
+        if isinstance(data, dict):
+            _code = data.get("code")
+            _succ = data.get("success")
+            if (isinstance(_code, (int, float)) and _code not in (0, 200)) \
+                    or (isinstance(_succ, bool) and not _succ):
+                return None
+        return target in str(text)
 
     # ---- 操作后校验 ----
     async def _verify_after(self, capability, tool_name, tool_params):

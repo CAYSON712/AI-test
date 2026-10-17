@@ -101,6 +101,25 @@ def generate_report(result_path, out_path):
         pk_txt = "—" if pk is None else f"{pk:.0%}"
         sd_txt = "—" if sd is None else f"{sd:.2f}"
         ci_txt = "—" if (not ci or (ci[0] == 0 and ci[1] == 0)) else f"[{ci[0]:.2f}, {ci[1]:.2f}]"
+        if not n:
+            # 无判定依据的维度一律记 N/A，不报分数。
+            # 此前会回退「默认分」，造成「0 条用例却得了 X 分」的假分数
+            # （实例：「写入安全边界」15 条全 judgeable=False，报告却显示 3.00 分，
+            #   让人误读为该维度"可接受"，实为这些用例根本没执行）。
+            # 且要明确区分两种 N/A 成因 —— 处置方式完全不同：
+            #   ① 高危跳过：安全设计，需 ALLOW_DESTRUCTIVE=1 + 隔离环境才会执行；
+            #   ② 能力缺口：执行器未采集该维度所需证据，需补采集逻辑。
+            _cc = (result.get("dim_case_counts", {}) or {}).get(dim, 0)
+            _sk = d.get("skipped", 0)
+            if _sk:
+                _why = (f"高危保护跳过 {_sk} 条（破坏性写入，未执行）｜"
+                        f"需 ALLOW_DESTRUCTIVE=1 + 隔离环境")
+            else:
+                _why = (f"无判定依据（{_cc} 条均无法自动判定）｜"
+                        f"执行器缺证据，属框架能力缺口")
+            lines.append(f"| {dim} | **N/A** | — | — | — | — | {mode} | — | "
+                         f"{_why} | 0 | — |")
+            continue
         lines.append(f"| {dim} | {score:.2f} | {avg:.2f} | {rate:.0%} | {pk_txt} | {sd_txt} | "
                      f"{mode} | {g['label']} | {g['verdict']} | {n} | {ci_txt} |")
 
@@ -123,9 +142,29 @@ def generate_report(result_path, out_path):
                          f"能做到但不够稳定，需排查偶发失败原因 |")
 
     # 2. 总体通过率
-    total_rate = sum(d.get("pass_rate", 0) for d in dims.values()) / len(dims) if dims else 0
+    #    只统计「可判定」维度（n>0）。n=0 的维度无判定依据，若按 0% 计入分母
+    #    会无端拉低总体通过率（「写入安全边界」即因此使平均分失真）。
+    judged = {k: v for k, v in dims.items() if v.get("n", 0)}
+    na_dims = [k for k in dims if not dims[k].get("n", 0)]
+    total_rate = sum(d.get("pass_rate", 0) for d in judged.values()) / len(judged) if judged else 0
     lines.append(f"\n## 总体通过率\n")
-    lines.append(f"- **平均通过率**: {total_rate:.1%}")
+    lines.append(f"- **平均通过率**: {total_rate:.1%}"
+                 f"（基于 {len(judged)} 个可判定维度）")
+    if na_dims:
+        lines.append(f"- ⚠️ **{len(na_dims)} 个维度无判定依据，未计入**："
+                     f"{'、'.join(na_dims)}")
+        for k in na_dims:
+            _sk = dims[k].get("skipped", 0)
+            if _sk:
+                lines.append(f"  - **{k}**：{_sk} 条属破坏性写入，被**高危保护跳过"
+                             f"（未执行）**。这是安全设计（历史教训：某 MCP 传不存在的 "
+                             f"ID 曾真实删除 983 个商品），不代表被测系统得分。"
+                             f"需真测时请在隔离环境设 `ALLOW_DESTRUCTIVE=1`"
+                             f"（并配合后置用例恢复数据）。")
+            else:
+                lines.append(f"  - **{k}**：执行器未提供该维度所需证据数据，"
+                             f"属**框架能力缺口**，需补采集逻辑。")
+        lines.append(f"  - 以上均不计入通过率。")
 
     # 3. 问题定位
     lines.append(f"\n## 问题定位\n")

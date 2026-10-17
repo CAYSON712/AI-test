@@ -948,6 +948,11 @@ def format_report(agg, dimension_labels=None):
     lines.append("-" * 60)
     for dim, data in agg.items():
         ci = data["ci"]
+        # n=0（无可判定用例）：不报分数，避免「0 条用例却得分」的假分数。
+        # 与 scripts/_08_report.py 的 N/A 口径保持一致。
+        if not data.get("n"):
+            lines.append(f"{dim:<20} {'N/A':<8} {'—':<8} {'0':<6} {'—':<16}")
+            continue
         lines.append(f"{dim:<20} {data['avg_score']:<8.2f} "
                      f"{data['pass_rate']:<8.1%} {data['n']:<6} "
                      f"[{ci[0]:.2f}, {ci[1]:.2f}]")

@@ -152,6 +152,11 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     dim_case_counts = defaultdict(int)     # 维度 → 用例数
     dim_case_all = defaultdict(dict)       # 维度 → {用例ID: [(score, judgeable, passed), ...各run]}
     dim_scores_all = defaultdict(list)     # 维度 → 所有运行的score（供 avg）
+    # 被「高危保护」跳过的用例（破坏性写入）：不计失败，但必须单独登记。
+    # 否则报告会把「未执行（安全保护）」误说成「执行器缺证据（框架能力缺口）」，
+    # 两者处置方式完全不同：前者需 ALLOW_DESTRUCTIVE=1 + 隔离环境，后者需补采集。
+    dim_skipped = defaultdict(int)
+    _skipped_uids = set()
     failed_cases = []
     blocked_cases = []                     # 期望拦截且确实被拦截的用例（符合预期，非失败）
     case_traces = {}                       # 用例ID → {用例ID, 能力, 维度, 层, trace_ids:[]}
@@ -187,6 +192,11 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                                      "输入": case.get("输入", {}),
                                      "error": "无执行器能处理该能力"})
                 continue
+            # 高危用例被安全保护跳过（破坏性写入）：每条用例只登记一次。
+            _od0 = getattr(result, "output_data", None)
+            if isinstance(_od0, dict) and _od0.get("skipped") and uid not in _skipped_uids:
+                _skipped_uids.add(uid)
+                dim_skipped[dim] += 1
             # Rubric 评分（统一判定：规则 → LLM → 默认；judgeable 标记该维度该条是否可信）
             scores = judger.score_case(req_type, case, result, judge_text=None,
                                        judge=llm_judge, use_llm=use_llm_judge,
@@ -342,6 +352,8 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
             "runs": max_k,
             "ci": ci,                        # pass@k 的 Wilson 95% CI
             "ci_all": all_ci if metric_mode != "分布" else None,
+            # 该维度被「高危保护」跳过的用例数（未执行，区别于"缺证据"）
+            "skipped": dim_skipped.get(dim, 0),
         }
 
     # 组装失分用例明细（供报告"错误类型分布 + 失分用例明细"）
