@@ -26,7 +26,8 @@ AI测试/
 │   │   ├── semantic_verify.py      #     确定性语义校验器（原语规则打分，不调 LLM）
 │   │   └── templates/              #     Rubric 模板（rubric_template.json 含新增维度步骤）
 │   ├── executors/                  #   执行器（通用，不绑系统，按需求类型路由）
-│   │   ├── base.py                 #     执行器基类 + ExecResult
+│   │   ├── base.py                 #     执行器基类 + ExecResult + 数据生命周期契约
+│   │   ├── data_lifecycle.py       #     数据生命周期：写前快照/跑后恢复/新建清理/自建自删
 │   │   ├── mock_executor.py        #     Mock 执行器（测 Agent/Skill 层，零配置）
 │   │   ├── direct_mcp_executor.py  #     A/D 类：纯工具调用（直连 MCP）
 │   │   ├── generic_chat_executor.py#     B 类：纯对话 Agent（不连 MCP）
@@ -38,7 +39,7 @@ AI测试/
 │   │   ├── POS_商品管理.yaml        #   接入样板（新增系统复制改）
 │   │   └── 客服知识库.yaml          #   虚构演示（E 链路）
 │   ├── scripts/                    #   工具脚本（按流水线阶段排序）
-│   │   ├── _01_mcp_setup.py        #   ① 接入 接新MCP：拉schema→写.env→生成configs/<系统>.yaml
+│   │   ├── _01_mcp_setup.py        #   ① 接入 接新MCP：拉schema→契约巡检→写.env→生成configs/<系统>.yaml
 │   │   ├── _02_generate_dataset.py #   ② 生成 能力目录+实体清单→数据集 yaml（不用LLM可复现）
 │   │   ├── _03_validate_dataset.py #   ③ 检查 硬校验：数据集 vs 能力目录（PASS/FAIL）
 │   │   ├── _05_export_to_excel.py  #   ③ 检查 导出 datasets/excel/*.xlsx
@@ -106,6 +107,7 @@ AI测试/
 7. **按维度驱动生成**：`_02_generate_dataset.py` 遍历维度表，每个维度按手册「核心测试方法」生成针对性用例（**不用 LLM**，可复现可回溯）。五类各按独立维度表：A→build_a、D→build_d、E→build_e、B/C→build_l1
 8. **错误归因升级**：每条失分标注 `attribution`（数据集问题/ AI 系统问题/ 环境问题/ 测试通过），报告分组展示，让开发只看真系统问题、测试修数据缺陷
 9. **通用化**：能力目录 + 真实实体清单通过参数注入，真实执行器由系统配置驱动，可复用到任意系统
+10. **数据生命周期保护**：真跑写用例前自动快照原值、跑后恢复；新建的自动删除；删除类走「自建自删」不碰真实数据。规则全在配置里，未配置的系统完全旁路
 
 ## 五类需求类型
 
@@ -129,8 +131,10 @@ AI测试/
 
 | 序号 | 阶段 | 脚本 | 作用 | 什么时候用 |
 |---|---|---|---|---|
-| ① | 接入 | `_01_mcp_setup.py` | 拉真实 schema → 写 `.env` → 生成 `configs/<系统>.yaml` 骨架 | 新增被测 MCP 系统，一条命令接入 |
+| ① | 接入 | `_01_mcp_setup.py` | 拉真实 schema → **契约巡检** → 写 `.env` → 生成 `configs/<系统>.yaml` 骨架 | 新增被测 MCP 系统，一条命令接入 |
 | ② | 生成 | `_02_generate_dataset.py` | 能力目录+实体清单 → 生成数据集 yaml | 改能力目录/实体清单后重建（种子固定可复现） |
+| ②½ | 生成 | `_check_gaps.py` | 检查写用例的数据保护覆盖（有无「无保护」工具） | **生成后、真跑前必做** |
+| ②¾ | 生成 | `_selftest_lifecycle.py` | 数据生命周期模块回归自测（35 项） | 改 `data_lifecycle.py` 后必跑 |
 | ③ | 检查 | `_03_validate_dataset.py` | 数据集 vs 能力目录 硬校验（PASS/FAIL） | 生成后、提交前必跑 |
 | ③ | 检查 | `_05_export_to_excel.py` | 导出 `datasets/excel/*.xlsx` | 人工快速过一遍用例 |
 | ④ | 执行 | `_06_run_test.py` | mock/real 执行器跑用例 + Rubric 5 分制评分 + 统计 | 跑测试出评分 |
@@ -240,3 +244,102 @@ python _08_report.py --result ../results/result_C_20260927.yaml
 > ⚠️ **占位样例**：`configs/客服知识库.yaml`、`ability/能力目录_客服知识库.yaml`、`datasets/E_客服知识库.yaml` 为验证 E 类链路的**虚构演示**，非真实系统。真实接入请按被测系统改写。
 
 > ⚠️ token 属敏感信息，放 `.env`，勿硬编码提交。系统名自动从数据集读取，避免命令行中文乱码。
+
+---
+
+## 数据生命周期保护（真跑写用例前必看）
+
+> **解决的问题**：真跑写用例会改动被测系统的真实数据——改价格、删数据、越跑越多的垃圾记录。
+> 框架提供三层自动保护，**规则全由配置声明，代码不含任何业务知识**；未配置的系统完全旁路。
+
+### 三层保护
+
+| 层 | 场景 | 行为 | 配置键 |
+|---|---|---|---|
+| ① 快照还原 | 改值（价格/库存/状态/店名/电话…） | 写前记录原值 → 跑完写回 | `可还原` |
+| ② 新建清理 | 新建（费用/邮箱/分类/菜单/商品…） | 记录新实体 ID → 跑完删除 | `新建后清理` |
+| ③ 自建自删 | 删除（删商品/删费用…） | 先建临时实体 → 删它，不碰真实数据 | `自建自删` |
+
+### 跑前两步检查
+
+```powershell
+cd ai-test-framework
+
+# 1) 看启动日志的「数据保护」行
+#    「已启用（可还原 N、新建清理 N、自建自删 N、能力缺口 N）」→ 可安全真跑
+#    「未声明「数据生命周期」」→ 写用例会真改数据且不还原
+
+# 2) 确认没有无保护的写工具
+python scripts/_check_gaps.py
+#    「✅ 所有写工具都有保护」才可跑
+```
+
+### 配置示例
+
+```yaml
+数据生命周期:
+  可还原:
+    - 工具: batch_item_price        # 写工具
+      快照工具: item_detail         # 用它查原值
+      主键参数: merchFoodIds        # 写工具里的目标参数（支持数组）
+      主键字段: id                  # 快照返回里的定位字段（常与参数名不同）
+      快照字段: [price]
+  新建后清理:
+    - 工具: add_extra_fee
+      删除工具: delete_extra_fee
+      删除参数: {merchId: "{merchId}", feeId: "{新实体ID}"}
+  自建自删:
+    - 删除工具: item_delete
+      建工具: item_create
+      建参数: {merchId: "{merchId}", name: "_AUTOTEST_DEL"}
+      删除主键: itemId
+  能力缺口:                          # 能做但无法验证/还原 → 跳过并作为缺陷上报
+    - 工具: set_tip_type
+      原因: 缺读取当前值的接口，改后无法验证与还原
+```
+
+### 关键原则
+
+- **被测系统缺读接口 → 记「能力缺口」，不要硬跑**。如 `set_*` 有写无读，改了既无法验证也无法还原，
+  真跑只会污染环境。这本身就是**被测系统缺陷**（API 只有写半身）。
+- **宁可跳过，不可误删**。自建自删的临时实体建失败 / 拿不到 ID 时，框架拒绝执行，绝不拿真实 ID 去删。
+- **快照目录按运行隔离**（`results/snapshots/<run_id>/`），绝不复用上次快照——
+  否则会把已被改脏的值当成原值「还原」成错误值。
+- **执行器契约**：`BaseExecutor.get_lifecycle()`。新增会产生写副作用的执行器**必须覆盖它**，
+  否则写用例会静默失去保护。纯对话/RAG/Mock 返回 `None` 自动旁路。
+
+---
+
+## 契约巡检（接入新 MCP 时自动跑）
+
+> **解决的问题**：schema 只能看到「工具有哪些参数」，看不到「调下去返回对不对」。
+
+`_01_mcp_setup.py` 接入时自动对每个工具真调一次，检查返回体自洽性：
+
+```powershell
+cd ai-test-framework
+# 给 2 个以上店铺 ID 才能做跨店对比（强烈建议）
+python scripts/_01_mcp_setup.py --name <系统名> --url <MCP端点> --token <TOKEN> \
+    --probe-merchants <店铺ID1>,<店铺ID2>
+
+# 纯拉 schema 不巡检
+python scripts/_01_mcp_setup.py ... --no-probe
+```
+
+产出 `results/mcp_schemas/<系统名>.contract.md` 体检表：
+
+| 检查项 | 含义 |
+|---|---|
+| `MERCH_ZERO` | 响应归属店铺字段为全零 UUID（未回填真实归属） |
+| `MERCH_MISMATCH` | 响应归属店铺与请求不一致（疑似跨租户泄露） |
+| `SAME_ACROSS_MERCH` | 已传 merchId 但换店铺返回完全一致（无视过滤） |
+| `TENANT_FIXED` | 工具无店铺参数，恒返回 token 绑定店铺的数据 |
+| `PREVIEW_IGNORED` | 传 confirm=true 仍返回预览空壳 |
+| `ZERO_ID` | 返回全零 UUID 主键（占位/脏数据） |
+| `SERVER_CRASH` | 服务端内部错误（非友好校验） |
+
+**安全边界**：写操作一律 `confirm=false` 只预览，绝不真实改删数据。
+**参数生成**按 schema 的 type/enum/format 造合法值；实体主键拿不到真实值时**不传**，
+避免「拿店铺 ID 当商品 ID」制造假缺陷。
+
+> ⚠️ 巡检只覆盖「返回体自洽性」，**不覆盖语义正确性**。0 异常 ≠ 工具完全正常。

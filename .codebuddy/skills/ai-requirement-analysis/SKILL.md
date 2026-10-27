@@ -40,7 +40,39 @@ python scripts/_01_mcp_setup.py --name <系统名> --url <MCP端点> \
 ```
 
 它会自动完成：**拉全量工具 schema → 平铺 → 落盘 `results/mcp_schemas/<系统名>.json`
-→ 落盘 `<系统名>.overview.md` 业务域概览 → 写 `.env` → 生成 `configs/<系统名>.yaml` 骨架**。
+→ 落盘 `<系统名>.overview.md` 业务域概览 → **契约巡检** → 写 `.env` → 生成 `configs/<系统名>.yaml` 骨架**。
+
+### 契约巡检（接入时自动跑，必须看报告）
+
+> schema 只能看到「工具有哪些参数」，看不到「调下去返回对不对」。
+> PocketStore 实测暴露的缺陷全部在 schema 层不可见、必须真调才发现，故 `_01` 内置巡检。
+
+```powershell
+# 默认启用；给 2 个以上店铺 ID 才能做跨店对比（强烈建议）
+python scripts/_01_mcp_setup.py --name <系统名> --url <MCP端点> --token <TOKEN> \
+    --probe-merchants <店铺ID1>,<店铺ID2>
+
+# 纯拉 schema 不巡检（行为同旧版）
+python scripts/_01_mcp_setup.py ... --no-probe
+```
+
+产出 `results/mcp_schemas/<系统名>.contract.md` 体检表，检查项：
+
+| 检查项 | 含义 |
+|---|---|
+| `MERCH_ZERO` | 响应归属店铺字段为全零 UUID（未回填真实归属） |
+| `MERCH_MISMATCH` | 响应归属店铺与请求不一致（疑似跨租户泄露） |
+| `SAME_ACROSS_MERCH` | 已传 merchId 但换店铺返回完全一致（无视过滤） |
+| `TENANT_FIXED` | 工具无店铺参数，恒返回 token 绑定店铺的数据 |
+| `PREVIEW_IGNORED` | 传 confirm=true 仍返回预览空壳 |
+| `ZERO_ID` | 返回全零 UUID 主键（占位/脏数据） |
+| `SERVER_CRASH` | 服务端内部错误（非友好校验） |
+
+**安全边界**：写操作一律 `confirm=false` 只预览，绝不真实改删数据。
+**参数生成**按 schema 的 type/enum/format 造合法值；实体主键（`itemId`/`menuId` 等）
+拿不到真实值时**不传**，避免「拿店铺 ID 当商品 ID」制造假缺陷。
+
+> ⚠️ 巡检只覆盖「返回体自洽性」，**不覆盖语义正确性**。报告 0 异常 ≠ 工具完全正常。
 
 > ⛔ **铁律：不要为某个具体 MCP 写 `_probe_<系统>.py` 这类一次性脚本。**
 > `_01_mcp_setup.py` 是「任意 MCP 通用」的接入器，新 MCP 永远复用它。
@@ -96,6 +128,25 @@ python scripts/_01_mcp_setup.py --name <系统名> --url <MCP端点> \
 - ⛔ **禁止用占位/编造 ID**（`'0'`、全 9、连续数字）做「正常执行」用例 —— 服务端会返回
   `data is null` / `not found`，导致用例必然失败，且**结果只能看到"系统报错"，看不出是数据集问题**。
 - ⛔ **禁止从 `results/mcp_schemas/*.json` 抄 ID** —— 那里只有 schema（字段定义），没有真实数据 ID。
+
+### ①½ 写操作必须声明「数据生命周期」（否则跑一次改一次数据）
+
+生成完数据集，先看有多少写用例、有没有保护：
+
+```powershell
+python scripts/_check_gaps.py
+```
+
+输出「✅ 所有写工具都有保护」才能进执行。若列出「⚠ 无保护工具」，说明这些写用例
+执行时会真改数据且不还原——**必须先补 `configs/<系统>.yaml` 的「数据生命周期」声明**。
+
+- **改值类**（改价/改状态）→ 配 `可还原`（快照工具 + 主键字段 + 快照字段）
+- **新建类**（加费用/加邮箱）→ 配 `新建后清理`（删除工具 + 删除参数）
+- **删除类** → 配 `自建自删`（建工具 + 删除主键），绝不拿真实 ID 去删
+- **写接口有、读接口没有**（如 `set_*` 无对应 `get_*`）→ 记 `能力缺口`，
+  跳过并作为**被测系统缺陷**上报，不要硬跑污染环境
+
+> 详细配置格式见 `ai-test-execution` Skill 的「数据生命周期保护」章节。
 
 ### ② 枚举取值必须「按工具」核对，不能全局一刀切
 

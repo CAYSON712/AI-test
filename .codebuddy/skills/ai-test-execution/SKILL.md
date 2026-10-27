@@ -110,7 +110,8 @@ python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yam
 | `generic_chat_executor.py` | B 类：纯对话 Agent（不连 MCP，Mock 隔离工具） | 无（对话） |
 | `generic_mcp_executor.py` | C 类：Agent+MCP 集成（E2E，操作后实时校验） | `configs/` + `ability/` + `.env` |
 | `generic_rag_executor.py` | E 类：RAG（检索+生成，按 E 类维度评分） | `configs/` + `ability/`（内置 Mock 检索） |
-| `base.py` | 执行器基类（统一接口） | 无 |
+| `data_lifecycle.py` | 数据生命周期：写前快照 / 跑后恢复 / 新建清理 / 自建自删 | `configs/` 的「数据生命周期」段 |
+| `base.py` | 执行器基类（统一接口 + `get_lifecycle()` 数据安全契约） | 无 |
 
 - `--executor mock/real/auto` 切换执行器模式
 - `auto`：有 token 或 RAG 系统则真实优先，否则纯 Mock（新系统自动降级）
@@ -118,7 +119,7 @@ python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yam
 
 ### 高危写入类用例（维度「写入安全边界」）
 
-破坏性/写入类工具（delete / update / batch_insert）会产生**真实副作用**，因此：
+破坏性/写入类工具（delete / update / batch_create）会产生**真实副作用**，因此：
 
 - **默认跳过**：用例带 `高危: true` 时执行器直接跳过，除非显式开启 `ALLOW_DESTRUCTIVE=1`
   （PowerShell：`$env:ALLOW_DESTRUCTIVE="1"`）。**只在隔离测试环境开启。**
@@ -132,7 +133,67 @@ python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yam
 - **判定顺序**：真实实体消失 → **1 分**；基线 > 0 → 按 `|Δ| ≤ 最大影响条数` 判 5 / 1 分；
   基线不可用但真实实体仍在 → 5 分；两类证据都没有 → **不判分**（避免假高分）。
 - 探针或快照工具自身报业务错误码时记为「无证据」（`None`），**不会**误判成「数据被删」。
-- 测写入类工具的正确姿势：**自己建 → 操作 → 删自己建的**，全链路隔离。
+
+### 数据生命周期保护（跑写用例前必读）
+
+> **目的**：真跑写用例不能把被测系统的数据改坏。框架提供三层自动保护，
+> 全部由 `configs/<系统>.yaml` 的「数据生命周期」段声明驱动，代码不含任何业务知识。
+
+**三层保护**
+
+| 层 | 场景 | 行为 | 配置键 |
+|---|---|---|---|
+| ① 快照还原 | 改值（价格/库存/状态/店名/电话…） | 写前记录原值 → 跑完写回 | `可还原` |
+| ② 新建清理 | 新建（费用/邮箱/分类/菜单/商品…） | 记录新实体 ID → 跑完删除 | `新建后清理` |
+| ③ 自建自删 | 删除（删商品/删费用…） | 先建临时实体 → 删它（不碰真实数据） | `自建自删` |
+
+**执行前必做的两步检查**
+
+```powershell
+# 1) 看启动日志里的「数据保护」行
+#    显示「已启用（可还原 N、新建清理 N、自建自删 N、能力缺口 N）」→ 可安全真跑
+#    显示「未声明「数据生命周期」」→ 写用例会真改数据且不还原，先补声明或用 CONFIRM_DRYRUN=1
+
+# 2) 确认没有「无保护」的写工具
+python scripts/_check_gaps.py
+#    输出「✅ 所有写工具都有保护」才可跑；列出「⚠ 无保护工具」时先补配置
+```
+
+**接入新系统时**（在 `configs/<系统>.yaml` 补声明，格式见文件内注释）：
+
+```yaml
+数据生命周期:
+  可还原:
+    - 工具: batch_item_price        # 写工具
+      快照工具: item_detail         # 用它查原值
+      主键参数: merchFoodIds        # 写工具里的目标参数（支持数组）
+      主键字段: id                  # 快照返回里的定位字段（注意常与参数名不同）
+      快照字段: [price]
+  新建后清理:
+    - 工具: add_extra_fee
+      删除工具: delete_extra_fee
+      删除参数: {merchId: "{merchId}", feeId: "{新实体ID}"}
+  自建自删:
+    - 删除工具: item_delete
+      建工具: item_create
+      建参数: {merchId: "{merchId}", name: "_AUTOTEST_DEL"}
+      删除主键: itemId
+  能力缺口:                          # 能做但无法验证/还原 → 跳过并作为缺陷上报
+    - 工具: set_tip_type
+      原因: 缺读取当前值的接口，改后无法验证与还原
+```
+
+**关键原则**
+
+- **被测系统缺读接口 → 记「能力缺口」，不要硬跑**。如 `set_*` 有写无读，改了既无法验证也无法还原，
+  真跑只会污染环境。这类要作为**被测系统缺陷**上报（API 只有写半身）。
+- **宁可跳过，不可误删**。自建自删的临时实体建失败 / 拿不到 ID 时，框架拒绝执行，不会拿真实 ID 去删。
+- **快照目录按运行隔离**（`results/snapshots/<run_id>/`），绝不复用上次快照——
+  否则会把已被改脏的值当成原值「还原」成错误值。
+- 纯对话 / RAG / Mock 执行器无写副作用，`get_lifecycle()` 返回 `None`，框架自动旁路。
+
+> **契约位置**：`executors/base.py` 的 `BaseExecutor.get_lifecycle()`。
+> 新增「会产生写副作用」的执行器**必须覆盖它**，否则写用例会静默失去保护。
 
 ## 评分说明
 

@@ -60,6 +60,245 @@ param_bools:
   - allowAsap
   - deliveryFeeTaxable
 
+# =====================================================================
+# 数据生命周期：真执行写操作时的「快照 / 恢复 / 不可恢复保护」
+# =====================================================================
+# 通用能力，规则由各系统自行声明；未声明此段的系统完全不受影响。
+# 目的：真跑写用例前后自动记录并还原原值，避免「跑一次数据集就改一次数据」。
+#
+# 字段说明：
+#   可还原.工具        写工具名
+#   快照工具           用什么只读工具查原值
+#   主键参数           写工具里标识目标实体的参数名（支持数组）
+#   主键字段           快照返回里对应的字段名
+#   快照字段           需要记录/还原的字段名
+#   恢复工具           可选，默认同「工具」
+#   恢复参数键         可选，{快照字段: 恢复参数名} 映射，默认同名
+#   不可恢复           删了就无法还原的工具，默认跳过（需 ALLOW_DESTRUCTIVE=1）
+数据生命周期:
+  快照目录: results/snapshots
+
+  可还原:
+    # ---- 商品：item_update 与 item_detail 字段名完全对齐，最可靠 ----
+    # ⚠ item_detail 返回里实体主键字段名是 id（不是 itemId）；
+    #   主键参数(itemId) 与 主键字段(id) 必须分开配，否则定位不到实体。
+    - 工具: item_update
+      快照工具: item_detail
+      主键参数: itemId
+      主键字段: id
+      快照字段: [price, stock, status, name]
+      恢复参数键: {price: price, stock: stock, status: status, name: newName}
+
+    # ---- 批量改价/改库存/改状态：按 merchFoodIds 批量，逐条快照 ----
+    # 恢复走 item_update（逐条写回），不能用 batch_*（会再批量覆盖）
+    - 工具: batch_item_price
+      快照工具: item_detail
+      主键参数: merchFoodIds
+      主键字段: id
+      快照字段: [price]
+      恢复工具: item_update
+    - 工具: batch_item_stock
+      快照工具: item_detail
+      主键参数: merchFoodIds
+      主键字段: id
+      快照字段: [stock]
+      恢复工具: item_update
+    - 工具: batch_item_status
+      快照工具: item_detail
+      主键参数: merchFoodIds
+      主键字段: id
+      快照字段: [status]
+      恢复工具: item_update
+
+    # ---- 店铺级设置：get_store_info 查原值 ----
+    # 注意：get_store_info 返回字段与 update_* 参数名不同，需显式映射
+    - 工具: update_store_name
+      快照工具: get_store_info
+      主键参数: merchId
+      主键字段: merchId
+      快照字段: [name]
+      恢复参数键: {name: newName}
+    - 工具: update_store_phone
+      快照工具: get_store_info
+      主键参数: merchId
+      主键字段: merchId
+      快照字段: [phone]
+      恢复参数键: {phone: newPhone}
+    - 工具: set_store_open_status
+      快照工具: get_store_info
+      主键参数: merchId
+      主键字段: merchId
+      快照字段: [status]
+
+    # ---- 额外费用：get_extra_fee 列表里按 feeId 定位 ----
+    - 工具: update_extra_fee
+      快照工具: get_extra_fee
+      主键参数: feeId
+      主键字段: id
+      快照字段: [name, value, isTaxable, description]
+
+    # ---- 支付方式开关：get_payment_methods 的 items[].isEnabled 能查原值 ----
+    # 主键是 paymentType（非 UUID），快照工具按 type 定位
+    - 工具: set_payment_method_enabled
+      快照工具: get_payment_methods
+      主键参数: paymentType
+      主键字段: type
+      快照字段: [isEnabled]
+      恢复参数键: {isEnabled: enabled}
+
+    # ---- 员工信息 ----
+    - 工具: update_user_info
+      快照工具: get_user_detail
+      主键参数: merchManagerId
+      主键字段: merchManagerId
+      快照字段: [email, phone]
+    - 工具: update_user_status
+      快照工具: get_user_detail
+      主键参数: merchManagerId
+      主键字段: merchManagerId
+      快照字段: [isActive]
+
+  # ---- 新建后清理：跑了要能删掉，否则越跑越多 ----
+  # 删除参数用占位符声明，支持：
+  #   {新实体ID}      新建返回里捞到的 ID
+  #   {merchId}       系统默认店铺
+  #   {建时参数.xxx}  新建时用过的参数（如 day / days）
+  新建后清理:
+    - 工具: add_extra_fee
+      删除工具: delete_extra_fee
+      删除参数: {merchId: "{merchId}", feeId: "{新实体ID}"}
+      返回ID字段: createdFeeId
+
+    - 工具: add_order_notification_email
+      删除工具: remove_order_notification_email
+      删除参数: {merchId: "{merchId}", id: "{新实体ID}"}
+
+    # 报表订阅：新建后重查列表按 email 找回 id（返回体不含新建 id）
+    - 工具: add_report_subscription
+      删除工具: remove_report_subscription
+      删除参数: {merchId: "{merchId}", id: "{新实体ID}"}
+      按标识回查:
+        查询工具: list_report_subscriptions
+        标识参数: email
+        标识字段: email
+        ID字段: id
+
+    # ⚠ 自提时段比较特殊：删除要 day + slotIndex（数组索引），不是 UUID。
+    #   新建返回里拿不到索引，只能从「建时参数」推：days 给出是哪几天，
+    #   建完该天最后一个时段就是新建的那个（列表按 index 递增追加）。
+    #   删除参数用 {建时参数.days.0} 取首个 day；多天场景需逐条清理，
+    #   这里保守只处理单 day，多 day 的用例跑完仍可能残留（见下方说明）。
+    - 工具: add_pickup_time_slot
+      删除工具: delete_pickup_time_slot
+      删除参数: {merchId: "{merchId}", day: "{建时参数.days.0}",
+                 slotIndex: "{新建后末尾索引}"}
+      # 新建返回里没有索引，建完后重查列表取该 day 的最后一个 slot
+      索引查询工具: list_pickup_time_slots
+      索引查询天字段: days
+      索引查询时段字段: slots
+      索引查询索引字段: index
+
+    - 工具: category_create
+      删除工具: category_delete
+      删除参数: {categoryId: "{新实体ID}"}
+      返回ID字段: createdCategoryId
+
+    - 工具: menu_create
+      删除工具: menu_delete
+      删除参数: {menuId: "{新实体ID}"}
+      返回ID字段: createdMenuId
+
+    - 工具: item_create
+      删除工具: item_delete
+      删除参数: {itemId: "{新实体ID}"}
+      返回ID字段: createdItemId
+
+    - 工具: create_discount_campaign
+      删除工具: update_discount_campaign
+      删除参数: {merchId: "{merchId}", campaignId: "{新实体ID}"}
+      返回ID字段: createdCampaignId
+
+  # ---- 自建自删：删除类用例不碰真实数据 ----
+  # 先按「建工具」造一个临时实体，再把删除目标换成它，跑完即干净。
+  # 删除主键：删除工具里标识目标实体的参数名（列表型会自动包成数组）
+  自建自删:
+    - 删除工具: delete_extra_fee
+      建工具: add_extra_fee
+      建参数: {merchId: "{merchId}", name: "_AUTOTEST_FEE_DEL",
+               target: Delivery, feeType: fixed, value: 1.0, isTaxable: false}
+      删除主键: feeId
+      返回ID字段: createdFeeId
+
+    - 删除工具: remove_order_notification_email
+      建工具: add_order_notification_email
+      建参数: {merchId: "{merchId}", email: "autotest_del@example.com"}
+      删除主键: id
+
+    - 删除工具: category_delete
+      建工具: category_create
+      建参数: {merchId: "{merchId}", name: "_AUTOTEST_CAT_DEL"}
+      删除主键: categoryId
+      返回ID字段: createdCategoryId
+
+    - 删除工具: menu_delete
+      建工具: menu_create
+      建参数: {merchId: "{merchId}", name: "_AUTOTEST_MENU_DEL"}
+      删除主键: menuId
+      返回ID字段: createdMenuId
+
+    - 删除工具: item_delete
+      建工具: item_create
+      建参数: {merchId: "{merchId}", name: "_AUTOTEST_ITEM_DEL",
+               price: 1.0, status: OnSale}
+      删除主键: itemId
+      返回ID字段: createdItemId
+
+  # ---- 受测系统能力缺口（作为缺陷上报，不硬跑）----
+  # 这些写接口存在，但被测系统没有对应的「读取当前值」接口：
+  #   get_store_info 只返回 merchId/name/logo/phone/email/address，
+  #   不返回 enabled / thresholdAmount / mode / tipValues 等开关字段。
+  # 后果：改了既无法验证对错，也无法自动还原 → 真跑会污染环境且测不出东西。
+  # 这不属于测试框架问题，属被测系统缺陷（缺读接口），单独列出。
+  能力缺口:
+    - 工具: set_auto_accept_orders
+      原因: 无读取「自动接单」当前状态的接口，改后无法验证与还原
+    - 工具: set_delivery_enabled
+      原因: 无读取「配送开关」当前状态的接口，改后无法验证与还原
+    - 工具: set_pickup_enabled
+      原因: 无读取「自提开关」当前状态的接口，改后无法验证与还原
+    - 工具: set_pickup_order_threshold
+      原因: 无读取「自提订单门槛」当前值的接口，改后无法验证与还原
+    - 工具: set_utensil_option_enabled
+      原因: 无读取「餐具选项开关」当前状态的接口，改后无法验证与还原
+    - 工具: set_sales_mode
+      原因: 无读取「销售模式」当前值的接口，改后无法验证与还原
+    - 工具: set_tip_options
+      原因: 无读取「小费选项」当前值的接口，改后无法验证与还原
+    - 工具: set_tip_type
+      原因: 无读取「小费类型」当前值的接口，改后无法验证与还原
+    - 工具: create_reward_campaign
+      原因: 无删除优惠券活动的接口（无 delete_reward_campaign），
+            创建后无法清理，会永久留下测试活动
+    - 工具: add_store_user
+      原因: 角色表为空，无合法 roleId 可填，员工实体无法创建
+    - 工具: delete_store_user
+      原因: 角色表为空，无法自建临时员工供删除，拒绝操作真实员工
+
+  # ---- 不可恢复：删除类，删了没得救，默认跳过 ----
+  # 配了「自建自删」的会走自建自删；没配的才会真正跳过。
+  不可恢复:
+    - delete_store_user
+    - delete_extra_fee
+    - delete_delivery_area
+    - delete_pickup_time_slot
+    - category_delete
+    - menu_delete
+    - spec_delete
+    - tax_delete
+    - item_delete
+    - remove_order_notification_email
+    - remove_report_subscription
+
 mcp_tools:
 - name: set_allow_add_items_to_active_order
   description: 允許增加商品到進行中訂單、關閉加點。Enable or disable adding items to active/in-progress
