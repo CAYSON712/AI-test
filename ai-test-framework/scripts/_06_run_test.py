@@ -148,6 +148,20 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
 
     print(f"需求类型: {req_type} | 系统: {system or '(自动)'} | 用例: {len(cases)} | 执行器: {executor_mode} | 每条跑 {runs} 次")
 
+    # 数据保护状态：写用例会真改数据，跑之前先让人看清有没有防护
+    try:
+        _lc_states = []
+        for _e in getattr(registry, "executors", []) or []:
+            _fn = getattr(_e, "lifecycle_summary", None)
+            if callable(_fn):
+                _s = _fn()
+                if _s not in _lc_states:
+                    _lc_states.append(_s)
+        for _s in _lc_states:
+            print(f"数据保护: {_s}")
+    except Exception:
+        pass
+
     # 记录每条用例的多次运行得分（按 用例 分组，支撑 pass@k 判定）
     dim_case_counts = defaultdict(int)     # 维度 → 用例数
     dim_case_all = defaultdict(dict)       # 维度 → {用例ID: [(score, judgeable, passed), ...各run]}

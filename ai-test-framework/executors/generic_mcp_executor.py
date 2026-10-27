@@ -36,6 +36,10 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
 from base import BaseExecutor
+from data_lifecycle import (SnapshotStore, check_irreversible, cleanup_created,
+                            fill_tail_index, prepare_self_delete,
+                            register_created, resolve_id_by_marker,
+                            restore_snapshots, take_snapshot)
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ABILITY_DIR = os.path.join(_ROOT, "ability")
@@ -47,6 +51,21 @@ if os.path.join(_ROOT, "scripts") not in sys.path:
 
 # 加载 ai-test-framework/.env（敏感配置统一存这里，勿硬编码提交 git）
 load_dotenv(os.path.join(_ROOT, ".env"))
+
+
+# 本次运行的快照目录标识：进程启动时定一次，整轮运行共用。
+# 显式设置 RUN_ID 可跨进程指定同一批快照（如分阶段执行）。
+_RUN_STAMP = time.strftime("%Y%m%d_%H%M%S")
+
+
+def _allow_destructive_enabled():
+    """是否允许执行破坏性写操作。由 ALLOW_DESTRUCTIVE=1 显式开启。
+
+    与 direct_mcp_executor._allow_destructive 口径一致；
+    放在此处让 generic 执行器也能复用，避免两处判定不一致。
+    """
+    return str(os.environ.get("ALLOW_DESTRUCTIVE", "")).strip().lower() \
+        in ("1", "true", "yes")
 
 
 # =====================================================================
@@ -148,6 +167,18 @@ class _SysConfig:
         # ---- 需默认上下文参数 / 需校验的工具 ----
         self.merchant_needed_tools = set(cfg.get("需要默认上下文参数的工具", []))
         self.verify_tools = set(cfg.get("需要校验的工具", []))
+
+        # ---- 数据生命周期（写前快照 / 跑后恢复 / 不可恢复保护）----
+        # 通用能力：规则全部来自 configs/<系统>.yaml 的「数据生命周期」段。
+        # 未配置该段时 LifecycleConfig.enabled=False，所有相关逻辑完全旁路，
+        # 行为与改动前一致（不破坏 POS / 小韩面等既有系统）。
+        try:
+            from data_lifecycle import LifecycleConfig
+        except ImportError:                       # 以包方式导入时的回退
+            from executors.data_lifecycle import LifecycleConfig
+        self.lifecycle = LifecycleConfig(
+            cfg.get("数据生命周期"), root_dir=os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))))
 
         # ---- 能力→工具 / verify / 操作类型 映射（来自能力目录）----
         self.cap_tool = {}
@@ -361,6 +392,15 @@ class GenericMcpExecutor(BaseExecutor):
             with open(sp_prompt_path, encoding="utf-8") as _f:
                 self._system_prompt = _f.read().strip()
 
+    # ---- 数据生命周期契约（覆盖 BaseExecutor.get_lifecycle）----
+    def get_lifecycle(self):
+        """MCP 执行器会产生真实写副作用，返回其数据生命周期配置。
+
+        未在 config 声明「数据生命周期」时返回 LifecycleConfig(enabled=False)，
+        所有保护逻辑自动旁路（行为与接入前一致）。
+        """
+        return getattr(self.sys, "lifecycle", None)
+
     # ---- 连接上下文 ----
     def _client_headers(self):
         headers = {}
@@ -398,6 +438,52 @@ class GenericMcpExecutor(BaseExecutor):
         latency_ms = (time.monotonic() - t0) * 1000
         texts = [c.text for c in result.content if c.type == "text"]
         return result.is_error, "\n".join(texts), round(latency_ms, 1)
+
+    async def _restore_after_case(self, snaps, lc):
+        """用例结束后按快照还原数据（数据生命周期）。
+
+        独立开一次会话执行恢复：不复用主流程的 session，
+        因为主流程可能已因异常退出、session 已关闭。
+        恢复失败只记日志，不影响用例结论（不能掩盖原始测试结果）。
+        """
+        try:
+            stack, session = await self._session_context()
+            async with stack:
+                ok_n, fails = await restore_snapshots(self, session, snaps, lc)
+            if ok_n or fails:
+                print(f"[生命周期] 恢复 {ok_n} 条"
+                      + (f"，失败 {len(fails)} 条：{fails[:3]}" if fails else ""))
+        except Exception as e:
+            print(f"[生命周期] 恢复过程异常（不影响用例结论）：{e}")
+
+    async def _prepare_self_delete(self, delete_tool, tool_params, lc):
+        """自建自删：建一个临时实体，把删除目标换成它。返回 (ok, params, reason)。
+
+        独立开会话：此时主流程尚未进入 try 块，还没建立 session。
+        """
+        try:
+            stack, session = await self._session_context()
+            async with stack:
+                return await prepare_self_delete(
+                    self, session, delete_tool, tool_params, lc, log=print)
+        except Exception as e:
+            return False, tool_params, f"自建自删过程异常：{e}"
+
+    async def _cleanup_after_case(self, lc):
+        """清理本次用例新建的实体（第 2 批）。
+
+        独立开会话执行：主流程 session 可能已因异常关闭。
+        清理失败只记日志，不影响用例结论。
+        """
+        try:
+            stack, session = await self._session_context()
+            async with stack:
+                ok_n, fails = await cleanup_created(self, session, lc)
+            if ok_n or fails:
+                print(f"[生命周期] 清理新建 {ok_n} 条"
+                      + (f"，失败 {len(fails)} 条：{fails[:3]}" if fails else ""))
+        except Exception as e:
+            print(f"[生命周期] 清理过程异常（不影响用例结论）：{e}")
 
     # ---- 主流程 ----
     def handle(self, capability, user_input, inp, expected):
@@ -483,14 +569,107 @@ class GenericMcpExecutor(BaseExecutor):
                 break
         mcp_input = json.dumps({self.sys.param_wrapper: tool_params}, ensure_ascii=False)
         before = after = exists_before = exists_after = None
+        # ---- 数据生命周期：不可恢复操作保护（删除类）----
+        # 配置声明了「不可恢复」清单且未开 ALLOW_DESTRUCTIVE 时跳过，
+        # 避免真删真实数据又无法还原。未配置的系统完全不受影响。
+        _lc = self.get_lifecycle()
+        _lc_skipped = None
+        _self_delete_pending = False
+        # 受测系统能力缺口：写接口存在但缺读取接口，改了无法验证也无法还原。
+        # 默认跳过并标注，避免真改配置污染环境（换系统只改配置即可）。
+        if _lc is not None:
+            _gap = _lc.capability_gap(tool_name)
+            if _gap and not _allow_destructive_enabled():
+                return {
+                    "steps": steps, "tool": tool_name,
+                    "output": f"[受测系统能力缺口] {_gap}",
+                    "tool_correct": None, "level": "INFO", "block": None,
+                    "biz_error": None, "impact": None, "verify": None,
+                    "skipped": True, "skip_reason": "capability_gap"}
+        if _lc is not None and _lc.is_irreversible(tool_name):
+            try:
+                _allow, _reason = check_irreversible(tool_name, _lc)
+            except Exception:
+                _allow, _reason = True, ""
+            if not _allow and not _allow_destructive_enabled():
+                # 第 3 批：先尝试「自建自删」——建一个临时实体再删它，
+                # 测试语义等价，但不碰任何真实数据。
+                # 配了规则就走这条路；没配才跳过（绝不拿真实 ID 去删）。
+                _sd_rule = _lc.self_delete_rule(tool_name)
+                if _sd_rule:
+                    _sd_ok = False
+                    try:
+                        _sd_ok, _new_params, _sd_reason = await self._prepare_self_delete(
+                            tool_name, tool_params, _lc)
+                    except Exception as e:
+                        _sd_reason = f"自建自删异常：{e}"
+                    if _sd_ok:
+                        tool_params = _new_params
+                        _self_delete_pending = True
+                    else:
+                        return {
+                            "steps": steps, "tool": tool_name,
+                            "output": f"删除类用例已跳过（{_sd_reason}）。"
+                                      "为避免误删真实数据，未执行。",
+                            "tool_correct": None, "level": "INFO", "block": None,
+                            "biz_error": None, "impact": None, "verify": None,
+                            "skipped": True}
+                else:
+                    _lc_skipped = _reason
+                    return {
+                        "steps": steps, "tool": tool_name, "output": _reason,
+                        "tool_correct": None, "level": "INFO", "block": None,
+                        "biz_error": None, "impact": None, "verify": None,
+                        "skipped": True}
+
+        _snaps = []
         try:
             stack, session = await self._session_context()
             async with stack:
+                # 写前快照：记录目标实体原值，供异常后恢复/事后查证。
+                # 快照目录按「本次运行」隔离（RUN_ID 或启动时间），
+                # 绝不复用上次运行的快照——否则会把已被改脏的值当成原值记下来，
+                # 恢复时「还原」成一个错误的值（实测踩过：36.00 被还原成 7.77）。
+                if _lc is not None and _lc.needs_snapshot(tool_name):
+                    try:
+                        _run_dir = _lc.run_dir(
+                            os.environ.get("RUN_ID") or _RUN_STAMP)
+                        _store = SnapshotStore(_run_dir)
+                        _snaps = await take_snapshot(
+                            self, session, tool_name, tool_params, _lc, _store)
+                    except Exception:
+                        _snaps = []
                 before = await self._snapshot_count(session, audit)
                 exists_before = await self._presence(session, audit)
                 is_error, text, mcp_latency = await self._call_tool(session, tool_name, tool_params)
                 after = await self._snapshot_count(session, audit)
                 exists_after = await self._presence(session, audit)
+                # 新建成功后登记待清理记录（第 2 批：防「越跑越多」）
+                if _lc is not None and not is_error:
+                    try:
+                        _rec = register_created(
+                            self, _lc, tool_name, tool_params, text)
+                        if _rec is not None:
+                            _rule = _lc.rule_for_create(tool_name) or {}
+                            # 新建返回里没有 ID 时，按业务标识回查列表拿 ID
+                            if _rec.get("按标识回查") and not _rec.get("新实体ID"):
+                                try:
+                                    await resolve_id_by_marker(
+                                        self, session, _lc, _rec, log=print)
+                                except Exception:
+                                    pass
+                            # 无 ID、靠索引删除的资源（如自提时段）：
+                            # 立刻补查末尾索引，否则清理时无法定位
+                            if _rule.get("索引查询工具"):
+                                try:
+                                    await fill_tail_index(
+                                        self, session, _lc, _rec, _rule, log=print)
+                                except Exception:
+                                    pass
+                            print(f"[生命周期] 登记待清理：{tool_name} "
+                                  f"新建实体 {_rec.get('新实体ID')}")
+                    except Exception:
+                        pass
         except Exception as e:
             steps.append({
                 "name": f"MCP-{tool_name}", "type": "SPAN", "input": mcp_input,
@@ -499,6 +678,14 @@ class GenericMcpExecutor(BaseExecutor):
             })
             return {"error": f"MCP 调用失败: {e}", "block": True, "steps": steps,
                     "impact": None}
+        finally:
+            # 无论成败都尝试收尾：调用抛异常时更要还原/清理，
+            # 否则「已经改了一半」或「建了没删」的数据没人收拾。
+            if _lc is not None:
+                if _snaps:
+                    await self._restore_after_case(_snaps, _lc)
+                if _lc.created:
+                    await self._cleanup_after_case(_lc)
 
         steps.append({
             "name": f"MCP-{tool_name}", "type": "SPAN", "input": mcp_input,

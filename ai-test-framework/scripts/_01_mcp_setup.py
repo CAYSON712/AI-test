@@ -133,6 +133,10 @@ def build_tools(tools):
             "description": _one_line(desc),
             "params": params,
             "required": required,
+            # 原始 schema（含 type/enum/format）：契约巡检据此按类型造合法参数，
+            # 否则会把数组参数传成标量、把实体主键塞成店铺ID，制造大量假缺陷。
+            # 落盘时会被剔除（见 run()）。
+            "_schema": schema,
         })
     return out
 
@@ -351,6 +355,400 @@ def render_config(name, tools, args, wrapper=None):
 
 
 # =====================================================================
+# 接入期契约巡检（对每个工具真调一次，检查返回体是否自洽）
+#
+# 定位：schema 只能告诉我们「工具有哪些参数」，看不到「调下去返回对不对」。
+#   实测 PocketStore 曾出现的缺陷全部在 schema 层不可见、必须真调才暴露：
+#     ① list_all_campaigns 返回的 merchId 恒为全零 UUID（响应字段未回填）
+#     ② list_report_subscriptions 无视店铺、恒返回另一个租户的数据
+#     ③ 只读工具不带 confirm=true 时返回 isPreview 空壳（items=[]/total=0）
+#     ④ list_discount_campaigns(filterType="") 抛 1006 反序列化异常
+#   这些都不是「调用成功/字段存在」能发现的，故在接入阶段一次性真调巡检。
+#
+# 安全边界：写操作一律 confirm=false（只预览不执行），绝不真实改/删数据。
+# =====================================================================
+
+# 判定「写操作」的关键字（与 _02 的 _op_of 语义对齐，此处只用于圈定安全边界，
+# 宁可多判为写操作——误判成写操作只是降级为预览，误判成只读则会真改数据）。
+_WRITE_HINTS = (
+    "add_", "create_", "update_", "delete_", "remove_", "set_", "bind_",
+    "unbind_", "publish_", "batch_", "generate_", "menu_create", "item_create",
+)
+
+
+def _is_write_tool(name):
+    n = str(name or "").lower()
+    return any(n.startswith(h) or h in n for h in _WRITE_HINTS)
+
+
+def _scan_collect_ids(obj, out):
+    """递归收集返回体里所有形如 *id / *Ids 的字段值及其字段名。"""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            kl = str(k).lower()
+            if kl == "merchid" or kl == "merchantid" or kl == "storeid":
+                out.setdefault("_merch_fields", []).append((k, str(v)))
+            elif kl == "ispreview":
+                out.setdefault("_is_preview", []).append(v)
+            if kl.endswith("id") or kl.endswith("ids"):
+                if isinstance(v, str):
+                    out.setdefault("_ids", []).append((k, v))
+            _scan_collect_ids(v, out)
+    elif isinstance(obj, list):
+        for x in obj:
+            _scan_collect_ids(x, out)
+    return out
+
+
+_ZERO_UUID = "00000000-0000-0000-0000-000000000000"
+
+# 跨店对比时要剔除的「请求回显 / 分页」字段：它们随请求变化，
+# 保留会让「数据本体完全一致」的两次调用看起来不同，漏掉硬编码缺陷。
+_ECHO_KEYS = {"merchid", "merchantid", "storeid", "shopid", "pageindex",
+              "pagesize", "page", "keyword", "filtertype", "msg", "message"}
+
+# 账号级工具：本就不该按店铺隔离，返回一致属正常，不参与跨店对比。
+# 判定依据仅限「语义上明确是账号/身份级」的工具名，不做泛化猜测。
+#   ⚠ 不要把「有 merchId 参数、但返回值归属与请求不一致」的工具放进来：
+#     那是真缺陷（见 get_bank_account_info / list_report_subscriptions）。
+_ACCOUNT_LEVEL_TOOLS = {
+    "list_my_merchants",     # 列出账号下所有店铺，本来就与单个店铺无关
+}
+
+
+def _biz_signature(text):
+    """提取返回体的「业务数据签名」：剥离分页/请求回显后做稳定序列化。
+
+    返回 (signature, sample_count)：
+      signature    —— 稳定序列化串；无法解析/业务失败时 None
+      sample_count —— 参与对比的业务条目数。0 表示「空结果」，
+                      空结果不能作为「无视店铺过滤」的证据
+                      （两个店铺都真的没数据，返回一致是正常现象）。
+    """
+    try:
+        data = json.loads(text)
+    except Exception:
+        return None, 0
+    if not isinstance(data, dict):
+        return None, 0
+    code = data.get("code")
+    succ = data.get("success")
+    if (isinstance(code, (int, float)) and code not in (0, 200)) \
+            or (isinstance(succ, bool) and not succ):
+        return None, 0
+    payload = data.get("data")
+    if payload is None:
+        return None, 0
+
+    def strip(o):
+        if isinstance(o, dict):
+            return {k: strip(v) for k, v in o.items()
+                    if str(k).lower() not in _ECHO_KEYS}
+        if isinstance(o, list):
+            return [strip(x) for x in o]
+        return o
+
+    def count(o):
+        """业务条目数：优先取 items 列表长度，其次 total/totalCount。"""
+        if isinstance(o, dict):
+            for k in ("items", "roles", "campaigns"):
+                if isinstance(o.get(k), list):
+                    return len(o[k])
+            for k in ("total", "totalCount"):
+                if isinstance(o.get(k), int):
+                    return o[k]
+            return 1 if o else 0
+        if isinstance(o, list):
+            return len(o)
+        return 0
+
+    return json.dumps(strip(payload), ensure_ascii=False, sort_keys=True), count(payload)
+
+
+def _check_response(tool, params, text, expect_merch=None, expect_preview=False):
+    """对单次调用返回做通用契约检查。返回 issues 列表（空=无问题）。
+
+    不含任何业务知识，全部规则对任意 MCP 通用。
+    """
+    issues = []
+    if not text:
+        return [("EMPTY", "返回内容为空")]
+
+    try:
+        data = json.loads(text)
+    except Exception:
+        # 非 JSON 返回不判缺陷，只记录（部分系统返回纯文本属正常契约）
+        return []
+
+    # 统一成功标志（各系统字段名不同，做了兼容）
+    code = data.get("code") if isinstance(data, dict) else None
+    succ = data.get("success") if isinstance(data, dict) else None
+    is_err = (isinstance(code, (int, float)) and code not in (0, 200)) \
+        or (isinstance(succ, bool) and not succ)
+
+    acc = _scan_collect_ids(data, {})
+
+    # ① 客户端已传 confirm=true 却仍返回预览空壳 → confirm 未生效
+    if not expect_preview:
+        previews = acc.get("_is_preview") or []
+        if any(p is True for p in previews):
+            issues.append(("PREVIEW_IGNORED",
+                           "已传 confirm=true 但仍返回 isPreview=true（confirm 未生效）"))
+
+    # ② 响应里的归属店铺字段与请求不一致 → 字段未回填 / 跨租户
+    if expect_merch and not is_err:
+        for field, val in (acc.get("_merch_fields") or []):
+            v = (val or "").strip()
+            if not v:
+                continue
+            if v == _ZERO_UUID:
+                issues.append(("MERCH_ZERO",
+                               f"字段 {field} 为全零 UUID（未回填真实归属）"))
+            elif v != str(expect_merch):
+                issues.append(("MERCH_MISMATCH",
+                               f"字段 {field}={v} 与请求店铺 {expect_merch} 不一致"
+                               "（疑似跨租户/未按店铺过滤）"))
+
+    # ③ 业务成功却返回全零 UUID 主键 → 占位/脏数据
+    if not is_err:
+        zeros = [(k, v) for k, v in (acc.get("_ids") or []) if v == _ZERO_UUID]
+        if zeros:
+            names = ", ".join(sorted({k for k, _ in zeros}))
+            issues.append(("ZERO_ID",
+                           f"返回体含全零 UUID 的 ID 字段：{names}"))
+
+    # ④ 业务失败时的错误类别（区分「友好校验」与「服务端异常」）
+    if is_err:
+        msg = str(data.get("msg") or data.get("message") or "")
+        low = msg.lower()
+        if any(k in low for k in ("internal error", "could not be converted",
+                                  "stack", "traceback", "unhandled")):
+            issues.append(("SERVER_CRASH",
+                           f"服务端内部错误（非友好校验）：{msg[:120]}"))
+    return issues
+
+
+async def _probe_contracts(url, token, company_id, company_header, tools,
+                           merchant_ids, wrapper, only=None, timeout=60.0):
+    """接入期契约巡检：逐工具真调，返回 [(工具, 检查项, 结果, 说明)]。
+
+    merchant_ids: 两个及以上店铺 ID，用于「跨店对比」判断是否按店铺过滤。
+    """
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    if company_id and company_header:
+        headers[company_header] = str(company_id)
+
+    wrap = wrapper
+    results = []
+
+    # ---- 参数生成：严格按 schema 的 type/enum/format 造值 ----
+    def _props_of(t):
+        sch = t.get("_schema") or {}
+        _w, inner, _req = detect_wrapper(sch)
+        return inner or {}
+
+    def build_args(t, mid):
+        """按 schema 类型生成最小合法参数集。
+
+        关键约束（不加会制造大量假缺陷）：
+          - array 类型必须传数组，传标量会触发服务端反序列化异常，
+            看起来像「服务端崩溃」实为探针参数错。
+          - 实体主键（itemId/menuId/categoryId/taxId/specId/merchManagerId 等）
+            不能塞 merchId：拿店铺ID当商品ID必然查不到，会误报缺陷。
+            这类参数在接入期拿不到真实值，直接不传（多数为可选）。
+        """
+        props = _props_of(t)
+        a = {}
+        for p in (t.get("params") or []):
+            pl = str(p).lower()
+            spec = props.get(p) or {}
+            tp = spec.get("type")
+            tps = tp if isinstance(tp, list) else [tp]
+            enum = spec.get("enum")
+
+            if pl == "confirm":
+                a[p] = not is_write
+                continue
+            if pl in ("page", "pageindex"):
+                a[p] = 1
+                continue
+            if pl in ("pagesize",):
+                a[p] = 20
+                continue
+            # 租户级 ID：可安全用请求店铺填充
+            if pl in ("merchid", "merchantid", "storeid", "shopid"):
+                if mid:
+                    a[p] = mid
+                continue
+            # 其它 *Id：属具体实体主键，接入期无真实值 → 跳过（多为可选）
+            if "id" in pl:
+                continue
+            if "array" in tps:
+                a[p] = []
+                continue
+            if enum:
+                a[p] = enum[0]
+                continue
+            if "boolean" in tps:
+                a[p] = False
+                continue
+            if "integer" in tps or "number" in tps:
+                a[p] = 1
+                continue
+            if "string" in tps:
+                fmt = spec.get("format")
+                if fmt == "uuid":
+                    continue
+                if fmt == "email":
+                    a[p] = "probe@example.com"
+                    continue
+                # 日期/时间：必须给合法 ISO 串。传 "probe" 会触发服务端
+                # DateTimeOffset 反序列化异常，看起来是「服务端崩溃」，
+                # 实为探针造错参数（create_discount_campaign 曾因此误报）。
+                if fmt in ("date-time", "datetime", "date") \
+                        or pl.endswith("date") or "time" in pl:
+                    a[p] = "2026-12-31T00:00:00Z" if (
+                        fmt in ("date-time", "datetime") or pl.endswith("time")
+                    ) else "2026-12-31"
+                    continue
+                desc = str(spec.get("description") or "").lower()
+                if "date" in desc or "time" in desc:
+                    a[p] = "2026-12-31T00:00:00Z"
+                    continue
+                a[p] = "probe"
+        return a
+
+    async with httpx.AsyncClient(headers=headers, timeout=timeout) as http:
+        async with streamable_http_client(url, http_client=http) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+
+                for t in tools:
+                    name = t.get("name")
+                    if not name:
+                        continue
+                    if only and only not in str(name):
+                        continue
+                    is_write = _is_write_tool(name)
+                    # 只对「自身声明了 merchId 参数」的工具做店铺一致性校验：
+                    # 没有该参数却返回带商铺归属的数据，属租户上下文硬编码，
+                    # 归入 SAME_ACROSS_MERCH 那类（另判），不在 MERCH_* 里重复报。
+                    props = _props_of(t)
+                    has_merch_param = any(
+                        str(p).lower() in ("merchid", "merchantid", "storeid")
+                        for p in props)
+
+                    mids = merchant_ids[:1] if is_write else (merchant_ids or [None])
+                    seen = []
+                    for mid in mids:
+                        args = build_args(t, mid)
+                        payload = {wrap: args} if wrap else args
+                        try:
+                            r = await session.call_tool(name, payload)
+                            text = "".join(
+                                c.text for c in (r.content or [])
+                                if getattr(c, "type", None) == "text")
+                        except Exception as e:
+                            results.append((name, "CALL_FAIL", "FAIL",
+                                            f"{type(e).__name__}: {e}"))
+                            seen = []
+                            break
+
+                        issues = _check_response(
+                            name, args, text,
+                            expect_merch=mid if (has_merch_param and not is_write) else None,
+                            expect_preview=is_write)
+                        for code, desc in issues:
+                            results.append((name, code, "FAIL", desc))
+                        if not issues:
+                            results.append((name, "BASIC", "PASS",
+                                            "写操作仅预览" if is_write else "无异常"))
+                        seen.append(text)
+
+                    # 跨店对比：比对「业务数据本体」（剔除请求回显字段），
+                    # 不能直接比原始文本 —— 中转的 merchId/分页参数不同也会导致
+                    # 文本不等，从而把「确实没按店铺过滤」的缺陷漏掉。
+                    if not is_write and len(seen) >= 2 \
+                            and name not in _ACCOUNT_LEVEL_TOOLS:
+                        pairs = [_biz_signature(s) for s in seen]
+                        sigs = [p[0] for p in pairs]
+                        counts = [p[1] for p in pairs]
+                        # 空结果 / 解析失败不参与对比：
+                        # 两店都真的没有数据时返回一致是正常现象，
+                        # 不能据此判「无视店铺过滤」。
+                        nonempty = all(c > 0 for c in counts)
+                        if nonempty and all(x is not None for x in sigs) \
+                                and len(set(sigs)) == 1:
+                            if has_merch_param:
+                                results.append((name, "SAME_ACROSS_MERCH", "FAIL",
+                                                f"{len(seen)} 个不同店铺返回 {counts[0]} 条"
+                                                "完全相同的业务数据"
+                                                "（已传 merchId 但仍无视过滤）"))
+                            else:
+                                results.append((name, "TENANT_FIXED", "FAIL",
+                                                f"工具无店铺参数，各店铺均返回同 {counts[0]} 条"
+                                                "数据（租户上下文硬编码，"
+                                                "无法查询其它店铺）"))
+    return results
+
+
+def render_contract_scan(name, results, tool_count):
+    """巡检结果 -> Markdown 体检表（按「工具+检查项」聚合，避免逐条重复刷屏）。"""
+    from collections import OrderedDict
+
+    bad = [r for r in results if r[2] == "FAIL"]
+    agg = OrderedDict()
+    for t, c, _s, d in bad:
+        key = (t, c)
+        if key not in agg:
+            agg[key] = [d, 1]
+        else:
+            agg[key][1] += 1
+
+    lines = [
+        f"# 契约巡检报告：{name}",
+        "",
+        f"- 工具总数：{tool_count}",
+        f"- 检查记录：{len(results)} 条",
+        f"- 异常工具：{len({t for t, _c in agg})} 个",
+        f"- 异常项：{len(agg)} 项"
+        + (f"（去重前 {len(bad)} 条）" if len(bad) != len(agg) else ""),
+        "",
+    ]
+    if not agg:
+        lines.append("**全部通过：未发现契约异常。**")
+    else:
+        lines.append("## 异常明细")
+        lines.append("")
+        lines.append("| 工具 | 检查项 | 命中 | 说明 |")
+        lines.append("|---|---|---|---|")
+        for (t, c), (d, n) in agg.items():
+            d = str(d).replace("|", "\\|").replace("\n", " ")
+            lines.append(f"| `{t}` | {c} | {n} | {d} |")
+        lines.append("")
+        lines.append("## 检查项说明")
+        lines.append("")
+        lines.append("| 代码 | 含义 |")
+        lines.append("|---|---|")
+        lines.append("| MERCH_ZERO | 响应归属店铺字段为全零 UUID（未回填真实归属） |")
+        lines.append("| MERCH_MISMATCH | 响应归属店铺与请求不一致（疑似跨租户） |")
+        lines.append("| SAME_ACROSS_MERCH | 已传 merchId 但换店铺返回完全一致（无视过滤） |")
+        lines.append("| TENANT_FIXED | 工具无店铺参数，恒返回 token 绑定店铺的数据 |")
+        lines.append("| PREVIEW_IGNORED | 传 confirm=true 仍返回预览空壳 |")
+        lines.append("| ZERO_ID | 返回全零 UUID 主键（占位/脏数据） |")
+        lines.append("| SERVER_CRASH | 服务端内部错误（非友好校验） |")
+        lines.append("| CALL_FAIL | 调用直接抛异常 |")
+        lines.append("")
+        lines.append("> 说明：巡检按 schema 类型（type/enum/format）造合法参数。")
+        lines.append("> 实体主键（itemId/menuId 等）在接入期拿不到真实值时**不传**，")
+        lines.append("> 避免「拿店铺ID当商品ID」产生假缺陷。")
+        lines.append("> 写操作一律 confirm=false，仅预览不执行。")
+    return "\n".join(lines) + "\n"
+
+
+# =====================================================================
 # 主流程
 # =====================================================================
 def _ask(label, default="", secret=False):
@@ -373,9 +771,15 @@ def _interactive():
     merchant_id = _ask("默认店铺 ID merchantId（可留空）")
     company_header = _ask("公司 ID 请求头名", "CompanyId")
     req_type = _ask("需求类型", "C")
+    # 巡检用店铺：默认用上面的默认店铺；多给一个即可做跨店对比
+    probe_m = _ask("契约巡检用店铺 ID（逗号分隔，给 2 个可做跨店对比；留空跳过）",
+                   merchant_id)
+    probe_merchants = [x.strip() for x in str(probe_m or "").split(",") if x.strip()]
     return argparse.Namespace(name=name, url=url, token=token, company_id=company_id,
                               merchant_id=merchant_id, company_header=company_header,
-                              req_type=req_type, dry_run=False)
+                              req_type=req_type, dry_run=False,
+                              probe=bool(probe_merchants),
+                              probe_merchants=probe_merchants, probe_only="")
 
 
 def run(args):
@@ -392,6 +796,9 @@ def run(args):
     if not tools:
         print("[FAIL] list_tools 返回空（可能鉴权隐藏全部工具）")
         return 2
+    # 落盘用的干净副本（剔除仅巡检需要的 _schema，保持 config 格式不变）
+    tools_for_schema = [{k: v for k, v in t.items() if k != "_schema"}
+                        for t in tools]
     wrapper = detect_common_wrapper(raw_tools)
     print(f"[OK] list_tools 返回 {len(tools)} 个工具"
           f"（参数外壳: {wrapper or '无（properties 直接是参数）'}）：")
@@ -403,7 +810,7 @@ def run(args):
     os.makedirs(SCHEMA_DIR, exist_ok=True)
     schema_path = os.path.join(SCHEMA_DIR, f"{args.name}.json")
     with open(schema_path, "w", encoding="utf-8") as f:
-        json.dump({"name": args.name, "wrapper": wrapper, "tools": tools}, f,
+        json.dump({"name": args.name, "wrapper": wrapper, "tools": tools_for_schema}, f,
                   ensure_ascii=False, indent=1)
     print(f"[OK] schema 落盘 -> {os.path.relpath(schema_path, _ROOT)}")
 
@@ -420,8 +827,43 @@ def run(args):
     # 2.5 业务域概览（人眼速览，免去每次写分类脚本）
     overview_path = os.path.join(SCHEMA_DIR, f"{args.name}.overview.md")
     with open(overview_path, "w", encoding="utf-8") as f:
-        f.write(render_overview(args.name, tools, wrapper, raw_tools))
+        f.write(render_overview(args.name, tools_for_schema, wrapper, raw_tools))
     print(f"[OK] 概览落盘 -> {os.path.relpath(overview_path, _ROOT)}")
+
+    # 2.6 契约巡检（真调每个工具，检查返回体是否自洽）
+    #     位置说明：schema 只能看到「有哪些参数」，看不到「调下去对不对」。
+    #     历史上多个缺陷（响应 merchId 全零 / 跨租户返回 / confirm 未生效 /
+    #     枚举报 1006）全部在 schema 层不可见，必须真调才暴露，故放在这里。
+    #     安全边界：写操作一律 confirm=false（只预览），不真改数据。
+    probed_mids = [m for m in args.probe_merchants if m]
+    if args.probe and probed_mids:
+        print(f"\n== 契约巡检（{len(tools)} 个工具，店铺 {len(probed_mids)} 个）==")
+        print("   安全边界：写操作一律 confirm=false，仅预览不执行")
+        try:
+            scans = asyncio.run(_probe_contracts(
+                args.url, args.token, args.company_id, args.company_header,
+                tools, probed_mids, wrapper, only=args.probe_only))
+        except Exception as e:
+            print(f"[WARN] 契约巡检失败（不影响 config 生成）：{e}")
+            scans = []
+        if scans:
+            scan_path = os.path.join(SCHEMA_DIR, f"{args.name}.contract.md")
+            with open(scan_path, "w", encoding="utf-8") as f:
+                f.write(render_contract_scan(args.name, scans, len(tools)))
+            bad = [r for r in scans if r[2] == "FAIL"]
+            print(f"[OK] 巡检完成：{len(scans)} 条记录，异常 {len(bad)} 条")
+            if bad:
+                seen = set()
+                for t, c, _s, _d in bad:
+                    if t in seen:
+                        continue
+                    seen.add(t)
+                    codes = sorted({x[1] for x in bad if x[0] == t})
+                    print(f"   ✗ {t}: {', '.join(codes)}")
+            print(f"[OK] 体检表 -> {os.path.relpath(scan_path, _ROOT)}")
+    elif args.probe and not probed_mids:
+        print("[跳过巡检] 未提供 --probe-merchants（需要至少 1 个店铺 ID，"
+              "给 2 个以上才能做跨店对比）")
 
     if args.dry_run:
         print("[dry-run] 未写 .env / config")
@@ -448,7 +890,7 @@ def run(args):
         print("       如需重建请先删除该文件，或手动改 .env 变量")
     else:
         with open(cfg_path, "w", encoding="utf-8") as f:
-            f.write(render_config(args.name, tools, args, wrapper))
+            f.write(render_config(args.name, tools_for_schema, args, wrapper))
         print(f"[OK] config 骨架 -> {os.path.relpath(cfg_path, _ROOT)}")
 
     print("\n下一步（人工）:")
@@ -473,7 +915,22 @@ def main():
         ap.add_argument("--company-header", default="CompanyId")
         ap.add_argument("--req-type", default="C")
         ap.add_argument("--dry-run", action="store_true")
+        # 契约巡检（真调每个工具，检查返回体自洽性）
+        ap.add_argument("--probe", dest="probe", action="store_true", default=True,
+                        help="启用契约巡检（默认启用）")
+        ap.add_argument("--no-probe", dest="probe", action="store_false",
+                        help="跳过契约巡检（只拉 schema，行为与旧版一致）")
+        ap.add_argument("--probe-merchants", default="",
+                        help="巡检用店铺 ID，逗号分隔；给 2 个以上可做跨店对比。"
+                             "留空则回退 --merchant-id")
+        ap.add_argument("--probe-only", default="",
+                        help="只巡检工具名包含该子串的工具（调试用）")
         args = ap.parse_args()
+        # 未显式给 --probe-merchants 时，回退到 --merchant-id
+        if not args.probe_merchants and args.merchant_id:
+            args.probe_merchants = str(args.merchant_id)
+        args.probe_merchants = [x.strip() for x in str(args.probe_merchants).split(",")
+                                if x.strip()]
     raise SystemExit(run(args))
 
 

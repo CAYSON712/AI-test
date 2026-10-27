@@ -585,6 +585,40 @@ def _allowed_for(param_lower, tool):
     return None
 
 
+def _is_enum_param(tool, param):
+    """该工具的这个参数是否为「枚举型过滤条件」（非空串可接受的真值域）。
+
+    用于对账快照参数构造：枚举参数置空串会被服务端反序列化拒绝
+    （PocketStore list_discount_campaigns(filterType="") → code=1006），
+    应保留实体/默认给出的合法值而非清空。
+    """
+    pl = str(param).lower()
+    if pl in (_TOOL_DESC_ENUMS.get(tool) or {}):
+        return True
+    return bool(_allowed_for(pl, tool))
+
+
+def _apply_confirm(tool, params):
+    """给「预览型」只读工具补 confirm=true。
+
+    部分 MCP（PocketStore 111 个工具中 list_store_users /
+    list_order_notification_emails 等）在缺少 confirm 时只返回 isPreview
+    空壳：data.items=[]、total=0，但并非真的无数据。若不补，
+    对账快照会把「查询未执行」误读成「基线为 0」，证据链整体失真
+    （实测同一工具不加 confirm 得 0、加了得 1）。
+
+    仅当该工具 schema 确实声明了 confirm 参数时才注入，避免给不支持的
+    工具塞多余参数（可能被 strict schema 拒绝）。
+    """
+    if not tool:
+        return params
+    if "confirm" not in (_TOOL_SCHEMA.get(tool, (set(), set()))[0] or set()):
+        return params
+    out = dict(params)
+    out.setdefault("confirm", True)
+    return out
+
+
 def _coerce_param(param, value, cap):
     """按参数名收敛取值域：枚举白名单 + 布尔型。
 
@@ -2263,6 +2297,20 @@ def build_a(products, abilities, req_type):
             return ("detail" in t or t.startswith("get_") or "info" in t
                     or t.endswith("_by_id"))
 
+        # 【修复】探针必须能按「实体主键」定位单个实体。若工具只有租户级参数
+        # （如 list_order_notification_emails 只有 merchId），拿 merchId 去查
+        # 再在正文里搜 merchId，搜的是「店铺是否存在」而非「这条实体是否还在」：
+        # 一次误删邮箱实体，merchId 依然能被搜到 → exists_after=True，缺陷漏网。
+        # 故要求候选工具至少有一个非租户层（store/company）的 id 参数。
+        def _has_entity_key(c):
+            keys = [p for p in (c.get("参数") or []) if "id" in str(p).lower()]
+            return any(_layer_of_param(p) not in ("store", "company", None)
+                       for p in keys)
+
+        entity_key_pool = [c for c in pool if _has_entity_key(c)]
+        if entity_key_pool:
+            pool = entity_key_pool
+
         return sorted(
             pool, key=lambda c: (0 if _is_detail_tool(c) else 1,
                                  -len(tokens(c) & mine_t),
@@ -2491,11 +2539,25 @@ def build_a(products, abilities, req_type):
                     # 实测 15 条写入安全边界用例因此 11 条不可判定。
                     # 规则：含 "id" 的参数是实体/租户过滤条件，必须保留真实值；
                     #       其余（名称、关键字、类型等）置空以取全量。
+                    # 【修复】枚举类过滤参数不能置空串：PocketStore 的
+                    # list_discount_campaigns(filterType="") → code=1006
+                    # 反序列化异常（"The JSON value could not be converted to
+                    # ...CampaignFilterType"），快照恒失败、before 恒 None，
+                    # 总数对账整条链路失效。此类参数改用工具 schema 的默认值
+                    # （通常是 All），退回上次已知的合法枚举值。
                     snap_params = {
-                        k: ("" if (isinstance(v, str) and "id" not in str(k).lower())
+                        k: ("" if (isinstance(v, str) and "id" not in str(k).lower()
+                                   and not _is_enum_param(snap_cap.get("工具"), k))
                             else v)
                         for k, v in snap_params.items()
                     }
+                    # 【修复】预览型只读工具必须显式 confirm=true，否则服务端只返回
+                    # isPreview 空壳（items=[] / total=0），把「查询压根没执行」
+                    # 伪装成「基线为空」。实测 PocketStore 111 个工具里
+                    # list_store_users / list_order_notification_emails 均如此：
+                    # 不传 confirm 时 items 恒空，传了才拿到真实条数。
+                    # 快照与存在性探针都必须带上，否则对账证据全部失真。
+                    snap_params = _apply_confirm(snap_cap.get("工具"), snap_params)
                     # 允许的最大影响条数按操作类型区分：传入的是「不存在的 ID」，
                     # 删除/更新应当影响 0 条（不存在的目标不能带来任何变更）；
                     # 但创建类操作本来就会新增数据，硬写 0 会把正确行为判成越范围，
@@ -2518,15 +2580,35 @@ def build_a(products, abilities, req_type):
                         # 复用 _fill_params 的层级解析（_layer_of_param），
                         # 与目标 ID 保持一致，探针判定才成立。
                         _pres_params = _fill_params(pres_cap, e)
-                        for p, pv in _pres_params.items():
-                            _pv = str(pv).strip()
-                            if "id" in str(p).lower() and _pv and _pv not in ("0", "1"):
-                                audit["存在性检查"] = {
-                                    "工具": pres_cap.get("工具"),
-                                    "参数": {p: pv},
-                                    "目标ID": _pv,
-                                }
-                                break
+                        # 【修复】目标ID 必须是「实体主键」而非租户ID。原逻辑取第一个
+                        # 含 id 的参数，遇到 list_order_notification_emails 这种只有
+                        # merchId 的工具就退化成「按店铺搜店铺」——实体真被误删了
+                        # merchId 照样搜得到，exists_after 仍为 True，缺陷漏网。
+                        # 现在按 _layer_of_param 排除 store/company 层，只认真实体主键；
+                        # 若探针只有租户参数，则放弃存在性对账（宁缺毋假），
+                        # 让该用例退化为「仅总数对账」，而不是配一个恒真的假探针。
+                        # 店铺 merchId：用于识别「回退填充」产生的假实体主键。
+                        # 当实体清单里没有该层实体时（本店 0 员工 → 无
+                        # merchManagerId），_fill_params 会回退取当前实体，
+                        # 把店铺 ID 填进员工主键参数。这种值必须排除：
+                        # 拿店铺 ID 当员工 ID 去探针，探到的是店铺本身，
+                        # 「员工是否还在」根本无从判断（恒真）。
+                        _store_id = str(e.get("merchId") or e.get("id") or "").strip()
+                        _entity_keys = [
+                            (p, pv) for p, pv in _pres_params.items()
+                            if "id" in str(p).lower()
+                            and _layer_of_param(p) not in ("store", "company", None)
+                            and str(pv).strip()
+                            and str(pv).strip() not in ("0", "1")
+                            and str(pv).strip() != _store_id
+                        ]
+                        if _entity_keys:
+                            p, pv = _entity_keys[0]
+                            audit["存在性检查"] = {
+                                "工具": pres_cap.get("工具"),
+                                "参数": _apply_confirm(pres_cap.get("工具"), {p: pv}),
+                                "目标ID": str(pv).strip(),
+                            }
                     exp_wb = build_expect(
                         cap, intent=name, params=ghost, block=False,
                         output="目标不存在时影响 0 条，不得越范围改删其他数据")
