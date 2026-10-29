@@ -1,21 +1,3 @@
-# =====================================================================
-# 实体清单：PocketStore 商家经营后台（cayson店鋪3 / test 环境真实数据）
-# 采集日期：2026-10-23（直连 MCP 实测，confirm=true 真实执行）
-# 店铺：cayson店鋪3  merchId=d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-# 账号：45a2ca8d-1192-400b-bfb3-5771dab46c20
-# 商品：45 个；分类：3 个；菜单：3 个；税率：1 个
-# 配送区域：7 个；支付方式：3 个；附加费用：2 个
-# 活动：10 个（全部 MerchPromotion 满减）
-# 订单通知邮箱：1 个；报表订阅：1 个
-# 员工：0 个、角色：0 个
-#   ⚠ 本账号下 16 个店铺员工/角色全为 0（role 表也是空），属真实业务状态，
-#     故此处不放任何员工实体。严禁造占位 ID：全零 UUID 会被校验器判「占位 ID」
-#     而 FAIL，且假 ID 做存在性探针会制造「实体被删」的假失败。
-#
-# 注意：所有 ID 一律用字符串（uuid）。时间用店铺本地日期/时刻。
-# 公共字段冗余：merchId/itemId/categoryId/menuId/taxId 等同时挂到业务实体上，
-#   保证任意实体回退都能填出合法参数。
-# =====================================================================
 实体清单:
 - 名称: cayson店鋪3
   id: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
@@ -196,14 +178,6 @@
   id: 6b4adc17-37c3-11f1-94d6-00224808ba53
   paymentType: ''
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: ''
-  id: offline_pay
-  paymentType: ''
-  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: ''
-  id: gift_card
-  paymentType: ''
-  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: Get $10 off for order $10 or more
   id: 92ac8eda-2372-43df-b3eb-ac48ffc3fae1
   campaignId: 92ac8eda-2372-43df-b3eb-ac48ffc3fae1
@@ -274,4 +248,69 @@
   subscriptionId: c08529ba-a3f5-11f0-bb4a-00224808ba53
   email: 944600294qq@gmail.com
   sendDay: 10
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: 店員
+  id: 1e6b1564-a5eb-4e4e-9019-8b87de5513b1
+  roleId: 1e6b1564-a5eb-4e4e-9019-8b87de5513b1
+  name: 店員
+  permissionCount: 60
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: all
+  id: 16a474af-9487-46ad-a8ba-70e4bc1221ab
+  roleId: 16a474af-9487-46ad-a8ba-70e4bc1221ab
+  name: all
+  permissionCount: 60
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: '9023162140'
+  id: 08dd61e8-5526-40f6-8bed-9ea14c66da1f
+  merchManagerId: 08dd61e8-5526-40f6-8bed-9ea14c66da1f
+  email: 944600294qq@gmail.com
+  phone: '9023162140'
+  roleNames:
+  - 店員
+  isActive: true
+  isAdmin: false
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: '9033927968'
+  id: 08dda714-12b9-4426-8158-98e3a38d394d
+  merchManagerId: 08dda714-12b9-4426-8158-98e3a38d394d
+  email: lorakwan12@gmail.com
+  phone: '9033927968'
+  roleNames:
+  - all
+  isActive: true
+  isAdmin: false
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: '9023162149'
+  id: af7038a4-3ecd-419c-850f-4549d186897f
+  merchManagerId: af7038a4-3ecd-419c-850f-4549d186897f
+  email: 944600294qq@gmail.com
+  phone: '9023162149'
+  roleNames:
+  - 店員
+  isActive: false
+  isAdmin: false
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: '9023162141'
+  id: fab134b0-4839-429a-941b-ce23cc46acc3
+  merchManagerId: fab134b0-4839-429a-941b-ce23cc46acc3
+  email: 944600294qq@gmail.com
+  phone: '9023162141'
+  roleNames: []
+  isActive: true
+  isAdmin: true
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: Proton Pay
+  id: 6b4adc17-37c3-11f1-94d6-00224808ba53
+  paymentId: 6b4adc17-37c3-11f1-94d6-00224808ba53
+  paymentType: proton_pay
+  type: proton_pay
+  isEnabled: true
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: Proton Pay
+  id: 6b4adc17-37c3-11f1-94d6-00224808ba53
+  paymentId: 6b4adc17-37c3-11f1-94d6-00224808ba53
+  paymentType: proton_pay
+  type: proton_pay
+  isEnabled: true
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed

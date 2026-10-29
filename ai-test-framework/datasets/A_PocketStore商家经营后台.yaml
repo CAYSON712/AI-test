@@ -76,8 +76,8 @@
     semantic:
       contains:
       - 权限拒绝
-      - 无权限
       - 拒绝
+      - 无权限
       - 错误
       any_of: true
   标签:
@@ -694,8 +694,8 @@
     semantic:
       contains:
       - 权限拒绝
-      - 无权限
       - 拒绝
+      - 无权限
       - 错误
       any_of: true
   标签:
@@ -1490,7 +1490,7 @@
     tool_name: menu_create
     tool_params: &id061
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: Get $8 off for order $15 or more
   期望:
     intent: 新建菜单
     params: *id061
@@ -1505,7 +1505,7 @@
   输入:
     tool_name: menu_create
     tool_params: &id062
-      name: 944600294qq@gmail.com
+      name: Get $8 off for order $15 or more
   期望:
     intent: 新建菜单
     params: *id062
@@ -1526,7 +1526,7 @@
     tool_name: menu_create
     tool_params:
       merchId: '0'
-      name: 944600294qq@gmail.com
+      name: Get $8 off for order $15 or more
   期望:
     intent: 新建菜单
     params: *id061
@@ -1547,7 +1547,7 @@
     tool_name: menu_create
     tool_params: &id063
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: cayson店鋪3
+      name: Get $3 off for order $10 or more
   期望:
     intent: 新建菜单
     params: *id063
@@ -1847,7 +1847,7 @@
     tool_name: category_create
     tool_params: &id076
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 1
+      name: Baked Fillet Of Sole
   期望:
     intent: 新建分类
     params: *id076
@@ -1862,7 +1862,7 @@
   输入:
     tool_name: category_create
     tool_params: &id077
-      name: Delivery Area 1
+      name: Baked Fillet Of Sole
   期望:
     intent: 新建分类
     params: *id077
@@ -1883,7 +1883,7 @@
     tool_name: category_create
     tool_params:
       merchId: '0'
-      name: Delivery Area 1
+      name: Baked Fillet Of Sole
   期望:
     intent: 新建分类
     params: *id076
@@ -1904,7 +1904,7 @@
     tool_name: category_create
     tool_params: &id078
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 3
+      name: Salt & Pepper Pork Chop Noodle In Soup
   期望:
     intent: 新建分类
     params: *id078
@@ -2139,7 +2139,7 @@
     tool_name: tax_create
     tool_params: &id088
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: 1
   期望:
     intent: 新建税率
@@ -2155,7 +2155,7 @@
   输入:
     tool_name: tax_create
     tool_params: &id089
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: 1
   期望:
     intent: 新建税率
@@ -2177,7 +2177,7 @@
     tool_name: tax_create
     tool_params:
       merchId: '0'
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: 1
   期望:
     intent: 新建税率
@@ -2199,7 +2199,7 @@
     tool_name: tax_create
     tool_params: &id090
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 15% off for order $15 or more
+      name: Name
       tax: 1
   期望:
     intent: 新建税率
@@ -2216,7 +2216,7 @@
     tool_name: tax_update
     tool_params: &id091
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      taxId: c08529ba-a3f5-11f0-bb4a-00224808ba53
+      taxId: fd226a91-7f7c-4a1c-9470-6dc6ada45939
   期望:
     intent: 修改税率
     params: *id091
@@ -2232,7 +2232,7 @@
   输入:
     tool_name: tax_update
     tool_params: &id092
-      taxId: c08529ba-a3f5-11f0-bb4a-00224808ba53
+      taxId: fd226a91-7f7c-4a1c-9470-6dc6ada45939
   期望:
     intent: 修改税率
     params: *id092
@@ -2254,7 +2254,7 @@
     tool_name: tax_update
     tool_params:
       merchId: '0'
-      taxId: c08529ba-a3f5-11f0-bb4a-00224808ba53
+      taxId: fd226a91-7f7c-4a1c-9470-6dc6ada45939
   期望:
     intent: 修改税率
     params: *id091
@@ -2276,7 +2276,7 @@
     tool_name: tax_update
     tool_params: &id093
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      taxId: 183e9b52-59a4-4526-88e5-8891209a4939
+      taxId: 5daf7dbf-c6ac-4170-954c-b179dbba8bbe
   期望:
     intent: 修改税率
     params: *id093
@@ -2371,7 +2371,7 @@
     tool_name: spec_create
     tool_params: &id098
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Hainan Style Chicken Noodle In Soup
+      name: Get 15% off for order $15 or more
   期望:
     intent: 新建规格组
     params: *id098
@@ -2386,7 +2386,7 @@
   输入:
     tool_name: spec_create
     tool_params: &id099
-      name: Hainan Style Chicken Noodle In Soup
+      name: Get 15% off for order $15 or more
   期望:
     intent: 新建规格组
     params: *id099
@@ -2407,7 +2407,7 @@
     tool_name: spec_create
     tool_params:
       merchId: '0'
-      name: Hainan Style Chicken Noodle In Soup
+      name: Get 15% off for order $15 or more
   期望:
     intent: 新建规格组
     params: *id098
@@ -2428,7 +2428,7 @@
     tool_name: spec_create
     tool_params: &id100
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Seafood Fried Rice
+      name: 944600294qq@gmail.com
   期望:
     intent: 新建规格组
     params: *id100
@@ -3115,7 +3115,7 @@
     tool_name: add_extra_fee
     tool_params: &id129
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: 1
@@ -3135,7 +3135,7 @@
   输入:
     tool_name: add_extra_fee
     tool_params: &id130
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: 1
@@ -3161,7 +3161,7 @@
     tool_name: add_extra_fee
     tool_params:
       merchId: '0'
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: 1
@@ -3187,7 +3187,7 @@
     tool_name: add_extra_fee
     tool_params: &id131
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: all
+      name: Get $8 off for order $15 or more
       target: pickup
       feeType: percentage
       value: 1
@@ -3208,7 +3208,7 @@
     tool_name: delete_extra_fee
     tool_params: &id132
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      feeId: 952acc9d-703b-4c98-8c8f-e50c4434a3c8
+      feeId: 65af65f6-eeef-48f8-a305-7a58f69ad0ba
   期望:
     intent: 删除附加费用
     params: *id132
@@ -3224,7 +3224,7 @@
   输入:
     tool_name: delete_extra_fee
     tool_params: &id133
-      feeId: 952acc9d-703b-4c98-8c8f-e50c4434a3c8
+      feeId: 65af65f6-eeef-48f8-a305-7a58f69ad0ba
   期望:
     intent: 删除附加费用
     params: *id133
@@ -3246,7 +3246,7 @@
     tool_name: delete_extra_fee
     tool_params:
       merchId: '0'
-      feeId: 952acc9d-703b-4c98-8c8f-e50c4434a3c8
+      feeId: 65af65f6-eeef-48f8-a305-7a58f69ad0ba
   期望:
     intent: 删除附加费用
     params: *id132
@@ -3268,7 +3268,7 @@
     tool_name: delete_extra_fee
     tool_params: &id134
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      feeId: a2fc3714-01e1-433a-8fee-87518f72e039
+      feeId: 08ddd582-ca66-4f9e-85dd-e934b1bf57c2
   期望:
     intent: 删除附加费用
     params: *id134
@@ -3726,7 +3726,7 @@
     tool_params: &id154
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
       phone: '9023162140'
-      roleId: 183e9b52-59a4-4526-88e5-8891209a4939
+      roleId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
   期望:
     intent: 新增员工
     params: *id154
@@ -3743,7 +3743,7 @@
     tool_name: add_store_user
     tool_params: &id155
       phone: '9023162140'
-      roleId: 183e9b52-59a4-4526-88e5-8891209a4939
+      roleId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
   期望:
     intent: 新增员工
     params: *id155
@@ -3766,7 +3766,7 @@
     tool_params:
       merchId: '0'
       phone: '9023162140'
-      roleId: 183e9b52-59a4-4526-88e5-8891209a4939
+      roleId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
   期望:
     intent: 新增员工
     params: *id154
@@ -3789,7 +3789,7 @@
     tool_params: &id156
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
       phone: '9023162140'
-      roleId: ffbaf04d-5331-495a-9193-f029f2174510
+      roleId: b967a7bf-1bab-4ee1-9bc1-b97eb55f2d6a
   期望:
     intent: 新增员工
     params: *id156
@@ -4110,7 +4110,7 @@
     tool_name: create_discount_campaign
     tool_params: &id169
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 4
+      name: 944600294qq@gmail.com
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4128,7 +4128,7 @@
   输入:
     tool_name: create_discount_campaign
     tool_params: &id170
-      name: Delivery Area 4
+      name: 944600294qq@gmail.com
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4152,7 +4152,7 @@
     tool_name: create_discount_campaign
     tool_params:
       merchId: '0'
-      name: Delivery Area 4
+      name: 944600294qq@gmail.com
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4176,7 +4176,7 @@
     tool_name: create_discount_campaign
     tool_params: &id171
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: all
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4263,7 +4263,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id175
-      name: Get 10% off for order $10 or more
+      name: Proton Pay
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -4326,7 +4326,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id177
-      name: Get $10 off for order $40 or more
+      name: Cream Soda Drink
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -5083,7 +5083,8 @@
     tool_name: update_store_name
     tool_params: &id204
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      newName: Get 10% off for order $30 or more
+      newName:
+      - 店員
   期望:
     intent: 修改店铺名称
     params: *id204
@@ -5100,7 +5101,7 @@
     tool_name: update_store_name
     tool_params: &id205
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      newName: Get 50% off for order $15 or more
+      newName: Proton Pay
   期望:
     intent: 修改店铺名称
     params: *id205
@@ -7064,7 +7065,7 @@
     tool_name: menu_create
     tool_params: &id244
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Name
+      name: Delivery Area 6
   期望:
     intent: 新建菜单
     params: *id244
@@ -7080,7 +7081,7 @@
     tool_name: menu_create
     tool_params: &id245
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get $40 off for order $100 or more
+      name: Get $10 off for order $10 or more
   期望:
     intent: 新建菜单
     params: *id245
@@ -7133,7 +7134,7 @@
     tool_name: menu_create
     tool_params: &id246
       merchId: '0000000000000000'
-      name: Name
+      name: Delivery Area 6
   期望:
     intent: 新建菜单
     params: *id246
@@ -7636,7 +7637,7 @@
     tool_name: category_create
     tool_params: &id258
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Hainan Style Chicken Noodle In Soup
+      name: Proton Pay
   期望:
     intent: 新建分类
     params: *id258
@@ -7652,7 +7653,7 @@
     tool_name: category_create
     tool_params: &id259
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Seafood Fried Rice
+      name: cayson店鋪3
   期望:
     intent: 新建分类
     params: *id259
@@ -7705,7 +7706,7 @@
     tool_name: category_create
     tool_params: &id260
       merchId: '0000000000000000'
-      name: Hainan Style Chicken Noodle In Soup
+      name: Proton Pay
   期望:
     intent: 新建分类
     params: *id260
@@ -8110,7 +8111,7 @@
     tool_name: tax_create
     tool_params: &id270
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: 晚餐菜单
       tax: 1
   期望:
     intent: 新建税率
@@ -8127,8 +8128,8 @@
     tool_name: tax_create
     tool_params: &id271
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Name
-      tax: 1
+      name: 0税率
+      tax: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
   期望:
     intent: 新建税率
     params: *id271
@@ -8181,7 +8182,7 @@
     tool_name: tax_create
     tool_params: &id272
       merchId: '0000000000000000'
-      name: Delivery Area 6
+      name: 晚餐菜单
       tax: 1
   期望:
     intent: 新建税率
@@ -8243,7 +8244,7 @@
     tool_name: tax_update
     tool_params: &id274
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      taxId: 92ac8eda-2372-43df-b3eb-ac48ffc3fae1
+      taxId: b967a7bf-1bab-4ee1-9bc1-b97eb55f2d6a
   期望:
     intent: 修改税率
     params: *id274
@@ -8260,7 +8261,7 @@
     tool_name: tax_update
     tool_params: &id275
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      taxId: a1ace3a4-e7a0-4875-9ede-8115b3aeb22b
+      taxId: 64251b73-0dd8-4c21-8e65-b4c270e1f3da
   期望:
     intent: 修改税率
     params: *id275
@@ -8458,7 +8459,7 @@
     tool_name: spec_create
     tool_params: &id278
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get $3 off for order $10 or more
+      name: Get $40 off for order $100 or more
   期望:
     intent: 新建规格组
     params: *id278
@@ -8474,7 +8475,7 @@
     tool_name: spec_create
     tool_params: &id279
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: Get 10% off for order $10 or more
   期望:
     intent: 新建规格组
     params: *id279
@@ -8527,7 +8528,7 @@
     tool_name: spec_create
     tool_params: &id280
       merchId: '0000000000000000'
-      name: Get $3 off for order $10 or more
+      name: Get $40 off for order $100 or more
   期望:
     intent: 新建规格组
     params: *id280
@@ -8915,7 +8916,7 @@
     tool_name: set_delivery_enabled
     tool_params: &id289
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      enabled: false
+      enabled: true
   期望:
     intent: 开关配送服务
     params: *id289
@@ -9212,7 +9213,7 @@
     tool_name: set_pickup_order_threshold
     tool_params: &id294
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      thresholdAmount: 10
+      thresholdAmount: '13.95'
   期望:
     intent: 设置自提门槛
     params: *id294
@@ -9565,7 +9566,7 @@
     tool_name: add_extra_fee
     tool_params: &id302
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 15% off for order $15 or more
+      name: Delivery Area 4
       target: pickup
       feeType: percentage
       value: 1
@@ -9586,7 +9587,7 @@
     tool_name: add_extra_fee
     tool_params: &id303
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: Delivery Area 6
       target: pickup
       feeType: percentage
       value: 1
@@ -9645,7 +9646,7 @@
     tool_name: add_extra_fee
     tool_params: &id304
       merchId: '0000000000000000'
-      name: Get 15% off for order $15 or more
+      name: Delivery Area 4
       target: pickup
       feeType: percentage
       value: 1
@@ -9711,7 +9712,7 @@
     tool_name: delete_extra_fee
     tool_params: &id306
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      feeId: 183e9b52-59a4-4526-88e5-8891209a4939
+      feeId: 92ac8eda-2372-43df-b3eb-ac48ffc3fae1
   期望:
     intent: 删除附加费用
     params: *id306
@@ -9728,7 +9729,7 @@
     tool_name: delete_extra_fee
     tool_params: &id307
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      feeId: ffbaf04d-5331-495a-9193-f029f2174510
+      feeId: a1ace3a4-e7a0-4875-9ede-8115b3aeb22b
   期望:
     intent: 删除附加费用
     params: *id307
@@ -10476,7 +10477,7 @@
     tool_params: &id322
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
       phone: '9023162140'
-      roleId: a1ace3a4-e7a0-4875-9ede-8115b3aeb22b
+      roleId: 01ecfb52-7e7c-4a5f-ab5f-d7390afd85e8
   期望:
     intent: 新增员工
     params: *id322
@@ -10494,7 +10495,7 @@
     tool_params: &id323
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
       phone: '9023162140'
-      roleId: 6fb83c05-2757-4ec9-a682-ac1ed05169e1
+      roleId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
   期望:
     intent: 新增员工
     params: *id323
@@ -11064,7 +11065,7 @@
     tool_name: create_discount_campaign
     tool_params: &id336
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: all
+      name: Get 10% off for order $10 or more
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -11083,7 +11084,7 @@
     tool_name: create_discount_campaign
     tool_params: &id337
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 晚餐
+      name: Get 10% off for order $30 or more
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -11140,7 +11141,7 @@
     tool_name: create_discount_campaign
     tool_params: &id338
       merchId: '0000000000000000'
-      name: all
+      name: Get 10% off for order $10 or more
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -11305,7 +11306,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id342
-      name: Delivery Area 1
+      name: 944600294qq@gmail.com
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -11323,7 +11324,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id343
-      name: Delivery Area 3
+      name: all
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -12598,7 +12599,7 @@
     tool_name: add_extra_fee_typo
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: 1
@@ -12688,7 +12689,7 @@
     tool_name: create_discount_campaign
     tool_params: &id373
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 4
+      name: 944600294qq@gmail.com
       startDate: '2026-01-01'
       endDate: '2026-01-01'
       unknown_param: x
@@ -12810,7 +12811,7 @@
     tool_name: tax_update
     tool_params: &id376
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      taxId: c08529ba-a3f5-11f0-bb4a-00224808ba53
+      taxId: fd226a91-7f7c-4a1c-9470-6dc6ada45939
       unknown_param: x
   期望:
     intent: 修改税率
@@ -12934,7 +12935,7 @@
     tool_name: tax_create
     tool_params: &id378
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: -1
   期望:
     intent: 新建税率
@@ -13051,7 +13052,7 @@
     tool_name: delete_extra_fee
     tool_params: &id382
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      feeId: 952acc9d-703b-4c98-8c8f-e50c4434a3c8
+      feeId: 65af65f6-eeef-48f8-a305-7a58f69ad0ba
       unknown_param: x
   期望:
     intent: 删除附加费用
@@ -13111,7 +13112,7 @@
     tool_name: menu_create
     tool_params: &id383
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: Get $8 off for order $15 or more
       unknown_param: x
   期望:
     intent: 新建菜单
@@ -13301,7 +13302,7 @@
     tool_name: tax_create
     tool_params: &id388
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: 0
   期望:
     intent: 新建税率
@@ -13605,7 +13606,7 @@
     tool_name: category_create
     tool_params: &id397
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 1
+      name: Baked Fillet Of Sole
       unknown_param: x
   期望:
     intent: 新建分类
@@ -14213,7 +14214,7 @@
     tool_name: add_extra_fee
     tool_params: &id410
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: 1
@@ -14517,7 +14518,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id418
-      name: Get 10% off for order $10 or more
+      name: Proton Pay
       startDate: '2026-01-01'
       endDate: '2026-01-01'
       unknown_param: x
@@ -14577,7 +14578,7 @@
     tool_name: tax_create
     tool_params: &id419
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: 1
       unknown_param: x
   期望:
@@ -14884,7 +14885,7 @@
     tool_name: tax_create_typo
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: 1
   期望:
     intent: 新建税率
@@ -15033,7 +15034,7 @@
     tool_name: tax_create
     tool_params: &id430
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: abc
   期望:
     intent: 新建税率
@@ -15225,7 +15226,7 @@
     tool_name: spec_create_typo
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Hainan Style Chicken Noodle In Soup
+      name: Get 15% off for order $15 or more
   期望:
     intent: 新建规格组
     params: *id098
@@ -15246,7 +15247,7 @@
     tool_name: add_extra_fee
     tool_params: &id436
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: 9999999999999999
@@ -15534,7 +15535,7 @@
     tool_name: create_discount_campaign_typo
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 4
+      name: 944600294qq@gmail.com
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -15578,7 +15579,7 @@
     tool_name: category_create_typo
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 1
+      name: Baked Fillet Of Sole
   期望:
     intent: 新建分类
     params: *id076
@@ -15599,7 +15600,7 @@
     tool_name: add_extra_fee
     tool_params: &id444
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: abc
@@ -15769,7 +15770,7 @@
     tool_name: delete_extra_fee_typo
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      feeId: 952acc9d-703b-4c98-8c8f-e50c4434a3c8
+      feeId: 65af65f6-eeef-48f8-a305-7a58f69ad0ba
   期望:
     intent: 删除附加费用
     params: *id132
@@ -15838,7 +15839,7 @@
     tool_name: spec_create
     tool_params: &id450
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Hainan Style Chicken Noodle In Soup
+      name: Get 15% off for order $15 or more
       unknown_param: x
   期望:
     intent: 新建规格组
@@ -16031,7 +16032,7 @@
     tool_params: &id454
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
       phone: '9023162140'
-      roleId: 183e9b52-59a4-4526-88e5-8891209a4939
+      roleId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
       unknown_param: x
   期望:
     intent: 新增员工
@@ -16177,7 +16178,7 @@
     tool_name: tax_create
     tool_params: &id457
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Get 50% off for order $15 or more
+      name: Delivery Area 5
       tax: 9999999999999999
   期望:
     intent: 新建税率
@@ -16336,7 +16337,7 @@
     tool_name: add_extra_fee
     tool_params: &id460
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: 0
@@ -17001,7 +17002,7 @@
   输入:
     tool_name: create_reward_campaign_typo
     tool_params:
-      name: Get 10% off for order $10 or more
+      name: Proton Pay
       startDate: '2026-01-01'
       endDate: '2026-01-01'
   期望:
@@ -17046,7 +17047,7 @@
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
       phone: '9023162140'
-      roleId: 183e9b52-59a4-4526-88e5-8891209a4939
+      roleId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
   期望:
     intent: 新增员工
     params: *id154
@@ -17255,7 +17256,7 @@
     tool_name: add_extra_fee
     tool_params: &id481
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Salt & Pepper Pork Chop Noodle In Soup
+      name: Get $10 off for order $40 or more
       target: pickup
       feeType: percentage
       value: -1
@@ -17339,7 +17340,7 @@
     tool_name: tax_update_typo
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      taxId: c08529ba-a3f5-11f0-bb4a-00224808ba53
+      taxId: fd226a91-7f7c-4a1c-9470-6dc6ada45939
   期望:
     intent: 修改税率
     params: *id091
@@ -17361,7 +17362,7 @@
     tool_name: menu_create_typo
     tool_params:
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: Get $8 off for order $15 or more
   期望:
     intent: 新建菜单
     params: *id061

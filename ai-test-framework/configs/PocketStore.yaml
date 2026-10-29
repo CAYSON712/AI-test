@@ -124,11 +124,9 @@ param_bools:
       主键字段: merchId
       快照字段: [phone]
       恢复参数键: {phone: newPhone}
-    - 工具: set_store_open_status
-      快照工具: get_store_info
-      主键参数: merchId
-      主键字段: merchId
-      快照字段: [status]
+    # ⚠ set_store_open_status 无法快照：实测 get_store_info 只返回
+    #   address/email/isPreview/logo/merchId/name/phone/store，没有营业状态字段，
+    #   改了既无法验证也无法还原 → 已移入「能力缺口」（见该段）。
 
     # ---- 额外费用：get_extra_fee 列表里按 feeId 定位 ----
     - 工具: update_extra_fee
@@ -169,14 +167,23 @@ param_bools:
       删除参数: {merchId: "{merchId}", feeId: "{新实体ID}"}
       返回ID字段: createdFeeId
 
+    # ⚠ 删除参数是 subscriberId（不是 id）：实测 remove 传 id 会报
+    #   "Parameter validation failed / field SubscriberId"。
     - 工具: add_order_notification_email
       删除工具: remove_order_notification_email
-      删除参数: {merchId: "{merchId}", id: "{新实体ID}"}
+      删除参数: {merchId: "{merchId}", subscriberId: "{新实体ID}"}
+      按标识回查:
+        查询工具: list_order_notification_emails
+        标识参数: email
+        标识字段: email
+        ID字段: id
 
     # 报表订阅：新建后重查列表按 email 找回 id（返回体不含新建 id）
+    # ⚠ remove_report_subscription 只接受 id/email/isSalesReport/isPayoutReport，
+    #   不接受 merchId（实测非 strict 但会被校验拒绝），故只传 id。
     - 工具: add_report_subscription
       删除工具: remove_report_subscription
-      删除参数: {merchId: "{merchId}", id: "{新实体ID}"}
+      删除参数: {id: "{新实体ID}"}
       按标识回查:
         查询工具: list_report_subscriptions
         标识参数: email
@@ -208,15 +215,27 @@ param_bools:
       删除参数: {menuId: "{新实体ID}"}
       返回ID字段: createdMenuId
 
+    # ⚠ item_delete 必填 merchId，必须显式带上
     - 工具: item_create
       删除工具: item_delete
-      删除参数: {itemId: "{新实体ID}"}
+      删除参数: {merchId: "{merchId}", itemId: "{新实体ID}"}
       返回ID字段: createdItemId
 
+    # ⚠ 满减活动没有删除接口，只能用 update_discount_campaign 下架
+    #   （传 isPublished: false）。它不接受 merchId，故删除参数只传
+    #   campaignId + isPublished。
+    #   注意：下架≠删除，活动记录仍会留在系统里，只是不再生效。
     - 工具: create_discount_campaign
       删除工具: update_discount_campaign
-      删除参数: {merchId: "{merchId}", campaignId: "{新实体ID}"}
+      删除参数: {campaignId: "{新实体ID}", isPublished: false}
       返回ID字段: createdCampaignId
+
+    # 员工：实测可创建可删除。roleId 用店铺预置的「店员」角色
+    # （不用 all —— 权限过高，即便只是测试账号也不该给全权限）
+    - 工具: add_store_user
+      删除工具: delete_store_user
+      删除参数: {merchId: "{merchId}", merchManagerId: "{新实体ID}"}
+      返回ID字段: merchManagerId
 
   # ---- 自建自删：删除类用例不碰真实数据 ----
   # 先按「建工具」造一个临时实体，再把删除目标换成它，跑完即干净。
@@ -232,7 +251,8 @@ param_bools:
     - 删除工具: remove_order_notification_email
       建工具: add_order_notification_email
       建参数: {merchId: "{merchId}", email: "autotest_del@example.com"}
-      删除主键: id
+      删除主键: subscriberId
+      返回ID字段: id
 
     - 删除工具: category_delete
       建工具: category_create
@@ -253,6 +273,16 @@ param_bools:
       删除主键: itemId
       返回ID字段: createdItemId
 
+    # 员工：实测 add_store_user 可正常创建（角色表有预置「店员」角色），
+    # 故删除类用例可走自建自删，不碰真实员工。
+    # roleId 用真实存在的角色，缺失时该用例会安全跳过（不会误删真实员工）。
+    - 删除工具: delete_store_user
+      建工具: add_store_user
+      建参数: {merchId: "{merchId}", phone: "9023999001",
+               roleId: "1e6b1564-a5eb-4e4e-9019-8b87de5513b1"}
+      删除主键: merchManagerId
+      返回ID字段: merchManagerId
+
   # ---- 受测系统能力缺口（作为缺陷上报，不硬跑）----
   # 这些写接口存在，但被测系统没有对应的「读取当前值」接口：
   #   get_store_info 只返回 merchId/name/logo/phone/email/address，
@@ -260,6 +290,9 @@ param_bools:
   # 后果：改了既无法验证对错，也无法自动还原 → 真跑会污染环境且测不出东西。
   # 这不属于测试框架问题，属被测系统缺陷（缺读接口），单独列出。
   能力缺口:
+    - 工具: set_store_open_status
+      原因: get_store_info 不返回营业状态字段（只有 name/phone/email/address），
+            开/关店后无法验证也无法还原
     - 工具: set_auto_accept_orders
       原因: 无读取「自动接单」当前状态的接口，改后无法验证与还原
     - 工具: set_delivery_enabled
@@ -279,10 +312,6 @@ param_bools:
     - 工具: create_reward_campaign
       原因: 无删除优惠券活动的接口（无 delete_reward_campaign），
             创建后无法清理，会永久留下测试活动
-    - 工具: add_store_user
-      原因: 角色表为空，无合法 roleId 可填，员工实体无法创建
-    - 工具: delete_store_user
-      原因: 角色表为空，无法自建临时员工供删除，拒绝操作真实员工
 
   # ---- 不可恢复：删除类，删了没得救，默认跳过 ----
   # 配了「自建自删」的会走自建自删；没配的才会真正跳过。

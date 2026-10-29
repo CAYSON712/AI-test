@@ -39,11 +39,12 @@ AI 测试一键流水线入口（端到端）
   --skip-selftest 跳过框架回归自测（默认执行）
   --skip-validate 跳过数据集校验门禁（不推荐；默认执行且 FAIL 则中止）
   --skip-review   跳过数据集软 review（默认执行，仅提示不阻断）
+  --skip-lifecycle 跳过数据保护门禁（不推荐）
   --force          校验 FAIL 时仍继续执行（仅调试用）
 
 流水线阶段：
   ⓪ 框架自测 → ① 生成/复用数据集 → ①.5 硬校验(门禁) → ①.6 软review(提醒)
-  → ② 执行+评分+报告
+  → ①.7 数据保护门禁 → ② 执行+评分+报告
 """
 import argparse
 import contextlib
@@ -129,6 +130,118 @@ def _validate_dataset_gate(dataset_path, ability, products):
     return rc == 0
 
 
+_WRITE_PREFIXES = ("add_", "create_", "update_", "delete_", "remove_", "set_",
+                   "bind_", "unbind_", "publish_", "batch_", "generate_")
+
+
+def _lifecycle_gate(dataset_path, system):
+    """数据保护门禁（阻断）：确认所有写用例都有防护。
+
+    读 configs/<系统>.yaml 的「数据生命周期」段，把数据集中每条写用例
+    归入 可还原 / 新建清理 / 自建自删 / 能力缺口 / 不可恢复跳过。
+    存在「完全无保护」的写工具时返回 False（真跑会改坏数据）。
+    """
+    import glob as _glob
+    import yaml as _yaml
+
+    print("①.7 数据保护门禁（写用例是否都有防护）")
+    # 定位系统配置
+    cfg_path = None
+    if system:
+        cand = os.path.join(_ROOT, "configs", f"{system}.yaml")
+        if os.path.exists(cand):
+            cfg_path = cand
+    if not cfg_path:
+        hits = _glob.glob(os.path.join(_ROOT, "configs", "*.yaml"))
+        if len(hits) == 1:
+            cfg_path = hits[0]
+    if not cfg_path:
+        print("   [跳过] 未定位到唯一的系统配置，无法检查")
+        print()
+        return True
+
+    try:
+        cfg = _yaml.safe_load(open(cfg_path, encoding="utf-8")) or {}
+    except Exception as e:
+        print(f"   [跳过] 配置读取失败: {e}")
+        print()
+        return True
+
+    lc = cfg.get("数据生命周期")
+    real_tools = {str(t.get("name")) for t in (cfg.get("mcp_tools") or [])
+                  if isinstance(t, dict) and t.get("name")}
+    ds = _yaml.safe_load(open(dataset_path, encoding="utf-8")) or {}
+    cases = ds.get("用例列表") or []
+
+    write_cases = []
+    for c in cases:
+        t = str(((c.get("输入") or {}).get("tool_name")) or "")
+        if any(t.startswith(w) for w in _WRITE_PREFIXES):
+            write_cases.append((t, c))
+
+    if not write_cases:
+        print("   [PASS] 无写操作用例，无需数据保护")
+        print()
+        return True
+
+    if not lc:
+        print(f"   [WARN] {os.path.basename(cfg_path)} 未声明「数据生命周期」，"
+              f"{len(write_cases)} 条写用例将在无保护下执行")
+        print("          建议先补声明，或在隔离环境跑")
+        print()
+        return True
+
+    restorable = {str(r["工具"]) for r in (lc.get("可还原") or [])
+                  if isinstance(r, dict) and r.get("工具")}
+    creatable = {str(r["工具"]) for r in (lc.get("新建后清理") or [])
+                 if isinstance(r, dict) and r.get("工具")}
+    irreversible = {str(x) for x in (lc.get("不可恢复") or [])}
+    selfdel = {str(r["删除工具"]) for r in (lc.get("自建自删") or [])
+               if isinstance(r, dict) and r.get("删除工具")}
+    gaps = set()
+    for g in (lc.get("能力缺口") or []):
+        if isinstance(g, dict) and g.get("工具"):
+            gaps.add(str(g["工具"]))
+        elif isinstance(g, str):
+            gaps.add(g)
+
+    cnt = {"还原": 0, "清理": 0, "自建自删": 0, "能力缺口": 0, "不可恢复跳过": 0}
+    unprot = {}
+    fake = 0
+    for t, _c in write_cases:
+        if real_tools and t not in real_tools:
+            fake += 1
+            continue
+        if t in gaps:
+            cnt["能力缺口"] += 1
+        elif t in restorable:
+            cnt["还原"] += 1
+        elif t in creatable:
+            cnt["清理"] += 1
+        elif t in irreversible and t in selfdel:
+            cnt["自建自删"] += 1
+        elif t in irreversible:
+            cnt["不可恢复跳过"] += 1
+        else:
+            unprot[t] = unprot.get(t, 0) + 1
+
+    total = sum(cnt.values()) + sum(unprot.values())
+    print(f"   写用例 {total} 条"
+          + (f"（另 {fake} 条 _typo 假工具，不会真执行）" if fake else ""))
+    print("   " + " | ".join(f"{k} {v}" for k, v in cnt.items() if v))
+    if unprot:
+        print(f"   [FAIL] {len(unprot)} 个写工具无任何保护，真跑会改动真实数据：")
+        for t, n in sorted(unprot.items(), key=lambda x: -x[1]):
+            print(f"          {n:3d} 条  {t}")
+        print("          修复：在 configs 的「数据生命周期」段补 可还原/"
+              "新建后清理/自建自删，或标为 能力缺口")
+        print()
+        return False
+    print("   [PASS] 所有写用例都有防护")
+    print()
+    return True
+
+
 def _review_dataset_hint(dataset_path, ability):
     """数据集软 review（提醒，不阻断）。
 
@@ -187,6 +300,11 @@ def _gen_dataset(req_type, system, ability, products):
     生成后通过 glob 定位最新生成的文件作为 dataset_path。
     """
     argv = ["_02_generate_dataset", "--req-type", req_type]
+    # system 必须透传：此前漏传导致 --system 被静默忽略，
+    # 生成器会自动匹配到别的系统（实测 --system PocketStore 却生成了
+    # POS员工考勤 的数据集），进而跑错数据集、校验错配置。
+    if system:
+        argv += ["--system", system]
     if ability:
         argv += ["--ability", ability]
     if products:
@@ -256,6 +374,9 @@ def main():
                         help="跳过数据集校验门禁（不推荐）")
     parser.add_argument("--skip-review", action="store_true",
                         help="跳过数据集软 review（仅提示，不阻断；一般无需跳过）")
+    parser.add_argument("--skip-lifecycle", action="store_true",
+                        help="跳过数据保护门禁（写用例是否都有防护；不推荐，"
+                             "跳过会让写用例在无保护下改动真实数据）")
     parser.add_argument("--force", action="store_true",
                         help="校验 FAIL 时仍继续执行（仅调试用）")
     args = parser.parse_args()
@@ -311,6 +432,14 @@ def main():
         print()
     else:
         print("①.6 已跳过数据集软 review（--skip-review）\n")
+
+    # 1.7) 数据保护门禁（默认强制）—— 真跑写用例前确认每条都有防护，
+    #      否则会改动被测系统真实数据且无法还原（改价/删数据/越跑越多的垃圾）。
+    if not args.skip_lifecycle:
+        if not _lifecycle_gate(dataset_path, args.system) and not args.force:
+            return 1
+    else:
+        print("①.7 已跳过数据保护门禁（--skip-lifecycle，不推荐）\n")
 
     # 2) 执行 + 评分 + 报告 + trace
     #    不传 system：让 run_dataset 从数据集读系统名（数据集系统名来自能力目录，
