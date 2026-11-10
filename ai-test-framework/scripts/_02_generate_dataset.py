@@ -148,6 +148,11 @@ def flat_abilities(ability_groups):
         for a in g.get("能力列表", []):
             item = dict(a)
             item["分组"] = g.get("分组", "")
+            # 分组级「需要人工前置条件」下发给组内每个能力（能力级可覆盖）：
+            # 同组用例通常共享同一个环境前提（如整组都需先给店铺断网），
+            # 写在分组上比逐条重复写更不易漏。
+            if g.get("需要人工前置条件") and not item.get("需要人工前置条件"):
+                item["需要人工前置条件"] = g["需要人工前置条件"]
             if gqa and not gqa_attached and not item.get("问答对"):
                 item["问答对"] = gqa
                 gqa_attached = True
@@ -345,14 +350,164 @@ def _as_param_value(v, pl):
     return v
 
 
-def _param_value(param, e):
+def _enum_for(param, tool, tool_level_only=False):
+    """按「工具 + 参数」取合法枚举（工具隔离，杜绝同名参数跨域串值）。
+
+    为什么必须带 tool：2026-10-30 实测 PocketStore A 类数据集 5 条 block=false
+    用例带了别的工具的枚举值（category_update.status='On' 实为 list_* 口径，
+    tax_update.type='MerchPromotion' 实为活动类型，discountType='10' 实为数量），
+    根因是 _param_value 按参数名跨域取实体值时没有任何工具上下文。
+
+    优先级：
+      1) 该工具 schema 声明的 enum / 描述候选（_TOOL_DESC_ENUMS，最准）
+      2) config param_enums 中「工具限定」命中的规则
+      3) 非 tool_level_only 时，才允许退回 config「全局」规则（如 priceAdjustmentType）
+    tool 为空 → 返回 None（不猜值，交给语义兜底）。
+    """
+    if not tool:
+        return None
+    pl = str(param).lower()
+    # ① schema 的 enum —— 但**不能单独信任它**，要与 config 枚举取并集。
+    #
+    # 为什么取并集（2026-11-09 两个方向的实测都踩到）：
+    #   · schema 漏值：orderStatus 的 schema enum 只有
+    #     ['Completed','Cancelled']，但服务端实际接受 'Progressing'
+    #     （实测有 73 单是该状态）；paymentStatus 同理漏了 'Unpaid'。
+    #     只信 schema → 生成器造不出这些合法值，覆盖面缩水。
+    #   · config 漏值+类型坑：status 的 schema enum 是
+    #     ['Off','Selling','Unknown',None]，我 configs 只写了 Selling/Off，
+    #     还因 YAML 1.1 把 Off 解析成布尔 False。
+    #     只信 config → 漏 Unknown、且类型错。
+    #   两者互补，取并集最稳；顺序上 schema 在前（契约优先）。
+    _ti = (_TOOL_PARAM_TYPES.get(str(tool)) or {}).get(str(param)) or {}
+    _se = list(_ti.get("enum") or [])
+
+    # 先看 config 是否有针对该工具的限定规则 —— 有就直接用，不并 schema。
+    # 依据（2026-11-09）：schema 的 sortField enum 含 ['Date','Amount','Quantity']，
+    # 但公鸡服务端只接受 Date（传另两个抛协议层异常）。人工实测的 config 必须
+    # 能推翻 schema 的不准确，否则会造出必失败的用例。
+    _rules = _PARAM_ENUMS.get(pl) or []
+    _tl = str(tool).lower()
+    for _r in _rules:
+        _tset = _r.get("tools")
+        if _tset and any(str(t).lower() in _tl for t in _tset):
+            return list(_r.get("values") or [])
+
+    if _se:
+        # schema enum ∪ config「无工具限定」的全局规则（互补，见上文说明）
+        _cfg_vals = []
+        for rule in _rules:
+            if not rule.get("tools"):
+                _cfg_vals.extend(rule.get("values") or [])
+        if _cfg_vals:
+            merged = list(_se)
+            for v in _cfg_vals:
+                if str(v) not in merged:
+                    merged.append(str(v))
+            return merged
+        return _se
+    # ② config 的「工具限定」规则优先于 schema enum。
+    #   为什么（2026-11-09 实测）：schema 里 sortField 的 enum 是
+    #   ['Date','Amount','Quantity']，但公鸡服务端**只接受 Date**
+    #   （传 Amount/Quantity 直接抛协议层异常）。若让 schema 优先，
+    #   生成器会造出 Amount/Quantity 两条必失败用例 —— config 里的
+    #   人工实测结论必须能覆盖 schema 的不准确。
+    rules = _PARAM_ENUMS.get(pl) or []
+    tl = str(tool).lower()
+    for rule in rules:
+        tset = rule.get("tools")
+        if tset and any(str(t).lower() in tl for t in tset):
+            return list(rule["values"])
+    # ③ 描述里提取的候选值
+    cands = list((_TOOL_DESC_ENUMS.get(tool) or {}).get(pl) or [])
+    if cands:
+        return cands
+    # ④ config 的「全局」规则（仅当未要求 tool_level_only）
+    if tool_level_only:
+        return None
+    for rule in rules:
+        if not rule.get("tools"):
+            return list(rule["values"])
+    return None
+
+
+def _raw_entity_value(param, e):
+    """取实体里该参数的「原始值」，不做枚举收敛（用于判断当前状态）。
+
+    与 _param_value 的区别：后者对枚举参数返回合法域首值（Active），
+    拿它当「当前状态」会让 _other_status 翻不动（Inactive → Inactive）。
+    """
+    if not isinstance(e, dict):
+        return None
+    pl = str(param).lower()
+    for k, v in e.items():
+        if pl == str(k).lower():
+            return v
+    for k, v in e.items():
+        kl = str(k).lower()
+        if len(pl) >= 3 and (pl in kl or kl in pl):
+            return v
+    return None
+
+
+def _param_value(param, e, tool=None):
     """为一个参数名从实体数据生成值（语义匹配，不绑定任何业务字段名）。
 
     规则：
+      0) 该工具有合法枚举 → 直接用（枚举参数的真值域以工具 schema 为准）
       1) 实体字段名精确/包含匹配（支持 orderId/amount/nameEn 等任意 schema）
       2) 语义别名兜底（id/name/price/status/category/merchant/qty...）
+
+    tool：当前工具名。传入后枚举值按工具隔离，避免同名参数跨域串值
+    （见 _enum_for 的 2026-10-30 事故说明）。省略时退化为旧行为。
     """
     pl = str(param).lower()
+    # 0-0) 多语言名称对象（nameLocalization 等）必须**最优先**，早于枚举/实体匹配。
+    #      原因（2026-11-09 实测 A-L1-048）：该参数的 description 里写着示例
+    #      { "zh-CN": "新商品名", "en-US": "New Product Name" }，
+    #      被 _DESC_ENUM_RE 当成枚举候选提取出 ['zh-CN','en-US']，
+    #      于是枚举收敛把整个对象值替换成了字符串 'zh-CN'。
+    #      对象型参数没有枚举语义，必须先构造正确结构再跳过枚举。
+    if ("localization" in pl or "i18n" in pl or "multilang" in pl) \
+            and (_param_type_of(tool, param) or {}).get("type") == "object":
+        _info = _param_type_of(tool, param) or {}
+        # 语言码优先取 schema 子属性键；无（additionalProperties 形式）则用 en-US
+        _langs = [str(k) for k in (_info.get("properties") or {}).keys()]
+        _lang = _langs[0] if _langs else "en-US"
+        _nm = (e.get("productName") or e.get("名称") or e.get("name")
+               or "New Product Name")
+        return {_lang: str(_nm)}
+
+    # 0-a) 布尔参数优先（configs 的 param_bools 显式声明，或 include*/is*/has* 命名）：
+    #      必须排在枚举与实体匹配之前，否则会被当成 ID 去实体里取值。
+    #      实测（2026-11-09）：query_product_detail_by_id 的 includeCategory
+    #      被填成 '13273427280397317'（分类 ID）—— 显然是类型错配，
+    #      服务端按布尔解析必然失败或行为不符预期。
+    # ⚠ 布尔判定只认 configs 显式声明的 param_bools（放最前，优先于实体匹配）。
+    #   曾试过「include*/is*/has* 前缀启发」，结果把 status 系列误伤
+    #   （实测 status/orderStatus/paymentStatus 被填成 True → YAML 序列化成
+    #    'On' → 校验器报「意图-参数矛盾」12 条）。启发式不可靠，退回白名单。
+    #
+    # ⚠ 但要**尊重实体里的显式空值**：实体写 includeCategory:"" / None 表示
+    #   「本次不传该参数」，必须让空值剔除逻辑生效，不能强行盖成 True。
+    #   （selftest gen4 就测这个：空串未剔除 → 曾被我这次改动打破）
+    # 只有「实体里**显式存在**该布尔字段且值为空」才返回 None（不传）；
+    # 实体里压根没这个字段时，仍默认 True（否则布尔参数永远不会被生成，
+    # 实测会导致 includeCategory 零覆盖）。
+    if pl in _PARAM_BOOL:
+        _present = False
+        _ev = None
+        for _k, _v in (e or {}).items():
+            if str(_k).lower() == pl:
+                _present, _ev = True, _v
+                break
+        if _present and (_ev is None
+                         or (isinstance(_ev, str) and not _ev.strip())):
+            return None
+        return True
+    _enum = _enum_for(param, tool)
+    if _enum:
+        return _as_param_value(_enum[0], pl)
     # 1) 实体字段匹配：先精确匹配（防止 "id" 等短 key 抢先命中 merchantId/terminalIds
     #    等长参数名，取错实体自身 id），无精确命中再做包含匹配
     for k, v in e.items():
@@ -380,6 +535,23 @@ def _param_value(param, e):
     # 2) 语义别名兜底
     if "id" in pl:
         return _as_param_value(e.get("id", "1"), pl)
+    # 多语言名称对象（如 nameLocalization）：必须造 {语言码: 名称} 结构。
+    # 放在 "name" 兜底之前，否则会匹配到实体的店铺名/名称字段当值，
+    # 变成 {'en-US': 'zh-CN'} 这种把语言码当名称的错误结构
+    # （实测 A-L1-048）。语言码优先取 schema 声明的子属性键。
+    if "localization" in pl or "i18n" in pl or "multilang" in pl:
+        _info = _param_type_of(tool, param) or {}
+        _langs = [str(k) for k in (_info.get("properties") or {}).keys()]
+        _lang = _langs[0] if _langs else "en-US"
+        _nm = (e.get("名称") or e.get("name")
+               or e.get("productName") or "New Name")
+        return _as_param_value({_lang: str(_nm)}, pl)
+
+    # 支付终端名称：实体里通常没有这个字段，不能落到 "name" 兜底
+    # （否则会填成店铺名，语义完全不对）。用中性占位名。
+    if "terminal" in pl and ("name" in pl or "名称" in pl):
+        return _as_param_value("POS Terminal", pl)
+
     if "name" in pl or "名称" in pl:
         return _as_param_value(e.get("名称", "测试实体"), pl)
     if "price" in pl or "价" in pl or "amount" in pl or "金额" in pl:
@@ -443,6 +615,52 @@ _PARAM_BOOL = set()    # 由 load_param_schema() 填充
 _TOOL_SCHEMA = {}
 _MISSING_REQUIRED = []   # 生成过程中累积的「必填缺失」告警：[(工具, 缺参列表, 能力)]
 
+# 参数约束：{工具名: {"至少一个": [...], "时间先后": {...}, "至少一个为真": [...]}}
+# JSON Schema 表达不了跨字段/条件约束（条件必填、时间先后、互斥开关），
+# 由 config 的「参数约束」段声明，生成时据此修正参数。
+# 实测 PocketStore 30 条 Parameter validation failed 全部源于此。
+_PARAM_CONSTRAINTS = {}
+
+
+def load_param_constraints(config_path):
+    """从 configs/<系统>.yaml 读「参数约束」段，按工具名索引。
+
+    支持三种约束（详见 config 内注释）：
+      至少一个:     至少提供一个参数；元素为 list 时表示「需同时提供」
+      时间先后:     保证结束时间晚于开始时间
+      至少一个为真: 布尔参数至少一个为 true
+    """
+    global _PARAM_CONSTRAINTS
+    _PARAM_CONSTRAINTS = {}
+    try:
+        import yaml as _yaml
+        with open(config_path, encoding="utf-8") as f:
+            cfg = _yaml.safe_load(f) or {}
+    except Exception:
+        return 0
+    raw = cfg.get("参数约束")
+    if not isinstance(raw, dict):
+        return 0
+
+    def _put(tool, kind, val):
+        if not tool:
+            return
+        _PARAM_CONSTRAINTS.setdefault(str(tool), {})[kind] = val
+
+    # 至少一个: {工具: [a, b, ...]} 或 {工具: [[a,b], c]}
+    for tool, spec in (raw.get("至少一个") or {}).items():
+        if isinstance(spec, list):
+            _put(tool, "至少一个", spec)
+    # 时间先后: {工具: {开始: x, 结束: y}}
+    for tool, spec in (raw.get("时间先后") or {}).items():
+        if isinstance(spec, dict) and spec.get("开始") and spec.get("结束"):
+            _put(tool, "时间先后", spec)
+    # 至少一个为真: {工具: [bool, bool]}
+    for tool, spec in (raw.get("至少一个为真") or {}).items():
+        if isinstance(spec, list):
+            _put(tool, "至少一个为真", spec)
+    return len(_PARAM_CONSTRAINTS)
+
 
 def load_param_schema(config_path):
     """从系统配置加载参数取值域。返回 (enums, bools)。
@@ -488,6 +706,11 @@ def load_tool_schema(config_path):
 
     用于必填参数自动补全与缺失告警：能力目录漏声明必填参数时能及时发现。
     配置缺失/格式异常时返回空（不做补全），不抛异常。
+
+    注意：参数「类型」不在这里读（config 的 mcp_tools 只存名字/必填）。
+    类型从 results/mcp_schemas/<系统>.raw.json 的 inputSchema 单独加载，
+    见 load_param_types() —— 生成器必须按真实类型造值，否则会出现
+    days='Monday'（应为数组）、tax='<uuid>'（应为 Decimal）这类类型错配。
     """
     schema = {}
     if not config_path or not os.path.exists(config_path):
@@ -501,6 +724,98 @@ def load_tool_schema(config_path):
             schema[str(t["name"])] = (set(t.get("params") or []),
                                       set(t.get("required") or []))
     return schema
+
+
+# 工具名 -> {参数名: 类型信息 dict}
+#   类型信息: {"type": "array"|"integer"|"number"|"string"|"boolean"|None,
+#              "items_type": 数组元素类型（仅 array 有效）}
+# 由 load_param_types() 从原始 schema 填充。生成器据此按真实类型造值，
+# 避免「字符串传给数组参数」「UUID 传给数值参数」等类型错配。
+# 实测 PocketStore 16 条数据集问题里 13 条属于此类。
+_TOOL_PARAM_TYPES = {}
+
+
+def load_param_types(schema_json_path):
+    """从 results/mcp_schemas/<系统>.raw.json 提取「工具.参数 → 类型」。
+
+    遍历 inputSchema（含参数外壳），记录每个参数的 type 与数组元素类型。
+    缺失/异常返回空（此时生成器退回按参数名猜，行为与改动前一致）。
+    """
+    global _TOOL_PARAM_TYPES
+    _TOOL_PARAM_TYPES = {}
+    if not schema_json_path or not os.path.exists(schema_json_path):
+        return 0
+    try:
+        import json as _json
+        raw = _json.load(open(schema_json_path, encoding="utf-8"))
+    except Exception:
+        return 0
+
+    tools = raw.get("tools") if isinstance(raw, dict) else raw
+    if not isinstance(tools, list):
+        return 0
+
+    def _norm_type(t):
+        """把 JSON Schema 的 type（可能是 list）收敛成单一主类型。"""
+        if isinstance(t, list):
+            for x in t:
+                if x and x != "null":
+                    return str(x)
+            return None
+        return str(t) if t else None
+
+    for t in tools:
+        if not isinstance(t, dict) or not t.get("name"):
+            continue
+        name = str(t["name"])
+        sch = t.get("inputSchema") or {}
+        # 兼容参数外壳：真实参数可能在 properties.parameters / toolParams 内层
+        props = sch.get("properties") or {}
+        for wrapper in ("parameters", "toolParams"):
+            inner = props.get(wrapper)
+            if isinstance(inner, dict) and isinstance(inner.get("properties"), dict):
+                props = inner["properties"]
+                break
+        if not isinstance(props, dict):
+            continue
+        bag = {}
+        for pname, pspec in props.items():
+            if not isinstance(pspec, dict):
+                continue
+            tp = _norm_type(pspec.get("type"))
+            items = pspec.get("items")
+            items_type = None
+            if isinstance(items, dict):
+                items_type = _norm_type(items.get("type"))
+            # enum：schema 里声明的合法取值域（最权威，优先于 config 手写枚举）。
+            # 2026-11-09 实测价值：query_products_by_filter 的 status 在 schema
+            # 里是 ['Off','Selling','Unknown',None]，而我 configs 只写了
+            # Selling/Off，漏了 Unknown 且把 Off 当布尔写错 —— schema 是唯一真相。
+            _enum = pspec.get("enum")
+            enum_vals = None
+            if isinstance(_enum, list):
+                vals = [str(x) for x in _enum if x is not None]
+                if vals:
+                    enum_vals = vals
+            # object 类型记录子 properties（用于造合法字典键，如多语言码）
+            _sub = None
+            if tp == "object":
+                _sp = pspec.get("properties")
+                if isinstance(_sp, dict):
+                    _sub = {str(k): (v or {}).get("type") if isinstance(v, dict)
+                            else None for k, v in _sp.items()}
+            bag[str(pname)] = {"type": tp, "items_type": items_type,
+                               "enum": enum_vals, "properties": _sub}
+        if bag:
+            _TOOL_PARAM_TYPES[name] = bag
+    return len(_TOOL_PARAM_TYPES)
+
+
+def _param_type_of(tool, param):
+    """取某工具某参数的声明类型；未知返回 None。"""
+    bag = _TOOL_PARAM_TYPES.get(str(tool)) or {}
+    info = bag.get(str(param))
+    return info if info else None
 
 
 # 参数描述里的「候选枚举值」：形如 'regular' / "percentage" / "pickup", "delivery"。
@@ -647,6 +962,13 @@ def _coerce_param(param, value, cap):
             return value.lower() == "true"
         return bool(value)
 
+    # 1.5) object 类型参数不做枚举收敛：对象没有枚举语义，且其 description
+    #      里常出现示例值（如 nameLocalization 的 {"zh-CN":..,"en-US":..}），
+    #      _DESC_ENUM_RE 会把语言码误当枚举候选，收敛后整个对象被替换成
+    #      字符串 'zh-CN'（实测 2026-11-09 A-L1-048）。
+    if (_param_type_of(tool, param) or {}).get("type") == "object":
+        return value
+
     # 2) 枚举型参数：优先用「该工具 schema 声明的 enum」，其次 config 枚举
     allowed = (list((_TOOL_DESC_ENUMS.get(tool) or {}).get(pl) or [])
                or _allowed_for(pl, tool))
@@ -754,7 +1076,7 @@ def _fill_params(cap, e, overrides=None, pool=None):
                                                for k in _keys)]
                 if cand:
                     src = cand[0]
-        tp[p] = _param_value(p, src)
+        tp[p] = _param_value(p, src, cap.get("工具"))
     if overrides:
         tp.update(overrides)
     tp = {p: _coerce_param(p, v, cap) for p, v in tp.items()}
@@ -774,7 +1096,7 @@ def _fill_params(cap, e, overrides=None, pool=None):
         for rp in sorted(req):
             if str(rp).lower() in have:
                 continue
-            v = _coerce_param(rp, _param_value(rp, e), cap)
+            v = _coerce_param(rp, _param_value(rp, e, tool), cap)
             if v is None or v == "":
                 v = _coerce_param(rp, _default_param_value(rp, cap), cap)
             if v is not None and v != "":
@@ -790,8 +1112,477 @@ def _fill_params(cap, e, overrides=None, pool=None):
         if rp and has_pair:
             tp.pop(rp, None)  # 优先保留精确区间，去掉相对周期
 
+    _tool = cap.get("工具") or ""
+    # 按 schema 声明的类型收敛取值（数组/数值/整数/字符串/布尔）。
+    # 放在约束修正之前：约束可能读取参数值做比较（如时间先后），
+    # 类型正确才能正确比较。
+    tp = {p: _coerce_to_type(_tool, p, v) for p, v in tp.items()}
+
+    # 跨字段/条件约束修正（schema 表达不了，靠 config「参数约束」声明）
+    tp = _apply_param_constraints(_tool, tp, e)
+
     # 空值（如布尔参数无对应值）不传，避免服务端 schema 校验失败
     return {k: v for k, v in tp.items() if v is not None and v != ""}
+
+
+def _add_days(date_str, days):
+    """在日期/时间字符串上加天数，保持原格式（有 T 则保留时间部分）。"""
+    import datetime as _dt
+    s = str(date_str)
+    try:
+        if "T" in s:
+            dt = _dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
+            return (dt + _dt.timedelta(days=days)).isoformat()
+        d = _dt.date.fromisoformat(s[:10])
+        return (d + _dt.timedelta(days=days)).isoformat()
+    except Exception:
+        return None
+
+
+# =====================================================================
+# 参数完整性（协议契约「构造缺失字段」+ 调用正确性「全字段覆盖」）
+# =====================================================================
+# 背景：维度表 A_MCP工具.yaml 要求
+#   协议契约  → 「语法变异法：构造缺失字段」
+#   调用正确性 → 「正向覆盖所有合法参数组合」
+# 但生成器此前只按能力目录声明的少量参数造用例，schema 里大量选填参数
+# （如 menu_create 的 categoryIds / onlineTimes）从未出现，导致
+# 「不传这些参数也能成功」这类参数完整性缺陷无法被发现。
+#
+# 数量控制（避免组合爆炸）：
+#   ① 只对 create_/add_/update_ 类工具生成（新建/更新才需关注字段完整性）
+#   ② 缺失字段只测「关联型」关键参数，不做两两组合
+#   ③ 单工具缺失用例数受 参数完整性.最大单缺数 限制
+_PARAM_COMPLETENESS = {}
+
+
+def load_param_completeness(config_path):
+    """读 config 的「参数完整性」段；未声明则默认关闭（保持旧行为）。"""
+    global _PARAM_COMPLETENESS
+    _PARAM_COMPLETENESS = {}
+    try:
+        import yaml as _yaml
+        cfg = _yaml.safe_load(open(config_path, encoding="utf-8")) or {}
+    except Exception:
+        return 0
+    raw = cfg.get("参数完整性")
+    if not isinstance(raw, dict):
+        return 0
+    _PARAM_COMPLETENESS = raw
+    return 1
+
+
+def _enable_param_completeness():
+    return bool(_PARAM_COMPLETENESS.get("启用"))
+
+
+def _enable_query_param_coverage():
+    """查询类工具的「过滤参数覆盖」是否启用（独立于 create/update 的参数完整性）。
+
+    ⚠ 为什么必须单独开关（2026-11-06）：
+    报表/查询类工具（query_*）的参数契约同样是测试重点——
+    query_datax_order_sales_reports 有 19 个参数（orderType/orderStatus/
+    paymentStatus/paymentType/operatorName/sourceName/sortField/limit…），
+    但 A_POS数据报表 与 A_POS Local路由 两个数据集都只用到了
+    merchantId + startAt + endAt，覆盖率不足 12%，过滤/排序/分页完全没测。
+
+    根因是两个门槛把它挡掉了：
+      ① _is_create_or_update_tool() 只认 create/add/update → 查询工具全跳过
+      ② 即使放开门槛，_param_value 对枚举参数只能瞎猜，
+         生成的值多半非法（实测 orderType=TakeOut → 协议层裸异常），用例全废。
+    所以正确做法是：只有 configs 里为该工具显式声明了枚举（param_enums），
+    才为它生成「每个合法枚举各一条」的用例 —— 值有依据，不是瞎猜。
+    """
+    return bool(_PARAM_COMPLETENESS.get("查询参数覆盖"))
+
+
+# 关键参数识别：关联型字段缺失最危险（数据归属会丢），优先测这些
+_KEY_PARAM_HINTS = ("categoryids", "menuids", "taxids", "itemids", "foodids",
+                    "roleid", "feeid", "specids", "onlinetimes", "price",
+                    "thresholdamount", "discountvalue", "status", "value")
+
+
+def _is_create_or_update_tool(tool, prefixes=None):
+    """判断工具是否属于「创建/新增/更新」类（决定是否生成参数完整性用例）。
+
+    注意：不同系统命名风格不一致，必须同时匹配前缀与后缀：
+      前缀式  create_menu / add_store_user / update_item
+      后缀式  menu_create / category_create / item_update
+    只按前缀匹配会漏掉 menu_create 这类（实测 PocketStore 大量采用后缀式，
+    这正是一开始用例生成不出来的原因）。
+    """
+    t = str(tool or "").lower()
+    pats = prefixes or ["create", "add", "update"]
+    for p in pats:
+        p = str(p).lower().strip("_")
+        if not p:
+            continue
+        if t.startswith(p + "_") or t.endswith("_" + p) or t == p:
+            return True
+    return False
+
+
+def _query_enum_params(tool, tp, cap=None):
+    """挑出查询类工具里「config 声明了枚举」的过滤参数，供逐个枚举值生成用例。
+
+    与 _pick_key_optional_params 的区别：
+      - 不要求 create/update 类（查询工具也要覆盖）
+      - 只取 configs/param_enums 为该工具显式声明过枚举的参数
+        （值有据可查；没声明的参数不碰，避免瞎猜造非法值）
+      - 排除已在 tp 里给出的参数（避免与基线重复）
+
+    返回 [(参数名, [合法值...]), ...]
+    """
+    if not _enable_query_param_coverage():
+        return []
+    # 参数清单来源优先级：
+    #   ① _TOOL_PARAM_TYPES（来自 *.raw.json 的完整 inputSchema，含类型）→ 最准
+    #   ② _TOOL_SCHEMA（来自 configs 的 mcp_tools.params）→ 兜底
+    # ⚠ 必须兜底：roosterpos 只落盘了「平铺版」roosterpos.json（name/description/
+    #   params/required，无 inputSchema），没有 *.raw.json → _TOOL_PARAM_TYPES 为空，
+    #   函数会直接 return []，导致 page/size 等参数永远覆盖不到（实测踩到）。
+    spec = _TOOL_PARAM_TYPES.get(str(tool)) or {}
+    if not spec:
+        _p, _r = _TOOL_SCHEMA.get(str(tool)) or (set(), set())
+        spec = {p: {} for p in (set(_p) | set(_r))}
+    if not spec:
+        return []
+    tool_l = str(tool)
+    out = []
+    # 非枚举但业务高频的分页参数：config param_enums 里不会列（不是枚举），
+    # 但报表/明细类工具都有 page/size，是真实用户会调的维度。
+    _paging = {"page": [1, 2], "size": [10, 50]}
+    for p in spec:
+        pl = str(p).lower()
+        if p in tp or pl in ("confirm",):
+            continue
+        vals = _enum_for(pl, tool_l, tool_level_only=True)
+        # 单值枚举也要覆盖：例如公鸡的 sortField 全工具只支持 'Date'，
+        # 若因 len(vals)<2 跳过，该参数就永远没有用例（实测 A_POS数据报表
+        # 的 sortField 因此零覆盖）。只有一个合法值同样值得钉死——
+        # 「只能传 Date」本身就是契约。
+        if not vals:
+            if pl in _paging and pl not in tp:
+                out.append((p, _paging[pl]))
+            continue
+        out.append((p, vals))
+    # 优先过滤类参数（业务价值最高），其次分页/排序，最后其他。
+    # ⚠ 分页放到「过滤」之后但排在「其他」之前：报表类工具的过滤参数常有
+    #   七八个，若分页排最后会被 查询参数上限 直接截掉（实测 page/size 全丢）。
+    def _rank(item):
+        pl = str(item[0]).lower()
+        if any(k in pl for k in ("type", "status", "statuses")):
+            pri = 0
+        elif any(k in pl for k in ("page", "size", "limit")):
+            pri = 1
+        elif any(k in pl for k in ("sort", "order", "direction")):
+            pri = 2
+        else:
+            pri = 3
+        return (pri, -len(item[1]))
+    out.sort(key=_rank)
+    return out
+
+
+def _pick_key_optional_params(tool, tp):
+    """挑出该工具「应做缺失测试」的业务关键选填参数。
+
+    规则：schema 里有、当前 tp 里有值、且不在 required 里；
+    优先关联型/业务语义参数（_KEY_PARAM_HINTS），再按配置「关键字段」补充，
+    最多取 参数完整性.最大单缺数 个（默认 3），避免用例数膨胀。
+    """
+    spec = _TOOL_PARAM_TYPES.get(str(tool)) or {}
+    if not spec:
+        return []
+    # 工具类型限制：只对创建/更新类生成（同时匹配前/后缀命名）
+    prefixes = _PARAM_COMPLETENESS.get("测试工具前缀")
+    if not _is_create_or_update_tool(tool, prefixes):
+        return []
+    t = str(tool)
+
+    required = (_TOOL_SCHEMA.get(t) or (set(), set()))[1] or set()
+    explicit = [str(x) for x in (_PARAM_COMPLETENESS.get("关键字段") or [])]
+
+    # 关键：候选来自「schema 的全部参数」，不是「tp 里已有的参数」。
+    # 业务关键选填参数（categoryIds / onlineTimes 等）本来就不在 tp 里
+    # （能力目录只声明必填），遍历 tp 会永远找不到它们 → 用例生成不出来。
+    cands = []
+    for p in spec:
+        if p in required or str(p).lower() == "confirm":
+            continue
+        pl = str(p).lower()
+        score = 0
+        if p in explicit:
+            score = 3
+        elif any(h in pl for h in _KEY_PARAM_HINTS):
+            score = 2
+        if score:
+            cands.append((score, p))
+    # 稳定排序：同分时保持 schema 顺序（避免不同 Python 版本结果漂移）
+    cands.sort(key=lambda x: -x[0])
+    limit = int(_PARAM_COMPLETENESS.get("最大单缺数") or 3)
+    return [p for _s, p in cands[:limit]]
+
+
+def _build_full_params(tool, tp, e=None):
+    """构造「全字段」参数：在 tp 基础上补齐 schema 里所有未提供的参数。
+
+    值来源优先级：_param_value 按参数名/类型推断 → 类型默认值。
+    拿不到合理值的参数跳过（宁缺，不造脏值）。
+    仅 create_/add_/update_ 类工具生效（与缺失测试口径一致）。
+    """
+    spec = _TOOL_PARAM_TYPES.get(str(tool)) or {}
+    if not spec:
+        return {}
+    prefixes = _PARAM_COMPLETENESS.get("测试工具前缀")
+    if not _is_create_or_update_tool(tool, prefixes):
+        return {}
+    t = str(tool)
+
+    out = dict(tp)
+    for p in spec:
+        if p in out or str(p).lower() == "confirm":
+            continue
+        v = _param_value(p, e, t)
+        if v is None or v == "" or v == []:
+            v = _default_for_type(t, p, e)
+        if v is None:
+            continue
+        out[p] = v
+    # 统一按声明类型收敛（全字段同样要遵守类型约束）
+    return {k: _coerce_to_type(t, k, v) for k, v in out.items()}
+
+
+def _default_for_type(tool, param, e=None):
+    """按 schema 声明类型给一个安全默认值；未知类型返回 None（跳过）。
+
+    数组参数优先从实体清单取真实关联 ID（categoryIds→分类ID、
+    menuIds→菜单ID、taxIds→税率ID 等）：这类字段缺失正是要测的场景，
+    若直接跳过就永远构造不出「全字段」基线，也就测不了「缺它会不会失败」。
+    """
+    info = _param_type_of(tool, param)
+    if not info:
+        return None
+    tp = info.get("type")
+    if tp == "array":
+        it = info.get("items_type")
+        # 元素为字符串且参数名带 Ids/Ids → 用实体清单里的真实关联 ID
+        if it == "string" and e:
+            ids = _related_ids_for(param, e)
+            if ids:
+                return ids
+        return None
+    if tp == "integer":
+        return 1
+    if tp == "number":
+        return 1.0
+    if tp == "boolean":
+        return True
+    if tp == "string":
+        return None      # 字符串含义未知，不造脏值
+    return None
+
+
+def _related_ids_for(param, e):
+    """按参数名从实体清单取真实关联 ID 列表（只取真实存在的，不造占位值）。"""
+    pl = str(param).lower()
+    # 参数名 → 实体清单里对应的字段名
+    MAP = {
+        "categoryids": ("categoryId", "categoryIds", "id"),
+        "menuids": ("menuId", "menuIds", "id"),
+        "taxids": ("taxId", "taxIds", "id"),
+        "itemids": ("itemId", "itemIds", "id"),
+        "foodids": ("itemId", "id"),
+        "merchfoodids": ("itemId", "id"),
+        "roleids": ("roleId", "id"),
+        "specids": ("specId", "id"),
+    }
+    keys = None
+    for k, v in MAP.items():
+        if k in pl:
+            keys = v
+            break
+    if not keys:
+        # 通用回退：*Ids → 取实体清单里的任意实体 ID（保持数组非空即可）
+        keys = ("id",)
+
+    ids = []
+    for key in keys:
+        v = (e or {}).get(key)
+        if isinstance(v, list):
+            ids = [str(x) for x in v if x]
+            break
+        if v:
+            ids = [str(v)]
+            break
+    return ids
+
+
+def _coerce_to_type(tool, param, value):
+    """按 schema 声明的类型，把值强制转成正确形态。
+
+    解决的问题（实测 PocketStore 16 条数据集问题里 13 条属此类）：
+      days='Monday'          → 应为 ['Monday']       (array)
+      tipValues=['']         → 应为 [0.1, 0.15]      (array of number)
+      tax='<uuid>'           → 应为 0.1              (number)
+      thresholdAmount='13.95'→ 应为 14               (integer)
+      newName=['店員']       → 应为 '店員'            (string)
+
+    只在「有类型声明」且「转换安全」时动手；否则原样返回，避免改坏。
+    """
+    info = _param_type_of(tool, param)
+    if not info:
+        return value
+    tp = info.get("type")
+    if not tp:
+        return value
+
+    def _to_number(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    # ---- object：包成合法字典 ----
+    # 典型场景（2026-11-09）：update_products_by_ids 的 nameLocalization
+    # 是 {语言码: 名称} 对象，如 {"en-US":"New Product Name"}。
+    # 生成器原本会把参数名当普通字符串造值，塞进去就是类型错配。
+    if tp == "object":
+        # ⚠ 已经是 dict 就**原样返回**：_param_value 可能已经（正确地）造好
+        #   {'en-US': '中环公鸡'}，此处再包一层会变成 {'en-US': 'zh-CN'}。
+        #   实测（2026-11-09 A-L1-048）就是这条把好值改坏的。
+        if isinstance(value, dict):
+            return value
+        # 标量/缺失 → 按「多语言名称」语义造；语言码优先取 schema 子属性。
+        _props = (info.get("properties") or {})
+        _keys = [str(k) for k in _props.keys()] or ["en-US"]
+        _txt = str(value) if isinstance(value, str) and value.strip() else "New Name"
+        return {(_keys[0] if _keys else "en-US"): _txt}
+
+    # ---- array：标量包成单元素数组；元素类型按 items_type 收敛 ----
+    if tp == "array":
+        if value is None:
+            return value
+        items = value if isinstance(value, list) else [value]
+        it = info.get("items_type")
+        out = []
+        for x in items:
+            if it in ("number", "integer"):
+                n = _to_number(x)
+                if n is None:
+                    # 无法转数字 → 用默认占位（避免 [''] 这类非法元素）
+                    n = 0.1
+                out.append(int(n) if it == "integer" else n)
+            elif it == "string":
+                if isinstance(x, (list, dict)):
+                    continue
+                out.append(str(x))
+            else:
+                out.append(x)
+        return out
+
+    # ---- 标量类型：数组取首元素，再转目标类型 ----
+    if isinstance(value, list):
+        if len(value) == 1:
+            value = value[0]
+        elif not value:
+            return value
+        else:
+            value = value[0]
+
+    if tp in ("number", "integer"):
+        # 数值参数却拿到 UUID/非数字串 → 给一个安全的默认值，避免必然失败。
+        # （典型：tax 参数名叫 tax 但语义是税率数值，生成器按 id 类参数填了 UUID）
+        n = _to_number(value)
+        if n is None:
+            s = str(value)
+            n = 0.1 if tp == "number" else 1
+            if s and not (len(s) == 36 and s.count("-") == 4):
+                pass          # 非 UUID 的串，保守用默认值
+        return int(n) if tp == "integer" else n
+
+    if tp == "boolean":
+        if isinstance(value, bool):
+            return value
+        s = str(value).strip().lower()
+        if s in ("true", "1", "yes", "y"):
+            return True
+        if s in ("false", "0", "no", "n"):
+            return False
+        return value
+
+    if tp == "string":
+        if isinstance(value, (list, dict)):
+            return str(value[0]) if isinstance(value, list) and value else ""
+        return str(value) if value is not None else value
+
+    return value
+
+
+def _apply_param_constraints(tool, tp, e=None):
+    """按 config 声明的参数约束修正 tp（就地修改并返回）。
+
+    三类约束分开处理，任一步取不到值就跳过该步（不因约束本身失败而中断生成）。
+    """
+    c = _PARAM_CONSTRAINTS.get(str(tool))
+    if not c:
+        return tp
+
+    # ① 至少一个：至少提供一个参数；list 元素表示「需同时提供」
+    spec = c.get("至少一个")
+    if spec:
+        def _present(k):
+            v = tp.get(k)
+            return v is not None and v != "" and v != []
+        if not any((all(_present(x) for x in item) if isinstance(item, list)
+                    else _present(item)) for item in spec):
+            # 优先取第一个可填的单参数；否则取第一个组合，逐个补
+            target = None
+            for item in spec:
+                if isinstance(item, list):
+                    if all(_param_value(x, e, tool) not in (None, "") for x in item):
+                        target = item
+                        break
+                elif _param_value(item, e, tool) not in (None, ""):
+                    target = [item]
+                    break
+            for k in (target or []):
+                v = _param_value(k, e, tool)
+                if v not in (None, ""):
+                    tp[k] = v
+
+    # ② 时间先后：保证「结束」严格晚于「开始」
+    spec = c.get("时间先后")
+    if isinstance(spec, dict):
+        sk, ek = spec.get("开始"), spec.get("结束")
+        sv, ev = tp.get(sk), tp.get(ek)
+        if sv and ev and str(ev) <= str(sv):
+            # 结束时间顺延 7 天（服务端要求 must be after / must be greater）
+            nv = _add_days(sv, 7)
+            if nv:
+                tp[ek] = nv
+        elif sv and not ev:
+            nv = _add_days(sv, 7)
+            if nv:
+                tp[ek] = nv
+
+    # ③ 至少一个为真：布尔参数至少一个 true
+    # 注意：值可能是 True / "true" / 1 / "1"（生成器的变异用例会写成 0/1），
+    # 不能用 `is True` 判等，否则 isSalesReport=0 会被当成"未设置"从而漏改。
+    spec = c.get("至少一个为真")
+    if spec:
+        def _truthy(k):
+            v = tp.get(k)
+            if isinstance(v, bool):
+                return v
+            if isinstance(v, (int, float)):
+                return v != 0
+            return str(v).strip().lower() in ("true", "1", "yes", "y")
+
+        if not any(_truthy(k) for k in spec):
+            tp[spec[0]] = True
+
+    return tp
 
 
 def _value_param(cap):
@@ -852,12 +1643,18 @@ def _other_status(param, cap, e):
     有的是整数。取值域优先级：config 枚举 / 描述枚举 / 实体当前值翻转 / 通用兜底。
     """
     pl = str(param).lower()
-    cur = _param_value(param, e)
+    tool = cap.get("工具")
+    # 「当前值」必须取实体里的真实值，不能走 _param_value——后者对枚举参数会把
+    # 值收敛成合法域首值（Active），导致实体是 Inactive 时也翻转成 Inactive（原地不动）。
+    cur = _raw_entity_value(param, e)
     cur_s = str(cur).lower() if cur is not None else ""
-    # 候选值域
-    cands = list(_allowed_for(pl, cap.get("工具")) or [])
-    if not cands:
-        cands = list((_TOOL_DESC_ENUMS.get(cap.get("工具")) or {}).get(pl) or [])
+    # 候选值域：该工具 schema + config 该参数规则（枚举不许跨工具猜，见 _enum_for）
+    cands = list(_enum_for(param, tool) or [])
+    # 实体当前值若不在合法域内（如实体 status='On'、域是 Active/Inactive），
+    # 把它并入候选，确保下面的「排除当前值」过滤不会把整个域清空。
+    if cur not in (None, "") and cands and \
+            all(str(c).lower() != cur_s for c in cands):
+        cands.append(str(cur))
     if not cands:
         # 实体当前值的「对偶」（成对常见状态）
         pairs = [("onsale", "offsale"), ("offsale", "onsale"),
@@ -894,7 +1691,7 @@ def _update_phrase(cap, e):
     vp = _value_param(cap)
     sp = _status_param(cap)
     if vp:
-        base = _param_value(vp, e)
+        base = _param_value(vp, e, cap.get("工具"))
         new_val = (base if isinstance(base, (int, float)) else 10) + 1
         return (f"把 {_entity_label(e)} 的{_value_label(cap)}改成 {new_val}",
                 _fill_params(cap, e, {vp: new_val}))
@@ -968,6 +1765,17 @@ def _pick_entity_for(cap, P, fallback_idx=0, idx=None):
     idx：显式轮换偏移。为 None 时自动使用全局 _ENTITY_ROTATE 游标，
     让不同维度生成器对同一能力自动错开实体（减少同输入冗余）。
     """
+    # 实体筛选条件：能力目录可用「筛选实体」声明 {字段: 期望值}，只在该子集内轮换。
+    # 动机（2026-11-04，POS Local 路由）：同一数据集要同时覆盖 Cloud 店和 Local 店，
+    # 若不加约束，Local 能力可能被填上 Cloud 店的 merchantId（或反之），
+    # 断言方向直接反转——"Local 写操作应被拒"却拿 Cloud 店去测，会误判成缺陷。
+    flt = cap.get("筛选实体")
+    if isinstance(flt, dict) and flt and P:
+        subset = [e for e in P if all(
+            str(e.get(k)) == str(v) for k, v in flt.items())]
+        if subset:
+            P = subset
+
     role = _entity_role_of(cap)
     pl = " ".join(str(p) for p in (cap.get("参数") or [])).lower()
     if idx is None:
@@ -1403,7 +2211,7 @@ def _gen_param_e2e(products, abilities, cap_by_name, rng):
     if change and _value_param(change):
         e = P[0]
         vp = _value_param(change)
-        base = _param_value(vp, e)
+        base = _param_value(vp, e, change.get("工具"))
         new_val = (base if isinstance(base, (int, float)) else 10) + 1
         vf = change.get("verify_field") or vp
         cases.append(_normal_case(
@@ -2023,9 +2831,14 @@ def build_l1(products, abilities, req_type):
     _fallback_dim = next((d for d in ("调用正确性", "工具调用") if d in dims_avail),
                          (dims[0].get("维度") if dims else "调用正确性"))
     covered = {c.get("能力") for c in cases}
+    # 「仅参数矩阵」能力不参与任何补底（它们只为矩阵输入而存在）
+    _matrix_only_names = {cap.get("能力") for cap in abilities
+                          if cap.get("仅参数矩阵")}
     for cap in abilities:
         name = cap.get("能力")
         if not name or name in covered:
+            continue
+        if name in _matrix_only_names:
             continue
         e = _pick_entity_for(cap, P)
         if _op_of(cap) in _WRITE_OPS:
@@ -2050,6 +2863,8 @@ def build_l1(products, abilities, req_type):
         name = cap.get("能力")
         layer = str(cap.get("layer") or "L1").upper()
         if not name or layer not in ("L2", "L3"):
+            continue
+        if cap.get("仅参数矩阵"):
             continue
         have = {c.get("维度") for c in cases if c.get("能力") == name}
         # 已覆盖的边界候选维度 ≥3 时视为足够，跳过
@@ -2238,6 +3053,84 @@ _TOLERANT_KW = ["查询成功", "成功", "错误", "参数", "校验", "失败"
                 "invalid", "not found", "failed", "unsupported"]
 
 
+def _inject_runtime_context(cases, products, abilities=None):
+    """给用例注入「运行时上下文」（按实体覆盖请求头，如 CompanyId）。
+
+    背景（2026-11-04，AI POS 1.2 店铺服务器路由）：同一 TOKEN 可见多间公司，
+    CompanyId 请求头决定能操作哪间公司。Local 店与 Cloud 店分属不同公司时，
+    只换 merchantId 不换 CompanyId 会稳定 40100 越权。故把 companyId 降到实体层：
+
+      实体清单每条可带 companyId / serverMode / mcpVersionSupported
+      → 生成时按用例参数里的店铺 ID 回查实体，把 companyId 写进「运行时上下文」
+      → 执行器按该上下文换请求头
+
+    设计要点（通用性）：
+      - 只在实体声明了 companyId 时才注入；未声明的系统**一条都不加**，
+        数据集形态与改动前完全一致。
+      - 与用例参数解耦：参数换店铺 ID 时上下文自动跟着变，用例内容不变。
+      - 实体清单换环境（改 ID / 加店铺）只需 regen，数据集文本几乎不变。
+    """
+    if not cases or not products:
+        return
+    idx = {}
+    for ent in products:
+        if not isinstance(ent, dict) or not ent.get("companyId"):
+            continue
+        for k in ("id", "merchantId", "merchantIds", "entityId", "entityIds"):
+            v = ent.get(k)
+            vals = v if isinstance(v, list) else ([v] if v else [])
+            for x in vals:
+                if x:
+                    idx[str(x)] = ent
+    if not idx:
+        return
+    # 能力名 → 筛选实体（能力目录声明），用于「参数里没有店铺 ID」的用例兜底。
+    cap_filter = {}
+    for a in (abilities or []):
+        if isinstance(a, dict) and a.get("能力") and a.get("筛选实体"):
+            cap_filter[a["能力"]] = a["筛选实体"]
+
+    for c in cases:
+        if not isinstance(c, dict) or c.get("运行时上下文"):
+            continue
+        tp = None
+        inp = c.get("输入")
+        if isinstance(inp, dict):
+            tp = inp.get("tool_params") or inp.get("params")
+        if not isinstance(tp, dict):
+            tp = (c.get("期望") or {}).get("params")
+            tp = tp if isinstance(tp, dict) else {}
+        ent = None
+        for k in ("merchantId", "merchantIds", "entityId", "entityIds",
+                  "storeId", "storeIds"):
+            v = tp.get(k)
+            if not v:
+                continue
+            vals = v if isinstance(v, list) else [v]
+            for x in vals:
+                if str(x) in idx:
+                    ent = idx[str(x)]
+                    break
+            if ent:
+                break
+
+        # 兜底：参数里没有店铺 ID 的用例（常见于「缺失必填参数」这类负向用例，
+        # 参数被删空了）按能力声明的「筛选实体」定位。
+        # ⚠ 不做这个兜底会静默打到错误公司：实测 A-L1-048/052/056（query_menus/
+        #   query_categories/query_merchant_staffs 传空参数）因 ctx=None 回退全局
+        #   CompanyId=BBEEII，返回的竟是 Cloud 公司的店铺数据，
+        #   「Local 店空参数应报错」的断言就跑错了对象。
+        if not ent:
+            flt = cap_filter.get(c.get("能力"))
+            if isinstance(flt, dict) and flt:
+                cand = [x for x in (products or []) if isinstance(x, dict)
+                        and all(str(x.get(k)) == str(v) for k, v in flt.items())]
+                if cand:
+                    ent = cand[0]
+        if ent:
+            c["运行时上下文"] = {"companyId": str(ent["companyId"])}
+
+
 def build_a(products, abilities, req_type):
     """A/D 类：纯 MCP 工具测试，生成「工具调用」格式用例（直连执行器消费）。
 
@@ -2354,19 +3247,44 @@ def build_a(products, abilities, req_type):
         # 按能力语义选取对应层级实体，避免 productId/merchantId 等被填成其他层级实体 id
         return _pick_entity_for(cap, P, fallback_idx=i) if P else {"名称": f"实体{i}", "id": str(i + 1)}
 
+    def _pool_for(cap):
+        """按能力的「筛选实体」收缩实体池，供 _fill_params 跨层取值时使用。
+
+        ⚠ 必须同步收缩：_fill_params 对 merchantId 这类参数会走
+        _layer_of_param → 从 pool 里取同层第一个实体，而不是用传进去的 e。
+        若 pool 仍是全局全量，筛选就形同虚设——实测 Cloud 能力的 merchantId
+        被填成 Local 店 ID，导致「Cloud 对照」全变成 Local 用例。
+        """
+        flt = cap.get("筛选实体")
+        if isinstance(flt, dict) and flt and P:
+            sub = [x for x in P if all(str(x.get(k)) == str(v) for k, v in flt.items())]
+            if sub:
+                return sub
+        return None
+
     for cap in abilities:
         name = cap.get("能力")
         tool = cap.get("工具")
         params = cap.get("参数") or []
         if not tool:
             continue
+        # 「仅参数矩阵」能力：只为特定输入组合而存在（如「可达店+不可达店混投」
+        # 这种局部失败探针）。走通用维度流水线会刷出几十条无关用例
+        # （实测 4 个能力膨胀成 51 条，其中仅 7 条有效），故：
+        #   跳过 1)~3.5) 全部通用维度，但**仍要走 3.8) 参数矩阵**。
+        # 实现：设 _only_matrix，各维生成块统一用 if not _only_matrix 包裹过重，
+        # 这里改用「只保留矩阵」的轻量做法——先记录标记，循环尾部的矩阵段照常执行。
+        _only_matrix = bool(cap.get("仅参数矩阵"))
         e = entity(used_idx); used_idx += 1
-        tp = _fill_params(cap, e)
+        tp = _fill_params(cap, e, pool=_pool_for(cap))
         cap_input = {"tool_name": tool, "tool_params": tp}
         # 负向能力：成功标准含「模式: 拒绝」→ 所有正常路径用例期望 block=True
         success = cap.get("成功标准") or []
         is_negative = any(isinstance(s, dict) and s.get("模式") == "拒绝"
                           for s in success)
+        # 「仅参数矩阵」能力：记下当前边界，循环末尾把本阶段产生的通用维度用例
+        # 整体回滚，只留 3.8) 参数矩阵。比在每个维块前面加 if 更省改动、更不易漏。
+        _case_mark = len(cases) if bool(cap.get("仅参数矩阵")) else None
 
         # 1) 调用正确性：负向能力 → 期望拒绝；无参能力无法构造成功调用 → 跳过
         #    （避免空 tool_params 调有参工具产生必失败的「成功」用例）
@@ -2400,6 +3318,49 @@ def build_a(products, abilities, req_type):
                                      output="参数校验失败，返回错误", block=True),
                 "标签": ["参数缺失"]})
 
+        # 2.5) 协议契约：构造「缺失字段」——逐个缺少业务关键参数
+        #   维度表 A_MCP工具.yaml 明确要求「语法变异法：构造缺失字段」，
+        #   但此前只实现了 JSON 层畸形，没实现业务参数层缺失：
+        #   原逻辑只删 params[0]（能力目录声明的第一个参数），而能力目录往往
+        #   只声明 1~2 个参数，导致 menu_create 的 categoryIds / onlineTimes
+        #   这类业务关键选填参数从未被"缺失"测试过 → 漏测
+        #   「不传 categoryIds 也能创建菜单」这类缺陷。
+        #   这里改为按 schema 全部选填参数逐一构造缺失用例（受上限约束）。
+        if _enable_param_completeness() and not is_negative and tp:
+            # 缺失测试必须基于「全字段参数」再删一项：业务关键选填参数
+            # 本来就不在 tp 里，直接从 tp 删等于什么都没删（输入与基线相同）。
+            _full_for_lack = _build_full_params(tool, tp, e)
+            for miss_p in _pick_key_optional_params(tool, tp):
+                if miss_p not in _full_for_lack:
+                    continue        # 该参数造不出合法值，无法构造「仅缺它」的对比
+                lack_tp = {k: v for k, v in _full_for_lack.items() if k != miss_p}
+                if not lack_tp or lack_tp == tp:
+                    continue
+                cases.append({
+                    "维度": "协议契约", "能力": name, "层": "L2",
+                    "输入": {"tool_name": tool, "tool_params": lack_tp},
+                    "期望": build_expect(
+                        cap, intent=name, params=lack_tp,
+                        output="缺少业务必需参数时，应拒绝或写入正确默认值",
+                        block=True, block_reason="参数|必填|不能为空|required|缺少"),
+                    "标签": ["缺失字段", f"缺_{miss_p}"]})
+
+        # 2.6) 调用正确性：正向「全字段覆盖」——所有 schema 参数都给值
+        #   维度表要求「正向覆盖所有合法参数组合」，但此前只传能力目录声明的
+        #   少量参数（多为必填），完整路径（分类绑定/营业时间/排序等）从未被执行，
+        #   即使服务端把选填参数静默丢弃也测不出来。
+        #   仅在创建/更新类工具上生成：这类工具选填参数最多、漏字段后果最重。
+        if _enable_param_completeness() and not is_negative and tp:
+            full_tp = _build_full_params(tool, tp, e)
+            if full_tp and len(full_tp) > len(tp):
+                cases.append({
+                    "维度": "调用正确性", "能力": name, "层": "L2",
+                    "输入": {"tool_name": tool, "tool_params": full_tp},
+                    "期望": build_expect(
+                        cap, intent=name, params=full_tp,
+                        output="全字段正常写入，各字段值可回读一致"),
+                    "标签": ["全字段"]})
+
         # 3) 参数校验（负向）：非法/边界值 → 应拒绝（主键参数名不写死）
         #    无 id 参数时注入非法值，避免 bad_tp == tp 与「调用正确性」同输入互斥
         bad_tp = _bad_value(tp, params, "bad")
@@ -2410,6 +3371,109 @@ def build_a(products, abilities, req_type):
                 "期望": build_expect(cap, intent=name, params=tp,
                                      output="非法参数被拒绝", block=True),
                 "标签": ["边界"]})
+
+        # 3.5) 查询类工具的「过滤参数枚举覆盖」（2026-11-06 新增）
+        #     背景：报表工具参数极多（order_sales 有 19 个），但能力目录只声明
+        #       merchantId + startAt + endAt，过滤/排序/分页全没测 —— 两个报表
+        #       数据集覆盖率都不到 12%。根因是原生成器只对 create/update 类
+        #       做参数完整性，查询类被 _is_create_or_update_tool 直接跳过。
+        #     做法：每个「config 显式声明了枚举」的过滤参数，逐个合法值生成
+        #       一条正向用例（值有据可查，不瞎猜）。值非法会全废，故只认 config。
+        #     数量控制：单工具最多 参数完整性.查询参数上限（默认 4 个参数），
+        #       单参数最多取前 参数完整性.枚举取值上限（默认 4 个值）。
+        if _enable_query_param_coverage() and not is_negative and tp:
+            _qmax_p = int(_PARAM_COMPLETENESS.get("查询参数上限") or 4)
+            _qmax_v = int(_PARAM_COMPLETENESS.get("枚举取值上限") or 4)
+            for _pname, _vals in _query_enum_params(tool, tp, cap)[:_qmax_p]:
+                for _v in _vals[:_qmax_v]:
+                    _qtp = dict(tp)
+                    _qtp[_pname] = _v
+                    # 值已由 config 保证合法 → 期望正常返回（不是拒绝）
+                    cases.append({
+                        "维度": "调用正确性", "能力": name, "层": "L2",
+                        "输入": {"tool_name": tool, "tool_params": _qtp},
+                        "期望": build_expect(
+                            cap, intent=f"{name}（{_pname}={_v}）",
+                            params=_qtp,
+                            output=f"按 {_pname}={_v} 过滤后正常返回结构化结果",
+                            block=False),
+                        "标签": ["参数覆盖", f"{_pname}={_v}"]})
+
+        # 3.8) 参数矩阵：能力目录显式声明的「同一工具、多组参数」清单。
+        #      用于把一组必须逐个钉死的边界输入固化下来，典型是夏令时/闰日等
+        #      时间边界——它们的共同点是**不能靠枚举参数自动生成**（是日期组合，
+        #      不是枚举值），必须由测试者按业务日历手工列出。
+        #
+        #      用例语义：每组参数都是**期望正常返回**的合法输入（block=False）。
+        #      若被测系统在这些边界上直接报系统错误，就是真实缺陷。
+        #      动机（2026-11-06）：total_reports 只要窗口含 2026-10-31（美西 DST
+        #      回拨日）就返回 40000 "aggregate window ... not verified across DST"，
+        #      而 order_sales 同区间正常 —— 属聚合层缺陷，必须固化成用例。
+        #
+        #      格式（能力目录）：
+        #        参数矩阵:
+        #          - 输入: "DST 切换日：2026-10-31 单日"
+        #            工具参数: {startAt: "2026-10-31", endAt: "2026-10-31"}
+        #
+        # 「仅参数矩阵」能力：在此回滚本阶段前面产生的全部通用维度用例，
+        # 只保留下面的矩阵用例（见循环开头 _case_mark 的说明）。
+        if _case_mark is not None:
+            del cases[_case_mark:]
+        for _mx in (cap.get("参数矩阵") or []):
+            if not isinstance(_mx, dict):
+                continue
+            _mxp = _mx.get("工具参数")
+            if not isinstance(_mxp, dict) or not _mxp:
+                continue
+            # 与能力基线参数合并（如能力的 merchantId 目标店铺），矩阵项覆盖同名键
+            _merged = dict(tp or {})
+            _merged.update(_mxp)
+            # 人工前置条件（能力目录「需要人工前置条件」）：把条件随用例带出，
+            # 执行时由 _06 打印提醒，避免人在没有断网/停服的情况下跑这组用例
+            # 并把「照常返回数据」误判成通过（实测踩到：不断网时 6 条全"通过"）。
+            if cap.get("需要人工前置条件"):
+                _merged = dict(_merged)
+                cases.append({
+                    "维度": "异常与容错", "能力": name, "层": "L2",
+                    "输入": {"tool_name": tool, "tool_params": _merged},
+                    "人工前置条件": cap.get("需要人工前置条件"),
+                    "期望": build_expect(
+                        cap, intent=f"{name}（{_mx.get('输入') or ''}）",
+                        params=_merged,
+                        output=_mx.get("输入") or "边界区间应正常返回",
+                        block=False),
+                    "标签": ["参数矩阵", "需人工前置", _mx.get("输入") or ""]})
+                continue
+            # 「期望覆盖」：矩阵项级断言，支持
+            #   must_contain           [str]     响应须包含这些串（如警告码）
+            #   must_not_contain       [str]     响应不得包含（如「不含该日期时不应告警」）
+            #   must_contain_field_value  {字段: 值}  结构化字段须含该值
+            # 动机（2026-11-09）：DST 修复后变成「能查 + 带警告」，若断言只写
+            # 「不得报 40000」，开发哪天把警告删了用例仍通过 —— 用户会静默拿到
+            # 不精确数据。故用矩阵项级断言把「必须告警」「不该告警」双向钉死。
+            _ov = _mx.get("期望覆盖") or {}
+            _sem = {}
+            if isinstance(_ov, dict):
+                if _ov.get("must_contain"):
+                    _sem["contains"] = list(_ov["must_contain"])
+                    _sem["any_of"] = False
+                if _ov.get("must_not_contain"):
+                    _sem["not_contains"] = list(_ov["must_not_contain"])
+                if _ov.get("must_contain_field_value"):
+                    _sem["field_values"] = dict(_ov["must_contain_field_value"])
+            _kw = {}
+            if _sem:
+                _kw["semantic"] = _sem
+            cases.append({
+                "维度": "异常与容错", "能力": name, "层": "L2",
+                "输入": {"tool_name": tool, "tool_params": _merged},
+                "期望": build_expect(
+                    cap, intent=f"{name}（{_mx.get('输入') or ''}）",
+                    params=_merged,
+                    output=_mx.get("输入") or "边界区间应正常返回",
+                    block=False, **_kw),
+                "标签": (["参数矩阵", _mx.get("输入") or ""]
+                         + (["告警断言"] if _sem else []))})
 
         # 4) 安全与权限（负向）：越权/无权限 → 应被业务层拒绝
         #    ⚠ 仅当负向场景显式给出「真实不可访问实体参数」（工具参数）时生成：
@@ -2434,9 +3498,9 @@ def build_a(products, abilities, req_type):
 
         # 5) 返回处理：正常返回校验（独立实体，避免与调用正确性同输入冗余；
         #    负向/无参能力无成功返回路径，跳过）
-        if not is_negative and tp:
+        if not is_negative and tp and _case_mark is None:
             e_ret = entity(used_idx); used_idx += 1
-            ret_tp = _fill_params(cap, e_ret)
+            ret_tp = _fill_params(cap, e_ret, pool=_pool_for(cap))
             cases.append({
                 "维度": "返回处理", "能力": name, "层": "L1",
                 "输入": {"tool_name": tool, "tool_params": ret_tp},
@@ -2445,8 +3509,12 @@ def build_a(products, abilities, req_type):
 
     # A 类补齐手册剩余 4 维（协议契约/工具描述与发现/性能与资源/异常与容错），
     # 保证 A 类 8 维全覆盖。D 类走 build_d（独立 6 维表）。
+    # 「仅参数矩阵」能力不参与（它们只为矩阵输入而存在）。
     if req_type == "A":
+        _mo = {cap.get("能力") for cap in abilities if cap.get("仅参数矩阵")}
         for cap in abilities:
+            if cap.get("能力") in _mo:
+                continue
             tool = cap.get("工具")
             if not tool:
                 continue
@@ -2455,7 +3523,7 @@ def build_a(products, abilities, req_type):
             is_neg2 = any(isinstance(s, dict) and s.get("模式") == "拒绝"
                           for s in success2)
             e = entity(used_idx); used_idx += 1
-            ok_tp2 = _fill_params(cap, e)
+            ok_tp2 = _fill_params(cap, e, pool=_pool_for(cap))
             ok_input = {"tool_name": tool, "tool_params": ok_tp2}
             # 协议契约：畸形/缺失字段请求 → 系统不崩溃、返回结构化错误或正常结果。
             # 直连 MCP 对未声明参数通常忽略或报 schema 校验错，无「强制拒绝」语义，
@@ -2479,7 +3547,8 @@ def build_a(products, abilities, req_type):
                     "标签": ["正常"]})
             if not is_neg2 and ok_tp2:
                 e_perf = entity(used_idx); used_idx += 1
-                perf_input = {"tool_name": tool, "tool_params": _fill_params(cap, e_perf)}
+                perf_input = {"tool_name": tool,
+                              "tool_params": _fill_params(cap, e_perf, pool=_pool_for(cap))}
                 cases.append({
                     "维度": "性能与资源", "能力": name, "层": "L1",
                     "输入": perf_input,
@@ -2511,6 +3580,12 @@ def build_a(products, abilities, req_type):
             if _op_of(cap) in _WRITE_OPS and snap_cap:
                 # 注意：此处必须用本循环的 ok_tp2（外层循环的 tp 是上一次迭代残留值）
                 ghost = dict(ok_tp2)
+                # 必须真执行：本维度的目的是「传无效 ID 时会不会越范围改数据」，
+                # 而 MCP 写工具默认 confirm=false 只返回预览（Preview: About to
+                # create ...），根本不落库 —— 预览模式下永远测不到越界，
+                # 前后对账 Δ 恒为 0，属于假阴性。
+                # 实测 2026-11-03：15 条全部是预览，一条都没真正执行。
+                ghost = _apply_confirm(tool, ghost)
                 # ID 类参数替换为「不存在的 ID」。注意不能限定 list 类型：
                 # 风险本质是「传入的目标 ID 无效 → 服务端是否越范围执行」，
                 # 与参数在 JSON 里是数组还是标量无关。此前只处理 list，
@@ -2522,7 +3597,38 @@ def build_a(products, abilities, req_type):
                     # 只表达了期望，服务端实际可能拒绝、也可能忽略过滤后越范围执行。
                     # 后者正是本维度要抓的缺陷，因此统一生成，交由执行期两级对账判定：
                     # 被拒绝→无异常（判高分）；越范围→存在性对账发现真实实体消失（判低分）。
+                    # 【修复 2026-11-01】不能把所有含 id 的参数都换成假 ID：
+                    # merchId / companyId 是「租户/店铺」层级参数，换掉后服务端
+                    # 直接报 GUID 解析失败（PocketStore 实测：
+                    # "The JSON value could not be converted to System.Guid.
+                    #  Path: $.merchId"），15 条写用例全部在参数校验阶段被拒，
+                    # 一条都没真正测到「作用范围是否受传入参数约束」——
+                    # 报告里 pass_rate=1.0 其实是评分器 default 兜底给的 3 分假通过。
+                    # 规则：只把「目标实体主键」换成不存在的 ID；
+                    #       租户层参数（store/company）保留真实值，保证请求能打到业务层。
+                    # 还要区分「目标实体主键」与「必填外键引用」：
+                    #   itemId / menuId / feeId      → 目标实体，替换成假 ID（正是要测的）
+                    #   roleId / categoryIds / taxId → 外键引用，换成假 ID 会让请求在
+                    #                                  业务层之前就失败，测不到作用范围。
+                    #   实测 add_store_user 的 roleId 必填且要求是真实角色
+                    #   （schema: Use list_merchant_roles to find available roles）。
+                    # ⚠ merchManagerId（员工 ID）虽被 _layer_of_param 归为 store 层，
+                    #   但它是「被操作的目标实体」而非租户，必须替换，否则
+                    #   delete_store_user 会拿真实员工 ID 去删。
+                    # 判定顺序（先窄后宽）：
+                    #   ① 复数/引用型（categoryIds/menuIds/taxIds/categoryId 挂在 create
+                    #      上）→ 外键引用，保留真实值
+                    #   ② 角色类（roleId）→ 必填外键，保留真实值
+                    #   ③ 租户层（store/company）→ 保留真实值
+                    #   ④ 其余「单数实体主键」→ 目标实体，替换成假 ID
+                    _REF_KEYS = ("roleid",)
                     for k in id_keys:
+                        _kl = str(k).lower()
+                        if _kl.endswith("ids") or any(x in _kl for x in _REF_KEYS):
+                            continue  # 外键引用 / 角色
+                        if _layer_of_param(k) in ("store", "company") \
+                                and _kl not in ("merchmanagerid", "staffid"):
+                            continue  # 租户层（员工 ID 例外：它是目标）
                         ghost[k] = (["0000000000000000"]
                                     if isinstance(ghost[k], list)
                                     else "0000000000000000")
@@ -2612,7 +3718,16 @@ def build_a(products, abilities, req_type):
                     exp_wb = build_expect(
                         cap, intent=name, params=ghost, block=False,
                         output="目标不存在时影响 0 条，不得越范围改删其他数据")
+                    # 判定语义（写进期望，供执行器/评分器解释判据）：
+                    #   删除/更新类：传入不存在的 ID → 应被拒绝，且不得波及真实数据
+                    #   创建类    ：入参合法 → 应成功，且最多新增 1 条（不越范围）
+                    # 注意：不使用 verify 字段 —— 执行器的 verify 恒为 None（没有
+                    # 任何代码消费用例里的 verify 配置），写了也是死配置。
+                    # 该维度唯一的有效判据是 impact 对账（见 rubric 的 _rule_judge）。
                     exp_wb["影响范围对账"] = audit
+                    exp_wb["判定语义"] = ("创建成功且新增≤1条"
+                                       if _op_of(cap) == _OP_CREATE
+                                       else "拒绝非法ID且不波及真实数据")
                     exp_wb["高危"] = True
                     cases.append({
                         "维度": "写入安全边界", "能力": name, "层": "L1",
@@ -2621,6 +3736,7 @@ def build_a(products, abilities, req_type):
                         "影响范围对账": audit,
                         "高危": True,
                         "标签": ["异常"]})
+    _inject_runtime_context(cases, P, abilities)
     return cases
 
 
@@ -2938,17 +4054,31 @@ def build_d_l2(abilities, l1_cases, target_share=0.30,
         #   开发也不认可为 bug（实测 D 类 11 条因此被误判"未按预期拦截"→ 误报
         #   "给开发"）。改为与「错误处理」同口径的宽容语义：忽略后正常返回
         #   或给出结构化校验响应都算通过，仅当崩溃/挂起才低分。
+        # ⚠ 负向能力例外（2026-11-05，POS Local 路由 A-L2-112/126/136）：
+        #   「Local 店铺操作类工具一律禁用」这类能力的成功标准是「拒绝」，
+        #   此时无论参数是否合法，服务端**都应拒绝**。若仍按上面的宽容语义
+        #   设 block=False，会把「正确拒绝」误判成 biz_fail（实测 3 条全中：
+        #   Local 写工具返回 50001 / 协议层 rejecting，被判"执行报错"）。
+        #   故负向能力的注入用例期望「被拒绝」。
+        _neg_cap = any(isinstance(s, dict) and s.get("模式") == "拒绝"
+                       for s in (cap.get("成功标准") or []))
         mtp = {**tp, "unknown_param": "x"}
         nc = copy.deepcopy(c)
         nc["输入"] = {"tool_name": tool, "tool_params": mtp}
         nc["层"] = "L2"
         nc["维度"] = dm["注入"]
         nc["标签"] = ["未知参数"]
-        nc["期望"] = build_expect(cap, intent=name, params=mtp,
-                                  output="未知参数被忽略并正常执行（或结构化校验响应）",
-                                  block=False,
-                                  semantic={"contains": list(_TOLERANT_KW),
-                                            "any_of": True})
+        if _neg_cap:
+            nc["期望"] = build_expect(
+                cap, intent=name, params=mtp,
+                output="该能力本应被拒绝：带多余参数时同样应返回拒绝/错误",
+                block=True, block_reason="拒绝|无权限|不支持|禁用|error|failed")
+        else:
+            nc["期望"] = build_expect(cap, intent=name, params=mtp,
+                                      output="未知参数被忽略并正常执行（或结构化校验响应）",
+                                      block=False,
+                                      semantic={"contains": list(_TOLERANT_KW),
+                                                "any_of": True})
         _push(nc)
         # D 类型错配：数值参数改成字符串
         if num_keys:
@@ -3281,14 +4411,58 @@ def main():
     _PARAM_ENUMS = _enums
     _PARAM_BOOL = _bools
     _TOOL_SCHEMA = load_tool_schema(_cfg_path)
+    # config 文件名 stem：后续定位原始 schema 用（必须先定义）
+    _stem = os.path.splitext(os.path.basename(_cfg_path))[0]
+    # 跨字段/条件约束（schema 表达不了，由 config「参数约束」声明）
+    _n_con = load_param_constraints(_cfg_path)
+    if _n_con:
+        print(f"参数约束: {_n_con} 个工具（条件必填/时间先后/互斥开关）")
+    # 参数真实类型：从原始 schema 提取，生成时按类型造值（防类型错配）。
+    # 优先用 configs 的「原始schema」显式声明 —— 系统名与 schema 文件名常不一致
+    # （POS Local路由 ↔ roosterpos），靠 <stem>.raw.json 约定猜不到。
+    # 目录优先级：schemas/（随仓库提交，团队共享）→ results/mcp_schemas/（本地产物）。
+    # 为什么分两处：results/ 整体被 .gitignore 忽略（里面全是运行结果），
+    # 但 raw schema 是生成器/校验器的**必需输入**，必须入库，否则别人拉代码后
+    # 类型推断与 schema 契约检查会整体静默失效（很难发现）。
+    _sch_dirs = [os.path.join(_ROOT, "schemas"),
+                 os.path.join(_ROOT, "results", "mcp_schemas")]
+    _sch_dir = _sch_dirs[0]
+    _raw_sch = None
+    try:
+        _cfg_doc = yaml.safe_load(open(_cfg_path, encoding="utf-8")) or {}
+    except Exception:
+        _cfg_doc = {}
+    _decl = _cfg_doc.get("原始schema") or _cfg_doc.get("schema_snapshot")
+    if _decl:
+        _cand = None
+        for _d in _sch_dirs:
+            _p = os.path.join(_d, str(_decl))
+            if os.path.exists(_p):
+                _cand = _p
+                _sch_dir = _d
+                break
+        if _cand is None:
+            _cand = os.path.join(_sch_dir, str(_decl))
+        if os.path.exists(_cand):
+            _raw_sch = _cand
+    if not _raw_sch:
+        _raw_sch = os.path.join(_sch_dir, f"{_stem}.raw.json")
+    _n_typ = load_param_types(_raw_sch)
+    if _n_typ:
+        print(f"参数类型: {_n_typ} 个工具（来源 {os.path.basename(_raw_sch)}，"
+              f"含 enum 优先于 config 手写）")
+    # 参数完整性：补「构造缺失字段」（协议契约）与「全字段覆盖」（调用正确性）
+    if load_param_completeness(_cfg_path):
+        print("参数完整性: 已启用（缺失字段 + 全字段覆盖）")
     _MISSING_REQUIRED.clear()
     # 参数描述里的候选枚举：从已落盘 schema（含 description）提取，提升必填参数
     # 默认值的真实可用性（PocketStore 的 mode/feeType/target 等枚举写在描述里）。
     # 候选文件名（按优先级）：<stem>.raw.json（完整 schema）→ <stem>.json（平铺，无描述）。
-    _stem = os.path.splitext(os.path.basename(_cfg_path))[0]
-    _sch_dir = os.path.join(_ROOT, "results", "mcp_schemas")
-    _sch_cands = [os.path.join(_sch_dir, f"{_stem}.raw.json"),
-                  os.path.join(_sch_dir, f"{_stem}.json")]
+    if _raw_sch:
+        _sch_cands = [_raw_sch, os.path.join(_sch_dir, f"{_stem}.json")]
+    else:
+        _sch_cands = [os.path.join(_sch_dir, f"{_stem}.raw.json"),
+                      os.path.join(_sch_dir, f"{_stem}.json")]
     _desc_enums = {}
     for _sj in _sch_cands:
         _desc_enums = load_param_descriptions(_sj)
@@ -3512,6 +4686,64 @@ def _sf_param_value():
     assert _param_value("完全未知的xyz", {}) == "", "未知参数未返回空"
 
 
+def _sf_enum_tool_scoped():
+    """枚举按「工具+参数」隔离：同名参数不得串用别的工具的取值。
+
+    回归背景（2026-10-30）：PocketStore A 类数据集 5 条 block=false 用例
+    参数非法——category_update.status='On'（实为 list_* 口径）、
+    tax_update.type='MerchPromotion'（实为活动类型）、
+    create_discount_campaign.discountType='10'（实为数量）。
+    根因：按参数名取值时没有工具上下文，串用了别处同名参数的值。
+    """
+    global _PARAM_ENUMS, _TOOL_DESC_ENUMS
+    _saved_enums, _saved_desc = _PARAM_ENUMS, _TOOL_DESC_ENUMS
+    try:
+        _PARAM_ENUMS = {
+            "status": [
+                {"tools": {"update_category"}, "values": ["Active", "Inactive"]},
+                {"tools": {"set_store_open_status"}, "values": ["open", "closed"]},
+            ],
+            "discounttype": [
+                {"tools": None, "values": ["PercentagePrice", "FixedPrice"]},
+            ],
+        }
+        _TOOL_DESC_ENUMS = {
+            "update_tax": {"type": ["Percentage", "FixedAmount"]},
+        }
+        # 1) 工具限定规则命中：只取该工具自己的值
+        assert _enum_for("status", "update_category") == ["Active", "Inactive"]
+        assert _enum_for("status", "set_store_open_status") == ["open", "closed"]
+        # 2) 工具 schema 的 enum 优先于 config
+        assert _enum_for("type", "update_tax") == ["Percentage", "FixedAmount"]
+        # 3) 无工具限定规则 + 有全局规则 → 允许全局兜底
+        assert _enum_for("discountType", "create_discount_campaign") == [
+            "PercentagePrice", "FixedPrice"]
+        # 4) 只有别的工具的限定规则 → 该工具不受约束（绝不串值）
+        assert _enum_for("status", "update_tax") is None, "串用了别的工具的 status 枚举"
+        assert _enum_for("status", "update_tax", tool_level_only=True) is None
+        # 5) 无工具上下文 → 不猜值
+        assert _enum_for("status", None) is None
+
+        # 端到端：_param_value 带 tool 时不再把实体里的跨域值带进参数
+        ent = {"status": "On"}
+        assert _param_value("status", ent, "update_category") == "Active"
+        assert _param_value("status", ent, "update_tax") == "On", "该工具无枚举应保留实体值"
+        # _other_status 的翻转值必须落在该工具自己的合法值域内，且避开当前值
+        # （绝不退化成 'Off' 这种别的系统口径）
+        cap_cat = {"工具": "update_category"}
+        assert _param_value("status", ent, "update_category") == "Active"
+        assert _other_status("status", cap_cat, ent).lower() in ("active", "inactive")
+        assert _other_status("status", cap_cat, {"status": "Active"}).lower() == "inactive", \
+            "翻转值未避开当前值"
+        assert _other_status("status", cap_cat, {"status": "Inactive"}).lower() == "active", \
+            "翻转值未避开当前值"
+        # 店铺开关工具走自己的值域，不串分类工具的 Active/Inactive
+        assert _other_status("status", {"工具": "set_store_open_status"},
+                             {"status": "open"}) == "closed"
+    finally:
+        _PARAM_ENUMS, _TOOL_DESC_ENUMS = _saved_enums, _saved_desc
+
+
 def _sf_coerce_param():
     """参数值域收敛：枚举白名单 / 布尔 / 跨工具区分（bug4 核心）。"""
     prod = {"工具": "query_products_by_filter"}
@@ -3602,6 +4834,7 @@ def _sf_pick_cap_rotate():
 GENERATOR_SELFTEST_CASES = [
     ("gen1 _as_param_value 单复数转换", _sf_as_param_value),
     ("gen2 _param_value 取值精确优先/兜底", _sf_param_value),
+    ("gen2b _enum_for 枚举按工具隔离", _sf_enum_tool_scoped),
     ("gen3 _coerce_param 枚举收敛", _sf_coerce_param),
     ("gen4 _fill_params 互斥去重/空值剔除", _sf_fill_params),
     ("gen5 _pick_cap 轮换铺开与重置", _sf_pick_cap_rotate),

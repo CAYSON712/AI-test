@@ -390,13 +390,17 @@ def register_created(executor, cfg, tool_name, tool_params, text):
     if not del_tool:
         return None
 
+    # 新建时若用了「客户端预生成 ID」，它就在建参数里，直接取（最可靠）
     new_id = None
+    id_param = rule.get("预生成ID参数")
+    if id_param and isinstance(tool_params, dict):
+        new_id = tool_params.get(id_param)
     id_field = rule.get("返回ID字段")
     try:
         data = json.loads(text)
     except Exception:
         data = None
-    if isinstance(data, dict):
+    if new_id is None and isinstance(data, dict):
         if id_field:
             new_id = _deep_get(data, id_field)
         if new_id is None:
@@ -724,6 +728,19 @@ async def prepare_self_delete(executor, session, delete_tool, tool_params, cfg,
             if not default_merch:
                 return False, tool_params, "缺默认店铺，无法构造建参数"
             create_params[k] = default_merch
+
+    # ① 优先「客户端预生成 ID」：不少 MCP 的 create 接口接受客户端指定主键
+    #   （schema 原文：Client should generate a new GUID. If empty, a new GUID
+    #    will be generated）。预生成后无需从响应里解析 ID，最可靠。
+    #   实测踩坑：menu_create / category_create 的返回体里没有 createdMenuId /
+    #   createdCategoryId，靠响应解析必然失败 → 整条用例被跳过。
+    preset_id = None
+    id_param = rule.get("预生成ID参数")
+    if id_param:
+        import uuid as _uuid
+        preset_id = str(_uuid.uuid4())
+        create_params[id_param] = preset_id
+
     if _tool_accepts(executor, create_tool, "confirm"):
         create_params["confirm"] = True
 
@@ -734,14 +751,14 @@ async def prepare_self_delete(executor, session, delete_tool, tool_params, cfg,
     if ok or _is_biz_error(text):
         return False, tool_params, f"建临时实体失败：{str(text)[:160]}"
 
-    # 从新建返回里捞 ID
-    new_id = None
+    # 从新建返回里捞 ID：预生成的优先（客户端自带，服务端不一定回显）
+    new_id = preset_id
     id_field = rule.get("返回ID字段")
     try:
         data = json.loads(text)
     except Exception:
         data = None
-    if isinstance(data, dict):
+    if new_id is None and isinstance(data, dict):
         if id_field:
             new_id = _deep_get(data, id_field)
         if new_id is None:

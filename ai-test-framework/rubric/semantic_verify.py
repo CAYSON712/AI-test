@@ -134,6 +134,29 @@ def has_fields(actual, expected_fields):
             return False, f"{note}实际输出不是 JSON，无法校验字段 {valid}"
     if not isinstance(actual, (dict, list)):
         return False, f"{note}实际输出不是对象，无法校验字段 {valid}"
+
+    # 护栏 b：结果集为空（零记录）时无法校验记录级字段，视作跳过。
+    # 动机（2026-11-04，POS Local 路由 A-L1-010）：Local 店当日订单明细返回
+    # {code:0, total:0, records:[]} —— 服务端成功、契约正确，只是当天没单。
+    # 原实现直接对空 records 查 orderId/orderStatus/paymentType，必然 missing，
+    # 判成 semantic_miss 并归因 ai_system，把「数据时效」误报成「系统缺字段」。
+    # 空集合不构成「字段缺失」的任何证据，不能据此判分。
+    _empty = None
+    if isinstance(actual, list) and not actual:
+        _empty = "输出为空列表"
+    elif isinstance(actual, dict):
+        _recs = actual.get("records")
+        _total = actual.get("total")
+        if isinstance(_recs, list) and not _recs:
+            try:
+                _zero = (_total is None) or int(_total) == 0
+            except (TypeError, ValueError):
+                _zero = False
+            if _zero:
+                _empty = "输出 records 为空且 total=0/缺省（结果集为空）"
+    if _empty:
+        return True, f"{note}跳过字段校验：{_empty}，无记录可供校验 {valid}"
+
     missing = [f for f in valid if not _has_key_deep(actual, f)]
     if not missing:
         return True, f"{note}输出包含全部期望字段: {valid}"
@@ -365,6 +388,57 @@ def _has_biz_data(payload):
     return payload not in (None, "")
 
 
+def _find_key_deep(obj, key, depth=0):
+    """在嵌套结构里找某个键的所有取值（用于 field_values 断言）。"""
+    if depth > 6:
+        return []
+    hits = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if str(k) == str(key):
+                hits.append(v)
+            hits.extend(_find_key_deep(v, key, depth + 1))
+    elif isinstance(obj, list):
+        for it in obj:
+            hits.extend(_find_key_deep(it, key, depth + 1))
+    return hits
+
+
+def _check_field_contains_value(obj, field, value):
+    """断言 obj 中 field 字段的取值集合包含 value。
+
+    用途（2026-11-09，DST 告警）：验证服务端告警的**精确作用范围**，
+    如 data.aggregateWindowUnverifiedDates = ["2026-10-31"] 必须包含 2026-10-31。
+
+    与 value_eq 的区别：value_eq 比「字段值等于」，这里是「集合里包含」——
+    告警日期是数组，只关心目标日在不在里面，不关心数组还有没有别的元素。
+
+    容错：字段值可能是列表、标量、或（JSON 字符串形式的）列表，都要能判。
+    """
+    if obj in (None, "", [], {}):
+        return False, f"输出为空，无法校验字段 {field}"
+    vals = _find_key_deep(obj, field)
+    if not vals:
+        return False, f"输出中找不到字段 {field}"
+
+    target = str(value).strip()
+    for v in vals:
+        cands = v if isinstance(v, (list, tuple, set)) else [v]
+        # 字段值本身可能是 JSON 字符串（服务端偶尔把数组序列化成字符串）
+        if isinstance(v, str):
+            s = v.strip()
+            if s.startswith("[") and s.endswith("]"):
+                try:
+                    cands = json.loads(s)
+                except Exception:
+                    cands = [v]
+        for c in cands:
+            if str(c).strip() == target:
+                return True, f"字段 {field} 包含期望值 {value}"
+    return False, (f"字段 {field} 不含期望值 {value}"
+                   f"（实际: {json.dumps(vals, ensure_ascii=False, default=str)[:120]}）")
+
+
 def verify_case(expectation, actual):
     """根据用例「期望」对实际输出做确定性校验。
 
@@ -383,13 +457,29 @@ def verify_case(expectation, actual):
     checks = []
     sem = expectation.get("semantic")
 
-    if isinstance(sem, dict) and (sem.get("fields") or sem.get("contains")):
+    if isinstance(sem, dict) and (sem.get("fields") or sem.get("contains")
+                                  or sem.get("not_contains")
+                                  or sem.get("field_values")):
         # 能力目录「成功标准:语义」声明的真实校验项 → 只用它，忽略生成脚本
         # 造的顶层 output/intent 占位，避免把能力名/话术当输出文本误判。
         for f in sem.get("fields", []):
             checks.append(("fields", [f]))
         for kw in sem.get("contains", []):
             checks.append(("contains", kw))
+        # not_contains：反向断言（2026-11-09 新增）
+        # 用途：验证「不该出现的告警确实没出现」。例如 DST 用例里，
+        #   区间不含 2026-10-31 时**不得**返回 AGGREGATE_DAY_WINDOW_UNVERIFIED，
+        #   否则说明告警滥发、失去信噪比（天天告警 = 用户直接忽略）。
+        for kw in sem.get("not_contains", []):
+            checks.append(("not_contains", kw))
+        # field_values：结构化字段取值断言（2026-11-09 新增）
+        # 用途：比对服务端告警的**精确作用范围**。例：
+        #   data.aggregateWindowUnverifiedDates 必须包含 "2026-10-31"。
+        # 比 warnings 枚举更细 —— 枚举只说「有这类问题」，这个才说「是哪一天」。
+        fv = sem.get("field_values")
+        if isinstance(fv, dict):
+            for f, v in fv.items():
+                checks.append(("field_values", {"field": f, "value": v}))
         # B 类纯对话标记：contains 用「任一命中」（对话回复只需体现核心信息之一）
         any_of = sem.get("any_of", False)
     else:
@@ -427,9 +517,14 @@ def verify_case(expectation, actual):
         if text_parts:
             actual_text = "\n".join(text_parts)
 
-    # 拆分 contains 与 非 contains 检查，便于 any_of（任一命中）与全量（全部命中）区分
+    # 拆分 contains / not_contains / 其它检查：
+    #   contains      → any_of 时任一命中、否则全部命中
+    #   not_contains  → 必须**全部不出现**（反向断言，不受 any_of 影响）
+    #   其它(fields/value/field_values) → 全部命中，且需有业务数据
     contains_checks = [p for k, p in checks if k == "contains"]
-    other_checks = [(k, p) for k, p in checks if k != "contains"]
+    not_contains_checks = [p for k, p in checks if k == "not_contains"]
+    other_checks = [(k, p) for k, p in checks
+                    if k not in ("contains", "not_contains")]
 
     details = []
     all_pass = True
@@ -453,7 +548,18 @@ def verify_case(expectation, actual):
             if not ok:
                 all_pass = False
 
-    # 非 contains 检查（fields/value）：全部命中。
+    # not_contains：必须全部不出现（反向断言）。
+    # 文本来源与 contains 相同（actual_text，含 msg/output 等文本键）。
+    # 不做 any_of：哪怕只有一条被命中，就说明「不该出现的告警出现了」，判失败。
+    for kw in not_contains_checks:
+        hit, d = contains_text(actual_text, kw)
+        if hit:
+            details.append(f"不应出现但出现了: {kw}")
+            all_pass = False
+        else:
+            details.append(f"确认未出现: {kw}")
+
+    # 非 contains 检查（fields/value/field_values）：全部命中。
     # 基于「业务输出」（_biz_payload：解析 output 字符串里的工具 JSON），
     # 支持嵌套深查。修复前直接对执行器结构 dict 查字段 → 业务字段必误判缺失。
     check_obj = _biz_payload(actual_obj)
@@ -469,6 +575,9 @@ def verify_case(expectation, actual):
                 details.append("输出为业务失败/无数据响应，跳过字段值断言")
                 continue
             ok, d = value_eq(check_obj, payload.get("field"), payload.get("value"))
+        elif kind == "field_values":
+            ok, d = _check_field_contains_value(check_obj, payload.get("field"),
+                                                payload.get("value"))
         else:
             continue
         details.append(d)

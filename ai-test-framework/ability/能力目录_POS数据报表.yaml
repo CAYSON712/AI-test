@@ -38,7 +38,10 @@
       - 能力: "查询店铺经营汇总"
         操作类型: "查询"
         layer: "L1"
-        参数: [merchantId, startAt, endAt]
+        # 加强：补 relativePeriod / sortField / sortDirection / limit；
+        # merchantName（按店铺名筛选）于 2026-11-09 按 schema 补全
+        参数: [merchantId, merchantName, startAt, endAt, relativePeriod,
+               sortField, sortDirection, limit]
         工具: query_datax_total_reports
         口语问法:
           - "看一下 2026/09/09 的销售额"
@@ -56,6 +59,36 @@
             成功标准:
               - 模式: 拒绝
 
+      # ★ 2026-11-06 新增：夏令时切换节点覆盖（与 A_POS Local路由 同口径）
+      # 美西 2026 年 DST 结束于 11-01 02:00，营业日 10-31 有 25 小时。
+      # 实测：区间含 2026-10-31 时 total_reports 返回
+      #   code=40000 "DataX aggregate window 2026-10-31 is not verified across
+      #   DST; historical repair is required."，而 order_sales 同区间正常
+      #   （Local LastMonth 378 单 / Cloud 206 单）→ 业务数据完整，是聚合层缺陷。
+      - 能力: "查询店铺经营汇总(夏令时切换区间)"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantId, startAt, endAt]
+        工具: query_datax_total_reports
+        口语问法:
+          - "看一下 10 月 31 号那天的销售额"
+          - "查询 10 月份整月的经营汇总"
+          - "上周（跨夏令时切换）的经营数据"
+        成功标准:
+          - 模式: 语义
+            期望: "跨夏令时切换日的区间应正常返回经营汇总或明确的数据状态说明；不得因 DST 直接报系统错误 40000"
+        参数矩阵:
+          - 输入: "DST 前一日（对照，应正常）：2026-10-30 单日"
+            工具参数: {startAt: "2026-10-30", endAt: "2026-10-30"}
+          - 输入: "DST 切换日：2026-10-31 单日"
+            工具参数: {startAt: "2026-10-31", endAt: "2026-10-31"}
+          - 输入: "DST 后一日（对照，应正常）：2026-11-01 单日"
+            工具参数: {startAt: "2026-11-01", endAt: "2026-11-01"}
+          - 输入: "跨切换周：2026-10-26 ~ 2026-11-02"
+            工具参数: {startAt: "2026-10-26", endAt: "2026-11-02"}
+          - 输入: "跨切换整月：2026-10-01 ~ 2026-11-01"
+            工具参数: {startAt: "2026-10-01", endAt: "2026-11-01"}
+
   # ---------------------------------------------------------------
   # 2. 订单销售明细查询
   # ---------------------------------------------------------------
@@ -65,7 +98,12 @@
       - 能力: "查询订单销售明细"
         操作类型: "查询"
         layer: "L1"
-        参数: [merchantId, startAt, endAt]
+        # ★ 2026-11-06 加强：原只 merchantId+startAt+endAt，19 个参数覆盖 3 个。
+        #   新增值为实测可用（见 configs 真值表），生成器按枚举逐值生成用例。
+        # paymentTerminalName（按支付终端筛选）于 2026-11-09 按 schema 补全
+        参数: [merchantId, startAt, endAt, orderType, orderStatus, paymentStatus,
+               paymentType, sourceName, orderSourceType, paymentTerminalName,
+               sortField, sortDirection, limit]
         工具: query_datax_order_sales_reports
         口语问法:
           - "查一下自动化店铺7 的订单明细"
@@ -91,7 +129,9 @@
       - 能力: "查询菜单商品分类报表"
         操作类型: "查询"
         layer: "L1"
-        参数: [merchantId, startAt, endAt, type]
+        # 加强：补 refId / name / sortField / sortDirection / limit（实测可用）
+        参数: [merchantId, startAt, endAt, type, refId, name, sortField,
+               sortDirection, limit]
         工具: query_datax_menu_product_category_reports
         口语问法:
           - "这个月销量前10是哪些"
@@ -144,7 +184,8 @@
       - 能力: "查询订单商品明细"
         操作类型: "查询"
         layer: "L2"
-        参数: [merchantId, orderIds]
+        # 加强：补 page/size（实测 Local 与 Cloud 均可用，返回 orders.list + 分页信息）
+        参数: [merchantId, orderIds, page, size]
         工具: query_order_details_by_ids
         口语问法:
           - "9月9号那笔 143.19 的单买了什么"

@@ -89,6 +89,32 @@ python _06_run_test.py --req-type <类型> --dataset ../datasets/<数据集>.yam
 系统名会自动从数据集「系统」字段读取，无需手动传（避免中文路径乱码）。
 `--job` 别名见 `_09_pipeline.py` 的 `JOB_ALIASES`（底层复用 `_10_maintain.SYSTEMS`，新增系统只加一处）。
 
+## 手工探测：走常驻入口，禁止写一次性脚本
+
+> 复测缺陷、临时查数据、验证开发修复情况——**都不准新建 `_tmp_*.py` / `_probe_*.py`**。
+> 判定标准不是「这次算不算接入」，而是「我是不是在为一个具体 MCP 写新文件」。
+
+| 系统 | 常驻入口 |
+|---|---|
+| PocketStore | `scripts/pocketstore_mcp.py` |
+| Rooster POS | `scripts/rooster_mcp.py` |
+| POS | `scripts/pos_mcp.py` |
+
+```powershell
+cd ai-test-framework
+python scripts/pocketstore_mcp.py tools                      # 列工具
+python scripts/pocketstore_mcp.py tools menu -v              # 过滤 + 看必填
+python scripts/pocketstore_mcp.py schema menu_create         # 完整入参
+python scripts/pocketstore_mcp.py stores                     # 店铺清单 + 别名
+python scripts/pocketstore_mcp.py call menu_list --store 3 --json pageIndex=1,pageSize=100
+python scripts/pocketstore_mcp.py call menu_delete --store 3 --json menuId=xxx        # 预览
+python scripts/pocketstore_mcp.py call menu_delete --store 3 --json menuId=xxx --go   # 执行
+```
+
+入口不存在时**先建入口**再用，不要先写临时脚本。缺的通用能力（限流重试 / 参数外壳 /
+`--json` 宽松解析 / 输出格式化）应**补进入口本身**，不要在外面临时加。
+详见 `ai-requirement-analysis` Skill 的「探测类调用」章节。
+
 ## Trace 上报（可视化链路）
 
 执行命令带 `--trace` 时，执行器产出的多层链路（LLM意图→参数→MCP→校验→回答）会自动上报到 trace_platform：

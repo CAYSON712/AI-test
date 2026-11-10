@@ -121,6 +121,75 @@ class Checker:
         # 本系统 config 的参数取值域（config 优先于内置 PARAM_ENUMS/PARAM_BOOL）
         self.param_enums, self.param_bools = self._load_param_domains()
 
+    def _load_schema_enums(self, cfg=None):
+        """从 results/mcp_schemas/*.raw.json 收集 {参数名(小写): [enum 值]}。
+
+        schema 与 config 的枚举互补（见 _load_param_domains 的说明），故并入使用。
+        未找到 raw.json 时返回空，行为退回「只认 config」。
+        """
+        out = {}
+        try:
+            base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # schemas/（入库，团队共享）优先 → results/mcp_schemas/（本地产物）
+            sch_dirs = [os.path.join(base, "schemas"),
+                        os.path.join(base, "results", "mcp_schemas")]
+            exist_dirs = [d for d in sch_dirs if os.path.isdir(d)]
+            if not exist_dirs:
+                return out
+            # 默认先看入库目录，找不到再回退本地结果目录（下方循环会逐个尝试）
+            sch_dir = exist_dirs[0]
+            path = None
+            # 优先 config 显式声明的「原始schema」
+            if isinstance(cfg, dict):
+                decl = cfg.get("原始schema") or cfg.get("schema_snapshot")
+                if decl:
+                    for d in exist_dirs:
+                        p = os.path.join(d, str(decl))
+                        if os.path.exists(p):
+                            path = p
+                            sch_dir = d
+                            break
+            if path is None:
+                sys_name = str(self.dataset.get("系统") or "")
+                n_sys = sys_name.replace("_", "").replace(" ", "").lower()
+                for fn in sorted(os.listdir(sch_dir)):
+                    if not fn.endswith(".raw.json"):
+                        continue
+                    stem = fn[:-len(".raw.json")].replace("_", "").lower()
+                    if n_sys and (stem in n_sys or n_sys in stem):
+                        path = os.path.join(sch_dir, fn)
+                        break
+            if not path:
+                return out
+            import json as _json
+            raw = _json.load(open(path, encoding="utf-8"))
+            tools = raw.get("tools") if isinstance(raw, dict) else raw
+            for t in (tools or []):
+                if not isinstance(t, dict):
+                    continue
+                props = (t.get("inputSchema") or {}).get("properties") or {}
+                for wrapper in ("parameters", "toolParams"):
+                    inner = props.get(wrapper)
+                    if isinstance(inner, dict) and isinstance(
+                            inner.get("properties"), dict):
+                        props = inner["properties"]
+                        break
+                for pname, pspec in props.items():
+                    if not isinstance(pspec, dict):
+                        continue
+                    ev = pspec.get("enum")
+                    if isinstance(ev, list) and ev:
+                        vals = [str(x) for x in ev if x is not None]
+                        if vals:
+                            kl = str(pname).lower()
+                            cur = out.setdefault(kl, [])
+                            for v in vals:
+                                if v not in cur:
+                                    cur.append(v)
+        except Exception:
+            return out
+        return out
+
     def _load_param_domains(self):
         """从 configs/<系统>.yaml 读 param_enums / param_bools。
 
@@ -139,7 +208,14 @@ class Checker:
             if not fn.lower().endswith((".yaml", ".yml")):
                 continue
             stem = os.path.splitext(fn)[0]
-            if sys_name and (stem in sys_name or sys_name in stem):
+            # 归一化比较：config 文件名惯用下划线（POS_Local路由），
+            # 而数据集的「系统」字段惯用空格（POS Local路由）。
+            # 直接子串比较会因下划线/空格差异匹配失败 → config 未被加载 →
+            # param_enums 为空 → 校验器回退到内置 POS 枚举表误判
+            # （2026-11-06 实测：orderSourceType=EasyPos 被判非法）。
+            n_stem = stem.replace("_", "").replace(" ", "").lower()
+            n_sys = str(sys_name).replace("_", "").replace(" ", "").lower()
+            if n_sys and n_stem and (n_stem in n_sys or n_sys in n_stem):
                 cands.append(os.path.join(cfg_dir, fn))
         if not cands:
             return enums, bools
@@ -149,7 +225,53 @@ class Checker:
             return enums, bools
         raw_enums = cfg.get("param_enums") or {}
         for k, v in raw_enums.items():
-            enums[str(k).lower()] = tuple(v) if isinstance(v, list) else v
+            # ⚠ 不要无脑 tuple(v)：param_enums 支持两种写法
+            #   ① [值, 值...]                      → 全部工具通用
+            #   ② [{tools:[工具], values:[值]}, ...] → 按工具限定作用域
+            # 原实现把 ② 也转成 tuple，得到 ({'tools':...},)，_enum_for 里
+            #   `isinstance(spec[0], dict)` 判不出来（spec[0] 仍是 dict 但 spec 是
+            #   tuple 也可判；真正问题是后续若再做 list(spec) 语义就乱了），
+            #   且与生成器侧解析口径不一致 → 「config 声明了却仍落回内置枚举」。
+            # 故 dict 形态原样保留（保持 list），只有纯值列表才转 tuple。
+            if isinstance(v, list) and v and isinstance(v[0], dict):
+                enums[str(k).lower()] = v
+            else:
+                enums[str(k).lower()] = tuple(v) if isinstance(v, list) else v
+        # schema enum 并入（2026-11-09）：服务端 schema 的 enum 与 config 手写枚举
+        # 互补，实测两边都会漏：
+        #   · schema 漏值：orderStatus 的 schema enum 只有 Completed/Cancelled，
+        #     但服务端实际接受 Progressing、paymentStatus 漏 Unpaid
+        #   · config 漏值：status 的 schema enum 有 Unknown，configs 没写
+        # 生成器按「并集」造值，校验器必须用同一口径，否则合法值被误判成非法。
+        for k, vals in (self._load_schema_enums(cfg) or {}).items():
+            kl = str(k).lower()
+            cur = enums.get(kl)
+            if cur is None:
+                enums[kl] = [{"tools": None, "values": list(vals)}]
+                continue
+            # config 已有「工具限定」规则时**不并 schema**：人工实测可推翻
+            # schema 的不准确（实测 sortField：schema 有 Amount/Quantity，
+            # 但服务端只接受 Date）。并入会把非法值当合法，放过真错。
+            if any(isinstance(r, dict) and r.get("tools") for r in cur):
+                continue
+            rules = [dict(r) if isinstance(r, dict) else {"tools": None,
+                                                          "values": list(r)}
+                     for r in (cur if isinstance(cur, list) else [])]
+            hit = None
+            for r in rules:
+                if not r.get("tools"):
+                    hit = r
+                    break
+            if hit is None:
+                rules.append({"tools": None, "values": list(vals)})
+            else:
+                vs = list(hit.get("values") or [])
+                for x in vals:
+                    if str(x) not in [str(y) for y in vs]:
+                        vs.append(x)
+                hit["values"] = vs
+            enums[kl] = rules
+
         raw_bools = cfg.get("param_bools") or []
         bools = {str(x).lower() for x in raw_bools}
         # param_not_bools：显式「排除」内置布尔假设。内置 PARAM_BOOL 是 POS 口径，
@@ -681,10 +803,15 @@ class Checker:
             return self._SCHEMA_ENUM_CACHE
         result = {}
         sys_name = self.dataset.get("系统") or ""
-        sch_dir = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "results", "mcp_schemas")
-        cands = [f for f in (os.listdir(sch_dir) if os.path.isdir(sch_dir) else [])
-                 if f.endswith(".raw.json")]
+        # schemas/（入库）优先 → results/mcp_schemas/（本地）
+        _base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        sch_dir = next((d for d in (os.path.join(_base, "schemas"),
+                                    os.path.join(_base, "results", "mcp_schemas"))
+                        if os.path.isdir(d)), None)
+        if not sch_dir:
+            self._SCHEMA_ENUM_CACHE = result
+            return result
+        cands = [f for f in os.listdir(sch_dir) if f.endswith(".raw.json")]
         target = None
         for f in sorted(cands):
             if sys_name and (os.path.splitext(f)[0].replace(".raw", "") in sys_name
@@ -836,6 +963,103 @@ class Checker:
                     f"{'; '.join(items[:5])}"
                     f"{' …' if len(items) > 5 else ''} {_HINT}")
 
+    def check_runtime_context(self, products_path=None):
+        """校验用例的「运行时上下文」（按实体覆盖 CompanyId 等请求头）。
+
+        为什么必须校验：该字段直接决定请求头，错了不会报「数据集问题」，
+        只会表现为「工具返回 40100 越权 / 查不到数据」，很容易被误判成
+        「Local 路由失效」这种被测系统缺陷，方向完全反了。
+
+        校验三条：
+          ① 只允许在 configs 声明过的「实体上下文字段」里出现（默认 companyId），
+             防止手写/生成出拼错的键（如 companyID / CompanyId）被静默忽略；
+          ② 值与实体清单里该实体声明的值必须一致（防止实体清单改了、数据集没 regen）；
+          ③ 若实体清单声明了该实体的 companyId，而用例缺「运行时上下文」→ 警告。
+        """
+        ctx_field = "companyId"
+        cfg = {}
+        try:
+            import yaml as _yaml
+            for p in ("configs",):
+                base = os.path.join(os.path.dirname(os.path.dirname(
+                    os.path.abspath(__file__))), p)
+                for fn in (os.listdir(base) if os.path.isdir(base) else []):
+                    if not fn.endswith((".yaml", ".yml")):
+                        continue
+                    try:
+                        with open(os.path.join(base, fn), encoding="utf-8") as f:
+                            _d = _yaml.safe_load(f) or {}
+                    except Exception:
+                        continue
+                    if (_d.get("系统") or "") == (self.dataset.get("系统") or ""):
+                        cfg = _d
+                        break
+        except Exception:
+            cfg = {}
+        ctx_field = cfg.get("实体上下文字段") or ctx_field
+
+        # 实体清单索引
+        ent_idx = {}
+        if products_path and os.path.exists(products_path):
+            try:
+                import yaml as _yaml
+                with open(products_path, encoding="utf-8") as f:
+                    doc = _yaml.safe_load(f) or {}
+                for ent in (doc.get("实体清单") or []):
+                    if not isinstance(ent, dict):
+                        continue
+                    for k in ("id", "merchantId", "merchantIds", "entityId"):
+                        v = ent.get(k)
+                        for x in (v if isinstance(v, list) else [v]):
+                            if x:
+                                ent_idx[str(x)] = ent
+            except Exception:
+                ent_idx = {}
+
+        for i, c in enumerate(self.cases, 1):
+            uid = c.get("用例ID", f"#{i}")
+            ctx = c.get("运行时上下文")
+            if ctx is None:
+                # ③ 实体清单要求换头但用例没声明 → 警告（该用例会用全局默认 CompanyId）
+                if not ent_idx:
+                    continue
+                tp = ((c.get("输入") or {}).get("tool_params") or {})
+                if not isinstance(tp, dict):
+                    continue
+                for k in ("merchantId", "merchantIds", "entityId"):
+                    v = tp.get(k)
+                    for x in (v if isinstance(v, list) else [v]):
+                        ent = ent_idx.get(str(x)) if x else None
+                        if ent and ent.get(ctx_field):
+                            self.warn(
+                                f"{uid}: 实体 {x} 在实体清单声明了 {ctx_field}="
+                                f"{ent.get(ctx_field)}，但用例未声明「运行时上下文」，"
+                                f"将用全局默认值（跨公司场景下会 40100）")
+                            break
+                continue
+            if not isinstance(ctx, dict):
+                self.error(f"{uid}: 运行时上下文 应为字典，实际 {type(ctx).__name__}")
+                continue
+            # ① 键必须在合法集合内
+            bad_keys = [k for k in ctx if k not in (ctx_field,)]
+            if bad_keys:
+                self.error(
+                    f"{uid}: 运行时上下文 含非法键 {bad_keys}"
+                    f"（本系统只认 {ctx_field}，写在 configs 的「实体上下文字段」）")
+            # ② 值与实体清单一致
+            tp = ((c.get("输入") or {}).get("tool_params") or {})
+            if isinstance(tp, dict) and ent_idx and ctx_field in ctx:
+                for k in ("merchantId", "merchantIds", "entityId"):
+                    v = tp.get(k)
+                    for x in (v if isinstance(v, list) else [v]):
+                        ent = ent_idx.get(str(x)) if x else None
+                        if ent and ent.get(ctx_field) \
+                                and str(ent.get(ctx_field)) != str(ctx.get(ctx_field)):
+                            self.error(
+                                f"{uid}: 运行时上下文 {ctx_field}={ctx.get(ctx_field)} "
+                                f"与实体清单中实体 {x} 声明的 {ent.get(ctx_field)} 不一致"
+                                f"（实体清单改过？请重新 regen）")
+
     def _enum_for(self, param_lower, tool, enums):
         """按参数名 + 工具名解析合法枚举。
 
@@ -935,9 +1159,17 @@ class Checker:
             snap_tool = audit.get("快照工具")
             sp = audit.get("快照参数") or {}
             # 快照参数必须解析得出有效值，否则快照工具必然查不到数据 → before 恒为 0
-            effective = {k: v for k, v in sp.items()
-                         if isinstance(v, (str, int, float))
-                         and str(v).strip() not in ("", "0", "1")}
+            # 注意：列表参数（productIds / merchantIds / orderIds 等）同样是有效值。
+            # 原实现只认标量，导致「按 ID 精确查询」类快照工具（query_products_by_ids
+            # 的 productIds=[真实ID]）被误判为「参数全为空/占位值」而挡住门禁。
+            def _effective(v):
+                if isinstance(v, (list, tuple)):
+                    return any(str(x).strip() not in ("", "0", "1") for x in v
+                               if isinstance(x, (str, int, float)))
+                return (isinstance(v, (str, int, float))
+                        and str(v).strip() not in ("", "0", "1"))
+
+            effective = {k: v for k, v in sp.items() if _effective(v)}
             if not effective:
                 self.error(
                     f"{uid}: 快照工具 {snap_tool} 的参数全为空/占位值"
@@ -962,7 +1194,21 @@ class Checker:
         names = set(names or ())
         for key in ("实体清单", "门店清单", "商品清单", "会员清单"):
             for e in doc.get(key) or []:
-                entities.add(e.get("名称"))
+                # 清单项必须是映射；纯标量/数字会让后续 `cand in e` 抛 TypeError。
+                if not isinstance(e, dict):
+                    self.warn(f"实体清单[{key}] 存在非映射项 {e!r}，已跳过"
+                              f"（每项应为 `- 名称: xxx` 形式的映射）")
+                    continue
+                # 「名称」统一转字符串：YAML 里 `名称: 9023162140` 会被解析成 int，
+                # 与用例里提取出的中文字符串做 in 判断会直接崩溃。
+                nm = e.get("名称")
+                if nm is not None:
+                    if not isinstance(nm, str):
+                        self.warn(f"实体清单[{key}] 的「名称」{nm!r} 不是字符串"
+                                  f"（YAML 未加引号会被解析为 "
+                                  f"{type(nm).__name__}），已按 str 处理；"
+                                  f"建议加引号，如 `名称: '{nm}'`")
+                    entities.add(str(nm))
                 for fld in ("id", "storeId", "productId", "memberId", "merchantId", "companyId"):
                     if e.get(fld):
                         entities.add(str(e[fld]))
@@ -1009,7 +1255,135 @@ class Checker:
         # 否则要等跑完整轮才发现「写入安全边界」不可判定。
         self.check_write_audit()
         self.check_entities(products_path, names)
+        self.check_runtime_context(products_path)
+        self.check_schema_contract()
         return self.report()
+
+    def check_schema_contract(self, raw_json_path=None):
+        """校验「configs 声明的参数」与「服务端 schema」是否一致。
+
+        为什么需要（2026-11-09）：
+          数据集只能测「行为」（调用是否成功、返回对不对），**测不出 schema 契约问题**。
+          实测踩到的典型事故：query_products_by_ids / query_products_by_filter /
+          query_product_detail_by_id 三个工具，服务端要求必须传店铺参数
+          （merchantIds / merchantId），但 inputSchema 里**没声明**。
+          结果：任何按 schema 自动生成参数的调用方（尤其是 AI）100% 调用失败，
+          而数据集因为 configs 里手工补了参数，跑得全绿 —— 缺陷被完全掩盖。
+
+        本检查把「configs 声明的参数」与「schema 声明的参数」双向比对：
+          · configs 有、schema 无  → 警告：该参数可能是隐式必填，schema 应补声明
+          · schema 有、configs 无  → 警告：configs 漏声明，数据集无法覆盖该参数
+        两者都会在 validate 阶段暴露，避免「数据集全绿但真实调用必失败」。
+
+        raw_json_path 缺省时按系统名自动找 results/mcp_schemas/<系统>.raw.json。
+        """
+        _base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cfg_dir = os.path.join(_base, "configs")
+        # schemas/（入库）优先 → results/mcp_schemas/（本地）
+        sch_dir = next((d for d in (os.path.join(_base, "schemas"),
+                                    os.path.join(_base, "results", "mcp_schemas"))
+                        if os.path.isdir(d)), None)
+        if not sch_dir:
+            self.info("schema 契约检查：无 schema 目录，跳过")
+            return
+
+        # 1) 定位 config
+        sys_name = self.dataset.get("系统") or ""
+        n_sys = str(sys_name).replace("_", "").replace(" ", "").lower()
+        cfg = None
+        if os.path.isdir(cfg_dir):
+            for fn in sorted(os.listdir(cfg_dir)):
+                if not fn.lower().endswith((".yaml", ".yml")):
+                    continue
+                n_stem = (os.path.splitext(fn)[0].replace("_", "")
+                          .replace(" ", "").lower())
+                if n_sys and n_stem and (n_stem in n_sys or n_sys in n_stem):
+                    try:
+                        cfg = load_yaml(os.path.join(cfg_dir, fn))
+                    except Exception:
+                        cfg = None
+                    break
+        if not isinstance(cfg, dict):
+            self.info("schema 契约检查：未找到 config，跳过")
+            return
+
+        # 2) 定位 raw schema（含完整 inputSchema）
+        if not raw_json_path:
+            # sch_dir 已在方法开头解析（schemas/ 优先 → results/mcp_schemas/）
+            # configs 里可选显式指定：「原始schema: roosterpos.raw.json」
+            # （系统名与 schema 文件名常不一致：POS Local路由 ↔ roosterpos，
+            #  靠字符串包含猜不到，显式声明最可靠）
+            _decl = cfg.get("原始schema") or cfg.get("schema_snapshot")
+            if _decl:
+                cand = os.path.join(sch_dir, str(_decl))
+                if os.path.exists(cand):
+                    raw_json_path = cand
+            if not raw_json_path:
+                key = n_sys
+                for fn in sorted(os.listdir(sch_dir)):
+                    if not fn.endswith(".raw.json"):
+                        continue
+                    stem = fn[:-len(".raw.json")].replace("_", "").lower()
+                    if key and (stem in key or key in stem):
+                        raw_json_path = os.path.join(sch_dir, fn)
+                        break
+        if not raw_json_path or not os.path.exists(raw_json_path):
+            self.info("schema 契约检查：未找到 *.raw.json，跳过"
+                      "（可运行 scripts/_01_mcp_setup.py 生成）")
+            return
+
+        try:
+            import json as _json
+            raw = _json.load(open(raw_json_path, encoding="utf-8"))
+        except Exception as exc:
+            self.warn(f"schema 契约检查：读取 {raw_json_path} 失败: {exc}")
+            return
+        tools = raw.get("tools") if isinstance(raw, dict) else raw
+        if not isinstance(tools, list):
+            self.info("schema 契约检查：raw.json 结构异常，跳过")
+            return
+
+        # 3) 服务端 schema：{工具: {参数名: 类型}}
+        srv = {}
+        for t in tools:
+            if not isinstance(t, dict) or not t.get("name"):
+                continue
+            props = (t.get("inputSchema") or {}).get("properties") or {}
+            for wrapper in ("parameters", "toolParams"):
+                inner = props.get(wrapper)
+                if isinstance(inner, dict) and isinstance(inner.get("properties"),
+                                                          dict):
+                    props = inner["properties"]
+                    break
+            srv[str(t["name"])] = {
+                str(k): (v or {}).get("type") if isinstance(v, dict) else None
+                for k, v in props.items()
+            }
+
+        # 4) configs 声明：{工具: [参数...]}
+        cfg_tools = {}
+        for t in (cfg.get("mcp_tools") or []):
+            if isinstance(t, dict) and t.get("name"):
+                cfg_tools[str(t["name"])] = [str(x) for x in (t.get("params") or [])]
+
+        # 5) 双向比对（只比 config 里登记过的工具，避免噪音）
+        for tool, cparams in cfg_tools.items():
+            sp = srv.get(tool)
+            if sp is None:
+                self.warn(f"schema 契约: configs 声明了工具 {tool}，"
+                          f"但服务端 schema 里不存在")
+                continue
+            missing_in_schema = [p for p in cparams if p not in sp]
+            missing_in_cfg = [p for p in sp if p not in cparams]
+            if missing_in_schema:
+                self.warn(
+                    f"schema 契约: {tool} 的 {(missing_in_schema)} "
+                    f"在 configs 里有声明、但服务端 inputSchema 未声明 → "
+                    f"按 schema 调用会漏传，须服务端补声明")
+            if missing_in_cfg:
+                self.warn(
+                    f"schema 契约: {tool} 的 {(missing_in_cfg)} "
+                    f"服务端有声明、configs 未登记 → 数据集无法覆盖这些参数")
 
     def report(self):
         print("=" * 72)

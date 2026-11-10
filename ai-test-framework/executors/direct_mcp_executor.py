@@ -61,11 +61,33 @@ class DirectMcpExecutor(GenericMcpExecutor):
         from generic_mcp_executor import _SysConfig
         return _SysConfig(system)
 
-    # ---- 主流程：直连工具调用 ----
-    def handle(self, capability, user_input, inp, expected):
-        return asyncio.run(self._call_direct(capability, inp, expected))
+    def _has_recovery_rule(self, tool_name):
+        """该工具是否配了「能把数据收回」的保护规则。
 
-    async def _call_direct(self, capability, inp, expected):
+        三种保护都算数（任一即可）：
+          可还原    —— 改前快照，跑完按原值写回
+          新建后清理 —— 建完登记，跑完调用对应 delete 删掉
+          自建自删  —— 建临时实体替身来删，不碰真实数据
+        """
+        lc = self.get_lifecycle()
+        if lc is None or not tool_name:
+            return False
+        if (lc.restorable or {}).get(tool_name):
+            return True
+        if (lc.creatable or {}).get(tool_name):
+            return True
+        try:
+            if lc.self_delete_rule(tool_name):
+                return True
+        except Exception:  # noqa: BLE001
+            pass
+        return False
+
+    # ---- 主流程：直连工具调用 ----
+    def handle(self, capability, user_input, inp, expected, case=None):
+        return asyncio.run(self._call_direct(capability, inp, expected, case=case))
+
+    async def _call_direct(self, capability, inp, expected, case=None):
         """按用例指定的工具+参数直连 MCP，返回结构化结果。"""
         steps = []
         # 取工具名 + 参数（A 类用例输入为工具调用格式）
@@ -81,17 +103,29 @@ class DirectMcpExecutor(GenericMcpExecutor):
             if _ck in tool_params:
                 tool_params = dict(tool_params)
                 tool_params[_ck] = False
-        # 高危用例保护：破坏性写入（delete/batch_update 等）默认跳过，
-        # 仅在显式开启 ALLOW_DESTRUCTIVE=1 且确认是隔离测试环境时才执行。
-        # 背景：某 MCP 传不存在的 ID 也会真实删掉全量数据，故默认不执行。
-        if isinstance(expected, dict) and expected.get("高危") and not _allow_destructive():
+        # 高危用例保护：「有数据保护兜底」才允许执行，否则跳过。
+        #
+        # 演进（2026-11-01）：原先只看 ALLOW_DESTRUCTIVE 一个开关，导致
+        # PocketStore「写入安全边界」15 条**全部被跳过**（skipped=15, n=0），
+        # 报告只剩一个假的 n=0。实际这 15 条都配了「新建后清理 / 可还原 /
+        # 自建自删」，数据能完整回收，根本不需要开高危开关。
+        #
+        # 现规则（更精确）：
+        #   ① 显式 ALLOW_DESTRUCTIVE=1          → 直接放行（隔离环境人工确认）
+        #   ② 该工具配了任一种可回收保护        → 放行（跑完自动还原/清理）
+        #   ③ 两种都没有                        → 跳过（真会留下无法回滚的数据）
+        # 背景不变：某 MCP 传不存在的 ID 也会真实删掉全量数据，无保护时绝不执行。
+        if isinstance(expected, dict) and expected.get("高危") \
+                and not _allow_destructive():
             tool_guess = (inp or {}).get("tool_name") if isinstance(inp, dict) else ""
-            return {
-                "steps": [], "tool": tool_guess,
-                "output": "高危用例已跳过（破坏性写入，需设置 ALLOW_DESTRUCTIVE=1 且确认"
-                          "为隔离测试环境后才会执行）",
-                "tool_correct": None, "level": "INFO", "block": None,
-                "biz_error": None, "impact": None, "verify": None, "skipped": True}
+            if not self._has_recovery_rule(tool_guess):
+                return {
+                    "steps": [], "tool": tool_guess,
+                    "output": f"高危用例已跳过（{tool_guess} 未配置任何可回收保护，"
+                              "需设置 ALLOW_DESTRUCTIVE=1 且确认隔离环境后才会执行）",
+                    "tool_correct": None, "level": "INFO", "block": None,
+                    "biz_error": None, "impact": None, "verify": None,
+                    "skipped": True, "skip_reason": "no_recovery_rule"}
 
         # 影响范围对账配置（「写入安全边界」维度）：执行前后各取一次快照总数
         audit = None
@@ -107,8 +141,13 @@ class DirectMcpExecutor(GenericMcpExecutor):
 
         mcp_input = json.dumps({self.sys.param_wrapper: tool_params}, ensure_ascii=False)
         before = after = exists_before = exists_after = None
+        # 用例级运行时上下文（按实体覆盖 CompanyId 等请求头）：
+        # 先看用例显式声明，再退回「按本次参数里的店铺 ID 查实体清单」。
+        # 两者都没有时 → 全局默认头（既有行为不变）。
+        _ctx = self._case_context(case, inp) \
+            or self.sys.resolve_entity_context(tool_params)
         try:
-            stack, session = await self._session_context()
+            stack, session = await self._session_context(_ctx)
             async with stack:
                 before = await self._snapshot_count(session, audit)
                 exists_before = await self._presence(session, audit)
@@ -175,8 +214,33 @@ class DirectMcpExecutor(GenericMcpExecutor):
                         or (isinstance(_succ, bool) and not _succ)
                     )
                     if _bad:
-                        biz_error = str(_parsed.get("msg") or _parsed.get("message") or _code)
-                        level = "WARNING"
+                        _msg = str(_parsed.get("msg") or _parsed.get("message")
+                                   or _code or "")
+                        biz_error = _msg
+                        # 区分「业务拒绝」与「系统故障」——两者都不算成功，但不能都当拦截：
+                        #   业务拒绝（参数非法/越权/不支持）= 系统正确拒绝请求
+                        #     → level=WARNING + block=True，供 block 类用例计分
+                        #   系统故障（聚合窗口未校验/内部错误/依赖不可用）= 系统没能完成查询
+                        #     → level=ERROR + block=None，不能算「成功拦截」
+                        #
+                        # 动机（2026-11-06，A-L2-009 DST 切换日）：
+                        #   query_datax_total_reports 返回
+                        #   {code:40000, success:false, msg:"DataX aggregate window
+                        #    2026-10-31 is not verified across DST; historical repair
+                        #    is required."}
+                        #   原逻辑一律当 WARNING+block=True，评分器按「已拦截且符合预期」
+                        #   给 5 分 —— 一条真实的系统故障被记成了通过。
+                        #   该用例期望本就是「应正常返回」，故障必须暴露而非被当拦截。
+                        _sys_fail_kw = (
+                            "not verified across dst", "historical repair",
+                            "字段缺失", "字段格式", "内部错误", "internally",
+                            "unavailable", "not available", "服务不可用",
+                            "依赖", "dependency", "aggregate window",
+                        )
+                        if any(k in _msg.lower() for k in _sys_fail_kw):
+                            level = "ERROR"
+                        else:
+                            level = "WARNING"
             except Exception:
                 biz_error = None
         elif level == "WARNING":
@@ -194,11 +258,25 @@ class DirectMcpExecutor(GenericMcpExecutor):
         if audit:
             delta = (abs(after - before)
                      if (before is not None and after is not None) else None)
+            # 服务端是否明确拒绝本次调用：基线为 0 时，这是「作用范围必然为 0」的
+            # 唯一有效证据（Δ 恒为 0 本身证明不了任何事）。
+            # 判定口径与执行器一致：biz_error 存在，或返回体 code != 0 / success=false。
+            _rejected = bool(biz_error)
+            if not _rejected:
+                try:
+                    _d = json.loads(text)
+                    if isinstance(_d, dict):
+                        _c = _d.get("code")
+                        if _c not in (None, 0, 200) or _d.get("success") is False:
+                            _rejected = True
+                except Exception:
+                    pass
             impact = {"快照工具": audit.get("快照工具"), "before": before, "after": after,
                       "delta": delta,
                       "最大影响条数": audit.get("最大影响条数", 0),
                       "存在性目标ID": (audit.get("存在性检查") or {}).get("目标ID"),
-                      "exists_before": exists_before, "exists_after": exists_after}
+                      "exists_before": exists_before, "exists_after": exists_after,
+                      "服务端拒绝": _rejected}
         return {
             "steps": steps,
             "tool": tool_name,
@@ -209,6 +287,10 @@ class DirectMcpExecutor(GenericMcpExecutor):
             "params": tool_params,
             "tool_correct": True,   # 直连模式无 LLM 选择，视为工具匹配
             "level": level,
+            # 只有 WARNING（系统明确拒绝请求）才算「已拦截」。
+            # ERROR（系统故障：DST 窗口未校验、内部错误、依赖不可用）虽然也是
+            # 非成功响应，但不能记作「按预期拦截」——它代表系统没完成这次查询，
+            # 标成 block 会被评分器当成成功（2026-11-06 A-L2-009 踩到）。
             "block": True if level == "WARNING" else None,
             "biz_error": biz_error,
             "impact": impact,

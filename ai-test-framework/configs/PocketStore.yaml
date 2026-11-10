@@ -61,6 +61,79 @@ param_bools:
   - deliveryFeeTaxable
 
 # =====================================================================
+# 参数约束：JSON Schema 表达不了的「跨字段/条件约束」
+# =====================================================================
+# 为什么需要这一段：
+#   MCP 的 inputSchema 只能声明「某参数必填」和「类型」，表达不了：
+#     - 条件必填：merchFoodIds 或 merchId+categoryId 二选一
+#     - 时间先后：endDate 必须晚于 startDate
+#     - 互斥开关：isSalesReport / isPayoutReport 至少一个为真
+#   生成器只按 schema 的 required 补参，补不出这些，导致「生成即可执行失败」。
+#   实测 PocketStore 30 条失分全部由此而来（Parameter validation failed）。
+#
+# 三种约束写法：
+#   至少一个:     参数列表中至少提供一个（可选 _同传 表示需同时提供）
+#   时间先后:     {开始: 参数A, 结束: 参数B}，保证 B > A
+#   至少一个为真: 布尔参数中至少一个为 true
+参数约束:
+  # ---- 批量操作：必须给 merchFoodIds，或 merchId+categoryId ----
+  # 服务端报错原文：
+  #   "MerchFoodIds must contain at least one item ID, or provide MerchId + CategoryId."
+  至少一个:
+    batch_item_price: [merchFoodIds, [merchId, categoryId]]
+    batch_item_stock: [merchFoodIds, [merchId, categoryId]]
+    batch_item_status: [merchFoodIds, [merchId, categoryId]]
+
+  # ---- 活动创建：结束日期必须晚于开始日期 ----
+  # 服务端报错原文："EndDate must be after StartDate."
+  时间先后:
+    create_discount_campaign: {开始: startDate, 结束: endDate}
+    create_reward_campaign: {开始: startDate, 结束: endDate}
+
+  # ---- 报表订阅：两种报表至少开一种 ----
+  # 服务端报错原文：
+  #   "At least one report type (IsSalesReport or IsPayoutReport) must be enabled."
+  至少一个为真:
+    add_report_subscription: [isSalesReport, isPayoutReport]
+
+# =====================================================================
+# 参数完整性：补齐维度表要求的「构造缺失字段」与「全字段覆盖」
+# =====================================================================
+# 为什么需要（维度表已有要求，此前生成器只实现了一半）：
+#   dimensions/A_MCP工具.yaml：
+#     协议契约   → 「语法变异法：构造缺失字段」
+#     调用正确性 → 「正向覆盖所有合法参数组合」
+#   但生成器只按能力目录声明的少量参数造用例，schema 里大量选填参数
+#   （如 menu_create 的 categoryIds / onlineTimes）从未出现，
+#   导致「不传业务关键参数也能成功」这类缺陷永远测不到。
+#
+# 数量控制（避免组合爆炸）：
+#   · 只对 创建/新增/更新 类工具生成，读/删/批量类不生成
+#   · 缺失字段只测「关联型/业务关键」参数，且不做两两组合
+#   · 单工具最多生成「最大单缺数」条缺失用例
+#   · 全字段每个工具只生成 1 条
+# 实测增量：+54 条左右（756 → 约 810，约 +7%）
+参数完整性:
+  启用: true
+  # 工具类型关键字：同时匹配前缀与后缀命名
+  #   前缀式 create_menu / add_store_user → 命中
+  #   后缀式 menu_create / item_update    → 命中（PocketStore 多为后缀式）
+  测试工具前缀: [create, add, update]
+
+  # 业务关键参数（显式补充；不写则按命名自动推断：
+  # 含 categoryIds / menuIds / taxIds / itemIds / onlineTimes / price 等的参数）
+  关键字段:
+    - categoryIds        # 菜单/商品必须绑定分类，缺了数据归属会丢
+    - onlineTimes        # 菜单营业时间，缺了菜单可能永不可售
+    - menuIds            # 分类归属菜单
+    - taxIds             # 商品税率
+    - roleId             # 员工角色
+    - feeId              # 额外费用
+
+  # 单个工具最多生成几条「缺失字段」用例（防止用例数膨胀）
+  最大单缺数: 3
+
+# =====================================================================
 # 数据生命周期：真执行写操作时的「快照 / 恢复 / 不可恢复保护」
 # =====================================================================
 # 通用能力，规则由各系统自行声明；未声明此段的系统完全不受影响。
@@ -208,18 +281,21 @@ param_bools:
     - 工具: category_create
       删除工具: category_delete
       删除参数: {categoryId: "{新实体ID}"}
-      返回ID字段: createdCategoryId
+      # schema 支持客户端自带主键，比解析返回体可靠（实测返回里无 createdCategoryId）
+      预生成ID参数: categoryId
 
     - 工具: menu_create
       删除工具: menu_delete
       删除参数: {menuId: "{新实体ID}"}
-      返回ID字段: createdMenuId
+      # 同上：实测返回里无 createdMenuId，改为客户端预生成
+      预生成ID参数: menuId
 
     # ⚠ item_delete 必填 merchId，必须显式带上
     - 工具: item_create
       删除工具: item_delete
       删除参数: {merchId: "{merchId}", itemId: "{新实体ID}"}
-      返回ID字段: createdItemId
+      # 同上：预生成 itemId，不依赖返回体
+      预生成ID参数: itemId
 
     # ⚠ 满减活动没有删除接口，只能用 update_discount_campaign 下架
     #   （传 isPublished: false）。它不接受 merchId，故删除参数只传
@@ -236,6 +312,27 @@ param_bools:
       删除工具: delete_store_user
       删除参数: {merchId: "{merchId}", merchManagerId: "{新实体ID}"}
       返回ID字段: merchManagerId
+
+    # ---- 规格组 / 税率：2026-11-01 补 ----
+    # 此前这两类写用例既不在「可还原」也不在「新建后清理」→ 属无保护，
+    # 真跑会往店铺里留下规格组和税率且不清理（写维度体检脚本扫出来的）。
+    # 删除用「新建后返回ID」，拿不到时靠名字回查列表兜底。
+    - 工具: spec_create
+      删除工具: spec_delete
+      删除参数: {merchId: "{merchId}", specId: "{新实体ID}"}
+      返回ID字段: createdSpecId
+      按标识回查:
+        查询工具: spec_list
+        标识参数: name
+        标识字段: name
+        ID字段: id
+
+    # ⚠ 税率更可靠：tax_create 的 taxId 允许客户端自带 GUID
+    #   （schema: "Client should generate a new GUID. If empty, a new GUID
+    #    will be generated."）→ 直接用建时传入的 ID 删，不依赖返回体。
+    - 工具: tax_create
+      删除工具: tax_delete
+      删除参数: {taxId: "{建时参数.taxId}"}
 
   # ---- 自建自删：删除类用例不碰真实数据 ----
   # 先按「建工具」造一个临时实体，再把删除目标换成它，跑完即干净。
@@ -254,24 +351,30 @@ param_bools:
       删除主键: subscriberId
       返回ID字段: id
 
+    # ⚠ 三个建工具都支持客户端自带主键（schema: Client should generate a new GUID），
+    #   靠「预生成ID参数」拿 ID，不再解析返回体（实测返回里没有 createdXxxId）。
     - 删除工具: category_delete
       建工具: category_create
       建参数: {merchId: "{merchId}", name: "_AUTOTEST_CAT_DEL"}
       删除主键: categoryId
-      返回ID字段: createdCategoryId
+      预生成ID参数: categoryId
 
     - 删除工具: menu_delete
       建工具: menu_create
       建参数: {merchId: "{merchId}", name: "_AUTOTEST_MENU_DEL"}
       删除主键: menuId
-      返回ID字段: createdMenuId
+      预生成ID参数: menuId
 
+    # ⚠ status 必须传整数（0=OffSale / 1=OnSale）。
+    #   原先写 status: OnSale（字符串）→ 服务端报
+    #   "The JSON value could not be converted to System.Int32. Path: $.status"，
+    #   导致建临时商品失败、item_delete 整条被跳过。
     - 删除工具: item_delete
       建工具: item_create
       建参数: {merchId: "{merchId}", name: "_AUTOTEST_ITEM_DEL",
-               price: 1.0, status: OnSale}
+               price: 1.0, stock: 0, status: 0}
       删除主键: itemId
-      返回ID字段: createdItemId
+      预生成ID参数: itemId
 
     # 员工：实测 add_store_user 可正常创建（角色表有预置「店员」角色），
     # 故删除类用例可走自建自删，不碰真实员工。

@@ -97,7 +97,10 @@ class BaseExecutor:
 
         t0 = time.time()
         try:
-            result = self.handle(cap, user_input, inp, case.get("期望", {}))
+            # 把整条用例一起传下去：部分执行器需要读用例级配置（如「运行时上下文」
+            # 用于按实体覆盖 CompanyId 请求头）。子类 handle 签名保持 4 参兼容。
+            result = self.handle(cap, user_input, inp, case.get("期望", {}),
+                                 case=case)
             latency = (time.time() - t0) * 1000
             # 状态判定（对齐 Langfuse）：
             #   level=ERROR（真异常）→ status=error
@@ -126,6 +129,11 @@ class BaseExecutor:
                 input_data=user_input, error=str(e),
             )
 
-    def handle(self, capability: str, user_input: str, inp: dict, expected: dict):
-        """子类实现：根据能力执行真实调用，返回结果"""
+    def handle(self, capability: str, user_input: str, inp: dict, expected: dict,
+               case: dict = None):
+        """子类实现：根据能力执行真实调用，返回结果
+
+        case: 整条用例（可选）。需要读用例级配置的实现可声明并使用它；
+              不关心的实现保持原 4 参签名即可（调用方用 keyword 传，不会破坏兼容）。
+        """
         raise NotImplementedError

@@ -1,0 +1,669 @@
+# =====================================================================
+# 能力目录：POS Local 店铺服务器路由（AI POS 1.2）
+# =====================================================================
+# 被测系统：AI POS 1.2 —— MCP 支持 local 店铺看数据
+# 真实 MCP：https://roosterpos-test-mcp.proton-system.com/mcp/company-account
+#
+# 需求三条映射到能力：
+#   A-1 店铺服务器路由   → 查询店铺路由模式 / 查询Cloud链路结果 / 查询Local报表
+#   A-2 Local 报表转发   → 查询Local经营汇总 / 查询Local订单明细 / 查询Local目录报表
+#   A-3 能力与版本管控   → 修改Local店铺商品(应拦截) / 删除Local店铺商品(应拦截)
+#                          / 新增Local店铺商品(应拦截)
+#
+# ★ 断言方式说明（为什么用「拒绝」模式而不是 db 模式）★
+#   本系统测的是「网关层的分流与拦截」，不是「数据内容对不对」：
+#     - A-2 正常查询   → 模式: 语义（返回含报表字段，且不得为 0 条 / 不得报错）
+#     - A-3 操作拦截   → 模式: 拒绝（必须返回业务拒绝，且不得产生下游变更）
+#     - A-1 路由断言   → 模式: 语义（query_merchants 返回体含 serverMode=Local/Cloud）
+#
+# ★ 写操作安全红线 ★
+#   A-3 的操作类能力全部声明为「模式: 拒绝」，用例期望 block=true，
+#   执行器不会真的执行写入；且写工具必填 merchantIds，参数里带上目标店铺
+#   才能触发"是否为 Local"的判定分支。
+# =====================================================================
+
+系统: "POS Local路由"
+描述: "AI POS 1.2：MCP 支持 Local 店铺看数据。按 store_id 路由到 Cloud/Local，Local 仅放行报表查询，操作类工具一律禁用"
+版本: "1.0"
+
+能力分组:
+  # ---------------------------------------------------------------
+  # A-1 店铺服务器路由
+  # ---------------------------------------------------------------
+  - 分组: "店铺服务器路由"
+    说明: "A-1：仅以 store_id 作为路由依据；Cloud 沿用既有链路，Local 需过 A-3 校验。MCP 调用方不得传入/取得/覆盖服务器地址"
+    能力列表:
+      - 能力: "查询店铺路由模式"
+        操作类型: "查询"
+        layer: "L1"
+        参数: []
+        工具: query_merchants
+        口语问法:
+          - "ZH_Rooster_Local 这家店是本地还是云端的"
+          - "这家店的服务器模式是什么"
+        成功标准:
+          - 模式: 语义
+            期望: "返回店铺列表，含 serverMode 字段（Local 或 Cloud），用于确认路由结果"
+        负向场景:
+          - 输入: "查询不属于当前公司的店铺路由"
+            成功标准:
+              - 模式: 拒绝
+
+      - 能力: "查询公司店铺清单"
+        操作类型: "查询"
+        layer: "L1"
+        参数: []
+        工具: query_companies
+        口语问法:
+          - "当前账号能看到哪些公司和店铺"
+          - "中环公鸡Local 下面有哪些店"
+        成功标准:
+          - 模式: 语义
+            期望: "返回公司及其下属店铺列表，每条店铺含 serverMode 字段"
+
+  # ---------------------------------------------------------------
+  # A-2 Local 报表查询转发
+  # ---------------------------------------------------------------
+  - 分组: "Local报表查询"
+    说明: "A-2：仅支持数据报表查询类工具；查询语义与 Cloud 一致；结果按既有 MCP 格式处理，不新增 Local 专属字段；连不上不得当零数据"
+    能力列表:
+      - 能力: "查询Local店铺经营汇总"
+        操作类型: "查询"
+        layer: "L1"
+        # merchantName：按店铺名称关键字筛选（可选，2026-11-09 按 schema 补全）
+        参数: [merchantId, merchantName, relativePeriod]
+        工具: query_datax_total_reports
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 今天的销售额多少"
+          - "这家本地店今天有多少单"
+        成功标准:
+          - 模式: 语义
+            期望: "返回经营汇总，含 orderCount、totalSales、netSales、actualRevenue 等字段，且为真实数据不得为 0 条；响应结构不新增 Local 专属字段"
+
+      # ★ 2026-11-06 新增：夏令时（DST）切换节点覆盖
+      #
+      # 为什么必须单独一条能力：DST 是时间区间聚合的经典事故点。
+      # 美西 America/Los_Angeles 2026 年 DST 结束于 11-01 02:00（回拨 1 小时），
+      # 对应「营业日 10-31 有 25 小时」这一异常边界。
+      # 实测：total_reports 只要查询窗口包含 2026-10-31 就返回
+      #   code=40000 "DataX aggregate window 2026-10-31 is not verified across
+      #   DST; historical repair is required."
+      # 而 order_sales 同区间正常（LastMonth 378 单）→ 业务数据完整，
+      # 是聚合层校验阻塞，属真实缺陷（Local / Cloud 均复现）。
+      # 故用显式日期把 DST 前后各一天、以及跨窗口区间逐一钉死：
+      #   前一日 10-30（正常）、切换日 10-31（缺陷）、后一日 11-01（正常）、
+      #   跨切换周 10-26~11-02、跨整月 10-01~11-01。
+      # 这样修复后能被验证「已修好」，未修复则稳定失败暴露问题。
+      - 能力: "查询Local店铺经营汇总(夏令时切换区间)"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantId, startAt, endAt]
+        工具: query_datax_total_reports
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 10 月 31 日那天营业汇总多少"
+          - "本地店上周（跨夏令时切换）的经营数据"
+          - "本地店 10 月份整月的销售额"
+        # ★ 2026-11-09 加强断言（实测校准）
+        #
+        # 修复前：含 2026-10-31 直接返回 code=40000 拒绝查询（已修复）。
+        # 修复后：code=0 正常返回，但**告知数据不精确**，共三处：
+        #   ① data.warnings                    含 "AGGREGATE_DAY_WINDOW_UNVERIFIED"
+        #   ② data.aggregateWindowUnverifiedDates  = ["2026-10-31"]  ← 最精确
+        #   ③ msg 尾部 "Note: ... known daylight saving scope limit ..."
+        #
+        # 原断言只写「不得报 40000」，太宽：若开发哪天把警告去掉（数据照常返回），
+        # 用例仍会通过，用户却在不知情下拿到不精确数据。故升级为：
+        #   · 区间含 10-31 → 必须返回 aggregateWindowUnverifiedDates 且包含 2026-10-31
+        #   · 区间不含 10-31 → 不得出现该警告（防止警告滥发、失去信噪比）
+        成功标准:
+          - 模式: 语义
+            期望: "含 2026-10-31 的区间应正常返回经营汇总（不得报 40000），且必须在 data.aggregateWindowUnverifiedDates 中列出 2026-10-31 并在 warnings 中返回 AGGREGATE_DAY_WINDOW_UNVERIFIED，明确告知该营业日聚合窗口未校验"
+        参数矩阵:
+          - 输入: "DST 前一日（对照，不含31，不应有 DST 警告）：2026-10-30 单日"
+            工具参数: {startAt: "2026-10-30", endAt: "2026-10-30"}
+            期望覆盖:
+              must_not_contain: ["AGGREGATE_DAY_WINDOW_UNVERIFIED"]
+          - 输入: "DST 切换日：2026-10-31 单日"
+            工具参数: {startAt: "2026-10-31", endAt: "2026-10-31"}
+            期望覆盖:
+              must_contain: ["AGGREGATE_DAY_WINDOW_UNVERIFIED"]
+              must_contain_field_value:
+                aggregateWindowUnverifiedDates: "2026-10-31"
+          - 输入: "DST 后一日（对照，不含31，不应有 DST 警告）：2026-11-01 单日"
+            工具参数: {startAt: "2026-11-01", endAt: "2026-11-01"}
+            期望覆盖:
+              must_not_contain: ["AGGREGATE_DAY_WINDOW_UNVERIFIED"]
+          - 输入: "跨切换周：2026-10-26 ~ 2026-11-02"
+            工具参数: {startAt: "2026-10-26", endAt: "2026-11-02"}
+            期望覆盖:
+              must_contain: ["AGGREGATE_DAY_WINDOW_UNVERIFIED"]
+              must_contain_field_value:
+                aggregateWindowUnverifiedDates: "2026-10-31"
+          - 输入: "跨切换整月：2026-10-01 ~ 2026-11-01"
+            工具参数: {startAt: "2026-10-01", endAt: "2026-11-01"}
+            期望覆盖:
+              must_contain: ["AGGREGATE_DAY_WINDOW_UNVERIFIED"]
+              must_contain_field_value:
+                aggregateWindowUnverifiedDates: "2026-10-31"
+        负向场景:
+          - 输入: "查询不存在的店铺的经营汇总"
+            工具参数:
+              merchantId: "99999999999999"
+              relativePeriod: "Today"
+            成功标准:
+              - 模式: 拒绝
+
+      - 能力: "查询Local店铺订单明细"
+        操作类型: "查询"
+        layer: "L1"
+        # ★ 2026-11-06 加强：原只声明 merchantId+relativePeriod，导致该工具
+        #   19 个参数只覆盖 2 个（<12%），过滤/排序/分页维度全空。
+        #   新加的参数值全部来自实测（见 configs 的真值表），
+        #   生成器会为 param_enums 里声明的枚举逐个合法值生成正向用例。
+        #   ⚠ 非法枚举会返回 MCP 协议层裸异常，故只能列实测可用的值。
+        # paymentTerminalName：按支付终端名称精确筛选（2026-11-09 按 schema 补全）
+        参数: [merchantId, relativePeriod, orderType, orderStatus, paymentStatus,
+               paymentType, sourceName, orderSourceType, paymentTerminalName,
+               sortField, sortDirection, limit]
+        工具: query_datax_order_sales_reports
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 今天的订单明细"
+          - "这家本地店今天有哪些单"
+          - "本地店今天只看堂食的单"
+          - "本地店哪些单是刷卡付的"
+        成功标准:
+          - 模式: 语义
+            期望: "返回订单销售明细，含 orderId、orderStatus、paymentType、totalAmount 等字段；结构须与 Cloud 一致"
+        负向场景:
+          - 输入: "查询不存在的店铺的订单明细"
+            工具参数:
+              merchantId: "99999999999999"
+              relativePeriod: "Today"
+            成功标准:
+              - 模式: 拒绝
+
+      - 能力: "查询Local店铺目录报表"
+        操作类型: "查询"
+        layer: "L1"
+        # 加强：补 refId / name / sortField / sortDirection / limit。
+        # 实测 type 三值、refId（真实商品 ID）、name 模糊匹配均可用。
+        参数: [merchantId, relativePeriod, type, refId, name, sortField,
+               sortDirection, limit]
+        工具: query_datax_menu_product_category_reports
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 今天哪个商品卖得最好"
+          - "这家本地店今天各分类卖了多少"
+        成功标准:
+          - 模式: 语义
+            期望: "返回菜单/商品/分类报表记录，含 name、type、amount、quantity；结构须与 Cloud 一致"
+
+      - 能力: "查询Local店铺订单商品明细"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantId, orderIds, page, size]
+        工具: query_order_details_by_ids
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 这笔单买了什么"
+          - "查一下本地店订单的商品明细"
+        成功标准:
+          - 模式: 语义
+            期望: "返回订单商品明细，含 items、name、quantity、price、totalAmount 等字段；查不到时如实告知"
+
+      # ★ 2026-11-06 新增能力：员工考勤。实测 Local 店可用（code=0，
+      #   返回 list + 分页信息；11 月无考勤数据故为空列表，属正常）。
+      #   这属于「Local 店铺看数据」的业务场景，此前完全没覆盖。
+      - 能力: "查询Local店铺员工考勤"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantId, startAt, endAt, page, size]
+        工具: query_staff_attendances
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 这周员工考勤怎么样"
+          - "本地店员工今天有谁出勤"
+        成功标准:
+          - 模式: 语义
+            期望: "返回考勤记录列表（list）及分页信息；无记录时如实返回空列表，不得报错"
+
+  # ---------------------------------------------------------------
+  # A-3 Local 能力与版本管控 —— 操作类工具一律禁用
+  # ---------------------------------------------------------------
+  - 分组: "Local操作类拦截"
+    说明: "A-3：当店铺为 Local 时，修改菜单/商品/分类/价格/店铺配置等操作类工具一律禁用，拦截后不得建立下游请求、不得产生变更"
+    能力列表:
+      - 能力: "修改Local店铺商品属性"
+        操作类型: "更新"
+        layer: "L1"
+        # stockStatus（InStock/OutOfStock）与 nameLocalization（多语言名称对象）
+        # 于 2026-11-09 按 schema 补全 —— 写操作虽被 A-3 拦截，参数仍需登记，
+        # 否则 schema 契约检查会一直报「configs 未覆盖」。
+        参数: [merchantIds, productIds, status, price, stockStatus,
+               nameLocalization]
+        工具: update_products_by_ids
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "把 ZH_Rooster_Local 的这个商品下架"
+          - "改一下本地店商品的状态"
+        成功标准:
+          - 模式: 拒绝
+        负向场景:
+          - 输入: "对 Local 店铺执行商品状态变更，应返回标准业务拒绝结果"
+            工具参数:
+              merchantIds: ["11897214392730629"]
+              productIds: ["11897285288461317"]
+              status: "Off"
+            成功标准:
+              - 模式: 拒绝
+
+      - 能力: "删除Local店铺商品"
+        操作类型: "删除"
+        layer: "L1"
+        参数: [merchantIds, productIds]
+        工具: delete_products_by_ids
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "删掉 ZH_Rooster_Local 的这个商品"
+        成功标准:
+          - 模式: 拒绝
+        负向场景:
+          - 输入: "对 Local 店铺执行删除商品，应返回标准业务拒绝结果"
+            工具参数:
+              merchantIds: ["11897214392730629"]
+              productIds: ["11897285288461317"]
+            成功标准:
+              - 模式: 拒绝
+
+      - 能力: "新增Local店铺商品"
+        操作类型: "创建"
+        layer: "L2"
+        # ⚠ 该工具的店铺参数是 merchantId（单数），与另两个写工具的
+        #   merchantIds（数组）不同 —— 按服务端 schema 校正（2026-11-09）。
+        参数: [merchantId, products]
+        工具: batch_insert_products
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "给 ZH_Rooster_Local 加一个新商品"
+        成功标准:
+          - 模式: 拒绝
+        负向场景:
+          - 输入: "对 Local 店铺执行新增商品，应返回标准业务拒绝结果"
+            工具参数:
+              merchantId: "11897214392730629"
+              products: []
+            成功标准:
+              - 模式: 拒绝
+
+  # ---------------------------------------------------------------
+  # 店铺不可达 / 局部失败 ★★★ A-2 规则 4 专项 ★★★
+  # ---------------------------------------------------------------
+  # 需求原文（A-2 规则 4）：
+  #   「Local 伺服器连线失败或逾时时，沿用既有查询异常处理，
+  #     不得将错误结果解读为零资料。」
+  #
+  # 为什么单独成组：这是 A-2 里唯一「断言方向是反的」的要求——
+  #   多数用例期望 code=0 有数据，而这里期望**不能**用 code=0 掩盖失败。
+  #
+  # 断网实测（2026-11-06，人工给 Local 店断网）暴露 P0 缺陷：
+  #   query_menus / query_categories / query_products_by_filter 返回
+  #     {"code":0, "msg":"Found 0 menus; 1 stores failed.", "data":{"data":{}}}
+  #   → code=0（成功）+ 0 条数据，失败信息只藏在 msg 文本里。
+  #   调用方若只看 code，会把「店铺离线」误读为「该店没有菜单」。
+  #   而 query_datax_* / query_order_details_by_ids / query_staff_attendances
+  #   同样条件下正确返回 50001，说明这三个工具错误处理缺失。
+  #
+  # ⚠ 断网无法在自动化里稳定复现（要人去拔网/改防火墙），
+  #   故用**「一个可达店铺 + 一个不可达店铺」的混合请求**作为等价探针：
+  #   只要服务端有任何一个店铺失败，就不得把整体结果报成「成功且 0 条」，
+  #   至少要让调用方能从结构化字段（code 或 failedMerchants）判断出部分失败。
+  #   这是同一类缺陷（局部失败被吞）的可持续回归方式，无需人工干预。
+  - 分组: "店铺不可达与局部失败"
+    说明: "A-2 规则4：店铺连不上/超时时不得把错误当零数据；部分店铺失败必须可从结构化字段识别"
+    # ⚠⚠ 本组用例【必须人工断网才能执行】⚠⚠
+    #
+    # 为什么不能自动化（2026-11-06 实测结论）：
+    #   尝试用「不存在的 merchantId」模拟不可达店铺，**行不通**——
+    #   · 混合请求 [真实店, 99999999999999999] → 服务端直接过滤掉无效 ID，
+    #     返回 code=0 + "Found 6 menus; 0 stores failed."（不算失败，测不出缺陷）
+    #   · 单独传 99999999999999999 → 走鉴权/存在性校验，返回 40100
+    #     "The requested merchant is not authorized for the current company."
+    #     这是「店铺不存在」，不是「店铺存在但连不上」，语义完全不同。
+    #   「存在但不可达」只可能由断网/防火墙/服务宕机造成，无法用参数构造。
+    #
+    # 因此本组用例的正确使用方式是：
+    #   1) 人工给目标 Local 店铺断网（或停掉其服务）
+    #   2) 执行本组用例
+    #   3) 断言：返回不得是 code=0 + 空数据（当前缺陷正是如此）
+    #
+    # 已知缺陷（2026-11-06 断网实测）：
+    #   query_menus / query_categories / query_products_by_filter 返回
+    #   {"code":0, "msg":"Found 0 menus; 1 stores failed.", "data":{"data":{}}}
+    #   → 成功码 + 0 条，失败只藏在 msg 文本里，违反 A-2 规则 4。
+    #   而 query_datax_* / query_order_details_by_ids / query_staff_attendances
+    #   同条件正确返回 50001 —— 说明是这三个工具的错误处理缺失。
+    需要人工前置条件: "目标 Local 店铺断网/服务停止"
+    能力列表:
+      - 能力: "断网时查询菜单"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantIds]
+        工具: query_menus
+        筛选实体: {serverMode: "Local"}
+        仅参数矩阵: true
+        口语问法:
+          - "店铺连不上的时候查菜单会怎样"
+        成功标准:
+          - 模式: 语义
+            期望: "Local 店铺不可达时必须返回非 0 业务错误码；不得以 code=0 + 空数据返回，使调用方把『店铺离线』误读为『该店没有菜单』"
+        参数矩阵:
+          - 输入: "断网时查询该店菜单（应报错，不得返回空成功）"
+            工具参数:
+              merchantIds: ["11897214392730629"]
+
+      - 能力: "断网时查询分类"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantIds]
+        工具: query_categories
+        筛选实体: {serverMode: "Local"}
+        仅参数矩阵: true
+        口语问法:
+          - "店铺连不上的时候查分类会怎样"
+        成功标准:
+          - 模式: 语义
+            期望: "店铺不可达时必须返回非 0 业务错误码；不得以 code=0 + 空数据返回"
+        参数矩阵:
+          - 输入: "断网时查询该店分类（应报错，不得返回空成功）"
+            工具参数:
+              merchantIds: ["11897214392730629"]
+
+      - 能力: "断网时查询商品"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantIds]
+        工具: query_products_by_filter
+        筛选实体: {serverMode: "Local"}
+        仅参数矩阵: true
+        口语问法:
+          - "店铺连不上的时候查商品会怎样"
+        成功标准:
+          - 模式: 语义
+            期望: "店铺不可达时必须返回非 0 业务错误码；不得以 code=0 + 空数据返回"
+        参数矩阵:
+          - 输入: "断网时查询该店商品（应报错，不得返回空成功）"
+            工具参数:
+              merchantIds: ["11897214392730629"]
+
+      # 以下三个是对照组：同样断网条件下它们**正确报错**，
+      # 用来证明「不是整条链路坏了，而是上面三个工具的错误处理缺失」。
+      - 能力: "断网时查询经营汇总(对照)"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantId, relativePeriod]
+        工具: query_datax_total_reports
+        筛选实体: {serverMode: "Local"}
+        仅参数矩阵: true
+        口语问法:
+          - "店铺连不上时查营业汇总"
+        成功标准:
+          - 模式: 语义
+            期望: "返回业务错误（实测 50001），不得返回 code=0 的空汇总"
+        参数矩阵:
+          - 输入: "断网时查询经营汇总（已知正确报 50001）"
+            工具参数:
+              merchantId: "11897214392730629"
+              relativePeriod: "Today"
+
+      - 能力: "断网时查询订单明细(对照)"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantId, relativePeriod]
+        工具: query_datax_order_sales_reports
+        筛选实体: {serverMode: "Local"}
+        仅参数矩阵: true
+        口语问法:
+          - "店铺连不上时查订单明细"
+        成功标准:
+          - 模式: 语义
+            期望: "返回业务错误（实测 50001），不得返回 code=0 的空列表"
+        参数矩阵:
+          - 输入: "断网时查询订单明细（已知正确报 50001）"
+            工具参数:
+              merchantId: "11897214392730629"
+              relativePeriod: "Today"
+
+      - 能力: "断网时查询员工考勤(对照)"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantId, startAt, endAt]
+        工具: query_staff_attendances
+        筛选实体: {serverMode: "Local"}
+        仅参数矩阵: true
+        口语问法:
+          - "店铺连不上时查员工考勤"
+        成功标准:
+          - 模式: 语义
+            期望: "返回业务错误（实测 50001），不得返回 code=0 的空列表"
+        参数矩阵:
+          - 输入: "断网时查询员工考勤（已知正确报 50001）"
+            工具参数:
+              merchantId: "11897214392730629"
+              startAt: "2026-11-01"
+              endAt: "2026-11-08"
+
+  # ---------------------------------------------------------------
+  # Cloud 对照组 ★★★ 本数据集最关键的分组 ★★★
+  # ---------------------------------------------------------------
+  # 为什么必须有 Cloud 组：A-2 要求「Local 查询语义与既有 Cloud 一致」，
+  # A-3 要求「Local 写操作一律禁用」。只有把「同一个工具 + 同一组参数」
+  # 在 Cloud 店上跑一遍，才能证明：
+  #   ① A-2：Local 返回结构与 Cloud 一致（不是 Local 单独造了个格式）
+  #   ② A-3：Local 被拒是「因为它是 Local」，而不是「这个工具本来就不能用」
+  # 没有 Cloud 组，A-3 的全部拒绝用例都可能被「工具本身坏了」解释掉，
+  # 断言就失去区分度。
+  #
+  # 注意：Cloud 店 chongqing hot 的 query_datax_total_reports 当前稳定报
+  #   50001（todayLocalAt 字段缺陷），故 Cloud 侧只放订单报表作一致性基线。
+  - 分组: "Cloud对照"
+    说明: "同一工具同一参数在 Cloud 店铺上的行为基线，用于证明 Local 的差异源自路由而非工具本身"
+    能力列表:
+      - 能力: "查询Cloud店铺订单明细"
+        操作类型: "查询"
+        layer: "L1"
+        # 与 Local 侧参数保持一致 —— A-2 要求「Local 查询语义与 Cloud 一致」，
+        # 两边参数集不同就无法逐项对照（同一过滤条件必须两边都能跑）。
+        参数: [merchantId, relativePeriod, orderType, orderStatus, paymentStatus,
+               paymentType, sourceName, orderSourceType, paymentTerminalName,
+               sortField, sortDirection, limit]
+        工具: query_datax_order_sales_reports
+        筛选实体: {serverMode: "Cloud"}
+        口语问法:
+          - "chongqing hot 今天的订单明细"
+          - "云端店今天有哪些单"
+          - "云端店只看堂食的订单"
+        成功标准:
+          - 模式: 语义
+            期望: "返回订单销售明细，字段结构须与 Local 店铺完全一致"
+
+      - 能力: "查询Cloud店铺目录报表"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantId, relativePeriod, type, refId, name, sortField,
+               sortDirection, limit]
+        工具: query_datax_menu_product_category_reports
+        筛选实体: {serverMode: "Cloud"}
+        口语问法:
+          - "chongqing hot 今天哪个商品卖得最好"
+        成功标准:
+          - 模式: 语义
+            期望: "返回菜单/商品/分类报表记录，字段结构须与 Local 店铺完全一致"
+
+      # ★ 2026-11-06 补：Cloud 侧经营汇总对照。
+      #   此前刻意跳过（理由"Cloud total 报表当前 50001 不可用"），但跳过意味着
+      #   A-2「Local 与 Cloud 查询语义一致」在经营汇总这一项完全没被验证。
+      #   正确做法是测出来并记录缺陷，而不是回避。
+      #   预期：Cloud 店该工具稳定 50001（todayLocalAt 字段缺陷），
+      #   故这些用例会稳定失败——它们本身就是缺陷的证明。
+      - 能力: "查询Cloud店铺经营汇总"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantId, relativePeriod, startAt, endAt, sortField,
+               sortDirection, limit]
+        工具: query_datax_total_reports
+        筛选实体: {serverMode: "Cloud"}
+        口语问法:
+          - "chongqing hot 今天的销售额多少"
+          - "云端店上周经营汇总"
+        成功标准:
+          - 模式: 语义
+            期望: "返回经营汇总，字段结构须与 Local 店铺完全一致"
+
+      - 能力: "查询Cloud店铺路由模式"
+        操作类型: "查询"
+        layer: "L1"
+        参数: []
+        工具: query_merchants
+        筛选实体: {serverMode: "Cloud"}
+        口语问法:
+          - "chongqing hot 是本地还是云端的"
+        成功标准:
+          - 模式: 语义
+            期望: "返回该店铺且 serverMode=Cloud，与 Local 店形成路由对照"
+
+  # ---------------------------------------------------------------
+  # 只读查询面（对照：这些非报表类查询不属 A-2 转发范围，但可用于断言路由）
+  # ---------------------------------------------------------------
+  - 分组: "Local只读查询"
+    说明: "菜单/分类/员工/商品等只读查询，用于交叉验证 Local 店铺读取通道，并作为写入安全边界的同域快照工具"
+    能力列表:
+      # 商品域只读工具（A-3 的改/删/增商品写能力也需要「同域」探针与快照）。
+      #
+      # ⚠ 更正（2026-11-06 实测推翻 11-05 的错误结论）：
+      #   此前判定 query_products_by_filter / query_products_by_ids「Local 不可用」，
+      #   根因是**参数名传错了**，不是工具不可用：
+      #     · query_products_by_ids   要 merchantIds（复数列表），传 merchantId 报 40100
+      #     · query_products_by_filter 同样要 merchantIds（复数列表）
+      #     · query_product_detail_by_id 要 merchantId（单数），不传报 40000「店铺 ID 不能为空」
+      #   按正确的参数名调用后，三者在 Local 店全部 code=0 正常返回。
+      #   教训：报 40100/40000 时先核对参数名与类型（单数/复数、标量/列表），
+      #   不要直接下「该工具在 Local 不可用」的结论。
+      #
+      # 实测可用枚举（Local 店，2026-11-06）：
+      #   status : Selling / Off（SoldOut、Draft、Deleted、Hidden、Active 均协议层异常）
+      #   type   : Normal（Product、Modifier、Combo、Package、Menu 均协议层异常）
+      #   categoryIds : 真实分类 ID（如 11897285288002565）可用
+      - 能力: "查询Local店铺商品"
+        操作类型: "查询"
+        layer: "L1"
+        参数: [merchantIds, productName]
+        工具: search_products_by_name
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 有哪些商品"
+          - "搜一下本地店的饺子类商品"
+        成功标准:
+          - 模式: 语义
+            期望: "返回商品列表，含 id、name、price、status"
+
+      # ★ 2026-11-06 新增：按 ID 查商品详情（Local 可用，传 merchantId 单数）
+      - 能力: "查询Local店铺商品详情"
+        操作类型: "查询"
+        layer: "L1"
+        # includeCategory/includeMenu/includeSpecificationGroup 为布尔选填
+        # （2026-11-09 按实时 schema 补全，此前 configs 漏声明导致零覆盖）
+        参数: [merchantId, productId, includeCategory, includeMenu,
+               includeSpecificationGroup]
+        工具: query_product_detail_by_id
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 这个商品多少钱"
+          - "看一下本地店这个商品的详情和分类"
+        成功标准:
+          - 模式: 语义
+            期望: "返回商品详情（product）与所属分类（categories），含 id、name、price、stock、status"
+
+      # ★ 2026-11-06 新增：按 ID 批量查商品（Local 可用，传 merchantIds 列表）
+      - 能力: "按ID批量查询Local店铺商品"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantIds, productIds]
+        工具: query_products_by_ids
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 这几个商品现在什么状态"
+        成功标准:
+          - 模式: 语义
+            期望: "返回商品列表，含 id、name、price、status；不存在的 ID 如实省略或返回空"
+
+      # ★ 2026-11-06 新增：按条件筛选商品（Local 可用，传 merchantIds 列表）
+      - 能力: "按条件筛选Local店铺商品"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantIds, status, type, categoryIds]
+        工具: query_products_by_filter
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 有哪些在售商品"
+          - "本地店下架的商品有哪些"
+          - "本地店这个分类下有哪些商品"
+        成功标准:
+          - 模式: 语义
+            期望: "返回符合条件的商品列表，含 id、name、price、status"
+
+      - 能力: "查询Local店铺菜单"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantIds]
+        工具: query_menus
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 有哪些菜单"
+        成功标准:
+          - 模式: 语义
+            期望: "返回菜单列表，含 id、name、status，且含 serverMode=Local"
+
+      - 能力: "查询Local店铺分类"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantIds]
+        工具: query_categories
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 有哪些商品分类"
+        成功标准:
+          - 模式: 语义
+            期望: "返回分类列表，含 id、name，且含 serverMode=Local"
+
+      - 能力: "查询Local店铺员工"
+        操作类型: "查询"
+        layer: "L2"
+        参数: [merchantIds]
+        工具: query_merchant_staffs
+        筛选实体: {serverMode: "Local"}
+        口语问法:
+          - "ZH_Rooster_Local 有哪些员工"
+        成功标准:
+          - 模式: 语义
+            期望: "返回员工列表，含 id、firstName、isActive"
+
+  # ---------------------------------------------------------------
+  # 工具元数据（协议层）
+  # ---------------------------------------------------------------
+  - 分组: "工具元数据"
+    说明: "MCP 协议层的工具发现与描述检查（tools/list）"
+    能力列表:
+      - 能力: "列出可用工具"
+        操作类型: "查询"
+        layer: "L1"
+        参数: []
+        工具: "*"
+        类型: "meta"
+        口语问法:
+          - "当前 MCP 提供哪些工具"
+        成功标准:
+          - 模式: 语义
+            期望: "返回全部 17 个工具，至少含 query_datax_total_reports / query_datax_order_sales_reports / query_datax_menu_product_category_reports 及 query_merchants"

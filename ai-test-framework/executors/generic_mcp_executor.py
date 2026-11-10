@@ -28,6 +28,7 @@ import re
 import sys
 import time
 from contextlib import AsyncExitStack
+from typing import Any, Dict, List
 
 import httpx
 import yaml
@@ -204,6 +205,76 @@ class _SysConfig:
                         "verify_expect": c.get("verify_expect", True),
                     }
         self.capabilities = list(self.cap_tool.keys())
+
+        # ---- 实体上下文（按实体覆盖请求头）----
+        # 背景（2026-11-04，AI POS 1.2 店铺服务器路由）：同一 TOKEN 可见多间公司，
+        # 但 CompanyId 请求头决定能操作哪间公司。Local 店与 Cloud 店分属不同公司时，
+        # 只换 merchantId 不换 CompanyId 会稳定报 40100 越权，请求到不了路由层。
+        # 故把 companyId 降到「实体层」：实体清单每条可带 companyId / serverMode 等，
+        # 执行时按用例声明的实体上下文动态换头。
+        # 未配置实体清单的系统 self.entity_ctx 为空，_resolve_context 恒返回 None，
+        # 行为与改动前完全一致（不破坏既有系统）。
+        self.entity_ctx = self._load_entity_context()
+        self.context_field = cfg.get("实体上下文字段", "companyId")
+
+    @staticmethod
+    def _load_entity_context():
+        """读实体清单，建立 {实体ID: {companyId, serverMode, ...}} 索引。
+
+        只收录带 companyId 的实体（没带的不参与上下文解析）。
+        实体清单路径按「能力目录同目录下的 实体清单_*.yaml」自动发现，
+        也认能力目录顶层「实体清单」字段显式指定。
+        """
+        try:
+            import glob as _glob
+            import yaml as _yaml
+        except ImportError:
+            return {}
+        idx = {}
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        abi_dir = os.path.join(base_dir, "ability")
+        if not os.path.isdir(abi_dir):
+            return {}
+        for p in _glob.glob(os.path.join(abi_dir, "实体清单_*.yaml")):
+            try:
+                with open(p, encoding="utf-8") as f:
+                    doc = _yaml.safe_load(f) or {}
+            except Exception:
+                continue
+            for ent in (doc.get("实体清单") or []):
+                if not isinstance(ent, dict):
+                    continue
+                if not ent.get("companyId"):
+                    continue
+                ctx = dict(ent)
+                for _k in ("id", "merchantId", "merchantIds", "entityId"):
+                    _v = ent.get(_k)
+                    if isinstance(_v, list):
+                        for _x in _v:
+                            if _x:
+                                idx[str(_x)] = ctx
+                    elif _v:
+                        idx[str(_v)] = ctx
+        return idx
+
+    def resolve_entity_context(self, tool_params):
+        """按工具参数里的店铺/实体 ID，从实体清单解析出上下文（含 companyId）。
+
+        命中条件：参数中的 merchantId / merchantIds / entityId(s) 任一值能在实体
+        清单找到。找不到返回 None（调用方回退全局默认头，行为不变）。
+        """
+        if not self.entity_ctx or not isinstance(tool_params, dict):
+            return None
+        for k in ("merchantId", "merchantIds", "entityId", "entityIds", "storeId", "storeIds"):
+            v = tool_params.get(k)
+            if not v:
+                continue
+            vals = v if isinstance(v, list) else [v]
+            for x in vals:
+                ctx = self.entity_ctx.get(str(x))
+                if ctx:
+                    return ctx
+        return None
 
     @staticmethod
     def _extract_db_verify(cap):
@@ -402,18 +473,42 @@ class GenericMcpExecutor(BaseExecutor):
         return getattr(self.sys, "lifecycle", None)
 
     # ---- 连接上下文 ----
-    def _client_headers(self):
+    def _client_headers(self, ctx=None):
+        """构造请求头。ctx 为「用例级运行时上下文」（见用例的 运行时上下文 字段）。
+
+        优先级：用例级 ctx > 实体清单解析出的实体上下文 > config/环境变量全局值。
+        ctx 里可覆盖的键由 configs 的「实体上下文字段」声明（默认 companyId），
+        故换公司/换租户只需在用例上声明，不必改环境变量。
+        """
         headers = {}
         if self.sys.token:
             headers["Authorization"] = f"Bearer {self.sys.token}"
-        if self.sys.company_id:
-            headers[self.sys.company_header] = self.sys.company_id
+        cid = (ctx or {}).get(getattr(self.sys, "context_field", "companyId")) \
+            or self.sys.company_id
+        if cid:
+            headers[self.sys.company_header] = cid
         return headers
 
-    async def _session_context(self):
+    def _case_context(self, case=None, inp=None):
+        """取用例声明的「运行时上下文」，用于按实体覆盖请求头（如 CompanyId）。
+
+        优先级：
+          ① 用例顶层「运行时上下文」
+          ② 用例输入块内「运行时上下文」（A 类直连用例把工具参数放 输入 里，放这里更近）
+          ③ None（回退实体清单自动解析 / 全局默认头）
+        未声明该字段的用例返回 None，行为与改动前完全一致。
+        """
+        for src in (case, inp):
+            if isinstance(src, dict):
+                ctx = src.get("运行时上下文")
+                if isinstance(ctx, dict) and ctx:
+                    return ctx
+        return None
+
+    async def _session_context(self, ctx=None):
         stack = AsyncExitStack()
         http = await stack.enter_async_context(
-            httpx.AsyncClient(headers=self._client_headers(), timeout=120.0)
+            httpx.AsyncClient(headers=self._client_headers(ctx), timeout=120.0)
         )
         read, write = await stack.enter_async_context(
             streamable_http_client(self.sys.base_url, http_client=http)
@@ -426,18 +521,165 @@ class GenericMcpExecutor(BaseExecutor):
         """调用 MCP 工具，返回 (is_error, 文本, latency_ms)
 
         入参按 configs 的「参数包装」包一层（新老系统外壳名不同，见 _SysConfig.param_wrapper）。
-        限流友好：每次调用前可选 sleep 一个间隔（环境变量 REQUEST_INTERVAL_MS 控制，
-        默认 0 不等待）。多轮采样（--runs>1）时建议设 200~500ms，避免触发服务端
-        「rate limit exceeded」（PocketStore 5 次采样实测会大量 429）。
+
+        限流友好（三层，读写分开配额）：
+          ① 调用前固定间隔：REQUEST_INTERVAL_MS（默认 0）；
+             写操作另有 WRITE_INTERVAL_MS（默认 0），叠加生效。
+          ② 429 指数退避重试（可加重试上限 + 上限封顶）：
+             读：RATE_LIMIT_MAX_RETRY（默认 3）/ RATE_LIMIT_BASE_MS（默认 1000）
+             写：WRITE_RATE_LIMIT_MAX_RETRY（默认 6）/ WRITE_RATE_LIMIT_BASE_MS（默认 3000）
+             RATE_LIMIT_MAX_WAIT_MS 限制单次等待上限（默认 30000）。
+          ③ 限流类失分默认不计入能力结论：重试耗尽后文案带 `[限流未恢复]` 标记，
+             由评分器归因为 env 而非能力缺陷（见 rubric 的 env 归因）。
+
+        为什么读写要分开（2026-11-01 实测）：PocketStore 的写接口是独立额度，
+        返回 `{"code":1007,"msg":"... 429: Write operation rate limit exceeded"}`；
+        默认 3 次 / 1s 基数（合计等 7s）压不住，写维度用例会大面积被限流噪声污染。
         """
         _interval = float(os.environ.get("REQUEST_INTERVAL_MS", "0") or 0) / 1000.0
         if _interval > 0:
             await asyncio.sleep(_interval)
-        t0 = time.monotonic()
-        result = await session.call_tool(name, {self.sys.param_wrapper: tool_params})
-        latency_ms = (time.monotonic() - t0) * 1000
-        texts = [c.text for c in result.content if c.type == "text"]
-        return result.is_error, "\n".join(texts), round(latency_ms, 1)
+
+        # 写操作按工具名前缀判定（与数据保护门禁口径一致）
+        is_write = self._is_write_tool(name)
+        if is_write:
+            _winterval = float(os.environ.get("WRITE_INTERVAL_MS", "0") or 0) / 1000.0
+            if _winterval > 0:
+                await asyncio.sleep(_winterval)
+            max_retry = int(os.environ.get("WRITE_RATE_LIMIT_MAX_RETRY", "6") or 0)
+            base_ms = float(os.environ.get("WRITE_RATE_LIMIT_BASE_MS", "3000")
+                            or 3000)
+        else:
+            max_retry = int(os.environ.get("RATE_LIMIT_MAX_RETRY", "3") or 0)
+            base_ms = float(os.environ.get("RATE_LIMIT_BASE_MS", "1000") or 1000)
+        max_wait_ms = float(os.environ.get("RATE_LIMIT_MAX_WAIT_MS", "30000")
+                            or 30000)
+
+        total_wait = 0.0
+        attempt = 0
+        # 瞬时故障重试（独立于限流）：被测系统偶发 50001 / 连接层错误。
+        # 这一类**不是稳定缺陷**——实测 2026-11-06：query_menus / query_categories
+        # / query_products_by_ids / query_products_by_filter 在批量执行时各有
+        # 1~2 条报 "50001 EasyPos merchant request failed." 或
+        # "MCP 调用失败: Server returned an error response"，
+        # 但单独复测每个工具 5 次 × 4 个工具 = 20/20 全部成功。
+        # 若不重试，会把这些环境抖动记成 9 条用例失败，报告失真。
+        #
+        # ⚠ 只对读操作重试：写操作重试可能重复执行（幂等性不可假设），
+        #   宁可让它失败并交给人工判断。
+        # ⚠ 不重试「业务拒绝」（参数非法/越权），那种重试无意义只会拖慢。
+        flaky_retry = 0 if is_write else int(
+            os.environ.get("FLAKY_MAX_RETRY", "2") or 0)
+        flaky_base_ms = float(os.environ.get("FLAKY_BASE_MS", "1500") or 1500)
+        flaky_n = 0
+        while True:
+            t0 = time.monotonic()
+            result = await session.call_tool(name,
+                                             {self.sys.param_wrapper: tool_params})
+            latency_ms = (time.monotonic() - t0) * 1000
+            texts = [c.text for c in result.content if c.type == "text"]
+            text = "\n".join(texts)
+
+            # 命中限流且还有重试次数 → 指数退避后重试
+            if attempt < max_retry and self._is_rate_limited(text):
+                wait_s = min(base_ms * (2 ** attempt), max_wait_ms) / 1000.0
+                total_wait += wait_s
+                attempt += 1
+                print(f"   [限流] {name}{'（写）' if is_write else ''} 429，"
+                      f"{wait_s:.1f}s 后重试（第 {attempt}/{max_retry} 次）")
+                await asyncio.sleep(wait_s)
+                continue
+            # 瞬时故障（服务端偶发 50001 / 连接错误）→ 读操作退避重试
+            if flaky_n < flaky_retry and self._is_transient_failure(
+                    result.is_error, text):
+                flaky_n += 1
+                wait_s = (flaky_base_ms * flaky_n) / 1000.0
+                total_wait += wait_s
+                print(f"   [瞬时故障] {name} 第 {flaky_n}/{flaky_retry} 次重试，"
+                      f"{wait_s:.1f}s 后")
+                await asyncio.sleep(wait_s)
+                continue
+            # 重试仍失败：在文案里标注，便于报告区分「重试耗尽」与「首次即失败」
+            if attempt > 0 and self._is_rate_limited(text):
+                text = (f"[限流未恢复/重试{attempt}次/累计等待{total_wait:.1f}s] "
+                        + text)
+            if flaky_n > 0:
+                text = f"[瞬时故障重试{flaky_n}次] " + text
+            return result.is_error, text, round(latency_ms + total_wait * 1000, 1)
+
+    # ---- 瞬时故障识别（供 _call_tool 决定是否重试）----
+    # 只匹配「下游/传输层偶发失败」，不含业务拒绝（参数非法、越权、不支持）。
+    _TRANSIENT_HINTS = (
+        "50001",                          # EasyPos merchant request failed（下游请求失败）
+        "server returned an error response",
+        "unhandled errors in a taskgroup",
+        "connection reset", "connection aborted",
+        "remote protocol error", "server disconnected",
+        "bad gateway", "service unavailable", "gateway timeout",
+        "econnreset", "econnaborted",
+    )
+
+    @classmethod
+    def _is_transient_failure(cls, is_error, text):
+        """判断是否为「可重试的瞬时故障」。
+
+        必须排除业务拒绝：业务拒绝重试无意义且会拖慢执行。
+        判据：文本命中瞬时故障特征，且不是明确的业务规则拒绝。
+        """
+        s = str(text or "").lower()
+        if not s:
+            return False
+        if not any(h in s for h in cls._TRANSIENT_HINTS):
+            return False
+        # 明确的业务拒绝不收（如参数校验、权限、不支持该店铺）
+        biz_kw = ("merchantids", "不能为空", "must be", "invalid parameter",
+                  "unauthorized", "permission", "not supported",
+                  "rate limit", "429")
+        return not any(k in s for k in biz_kw)
+
+    # ---- 写工具判定 ----
+    # 前缀式：add_xxx / create_xxx（动作在前）
+    _WRITE_PREFIXES = ("add_", "create_", "update_", "delete_", "remove_", "set_",
+                       "bind_", "unbind_", "publish_", "batch_", "generate_")
+    # 后缀式：item_update / menu_create / category_delete（实体在前）
+    # ⚠ 只判前缀会漏掉「实体_动作」命名（实测 item_update 被判成读操作，
+    #   导致写限流没走加长退避仍大面积 429）。
+    _WRITE_SUFFIXES = ("_create", "_update", "_delete", "_remove", "_add",
+                       "_set", "_bind", "_unbind", "_publish", "_batch",
+                       "_enable", "_disable", "_restore", "_reset")
+
+    @classmethod
+    def _is_write_tool(cls, name):
+        """判断是否为写操作：动作前缀 或 动作后缀（覆盖两种命名风格）。"""
+        n = str(name or "")
+        return n.startswith(cls._WRITE_PREFIXES) or n.endswith(cls._WRITE_SUFFIXES)
+
+    # ---- 限流识别（供 _call_tool 使用；各系统文案不同，统一小写去空格后匹配）----
+    _RATE_LIMIT_HINTS = ("ratelimit", "429", "toomanyrequests",
+                         "限流", "请求过于频繁", "throttl")
+
+    @staticmethod
+    def _is_rate_limited(text):
+        """判断返回文本是否表示被限流（429 / rate limit exceeded）。
+
+        ⚠ 必须先判「业务成功」：原实现只做关键词包含匹配，会把**成功响应**
+        误判成限流。实测 2026-11-01：item_list 明明返回
+          {"code":0,"msg":"Successfully retrieved 20 item(s) (page 1/3, total 45)"}
+        却被判成 429 并重试 3 次（累计等 7s），把账号额度真的打满，
+        形成「越重试越限流」的死循环，最终阻塞数据清理。
+        规则：JSON 里 code=0 或 success=true 且不含 429 时，一律视为成功。
+        """
+        if not text:
+            return False
+        import re as _re
+        s0 = str(text)
+        if "429" not in s0:
+            if _re.search(r'"code"\s*:\s*0\b', s0):
+                return False
+            if _re.search(r'"success"\s*:\s*true', s0):
+                return False
+        s = "".join(s0.lower().split())
+        return any(h in s for h in GenericMcpExecutor._RATE_LIMIT_HINTS)
 
     async def _restore_after_case(self, snaps, lc):
         """用例结束后按快照还原数据（数据生命周期）。
@@ -486,12 +728,16 @@ class GenericMcpExecutor(BaseExecutor):
             print(f"[生命周期] 清理过程异常（不影响用例结论）：{e}")
 
     # ---- 主流程 ----
-    def handle(self, capability, user_input, inp, expected):
-        return asyncio.run(self._call_capability(capability, user_input, expected, inp))
+    def handle(self, capability, user_input, inp, expected, case=None):
+        return asyncio.run(self._call_capability(capability, user_input, expected, inp,
+                                                 case=case))
 
-    async def _call_capability(self, capability, user_input, expected, inp=None):
+    async def _call_capability(self, capability, user_input, expected, inp=None,
+                               case=None):
         steps = []
         cap_tool = self.sys.cap_tool.get(capability, "")
+        # 用例级运行时上下文（按实体覆盖请求头），由用例的「运行时上下文」声明
+        _ctx = self._case_context(case, inp)
 
         # 1. LLM 意图理解：记录 LLM 原始选择的工具 + 解析的意图（供评分区分维度）
         llm_tool = ""
@@ -623,8 +869,12 @@ class GenericMcpExecutor(BaseExecutor):
                         "skipped": True}
 
         _snaps = []
+        # 若用例未显式声明上下文，则按本次实际参数里的店铺/实体 ID 从实体清单解析
+        # （实体清单条目带 companyId 时才生效；否则仍走全局默认头）。
+        if not _ctx:
+            _ctx = self.sys.resolve_entity_context(tool_params)
         try:
-            stack, session = await self._session_context()
+            stack, session = await self._session_context(_ctx)
             async with stack:
                 # 写前快照：记录目标实体原值，供异常后恢复/事后查证。
                 # 快照目录按「本次运行」隔离（RUN_ID 或启动时间），
@@ -742,9 +992,16 @@ class GenericMcpExecutor(BaseExecutor):
                 _success = _parsed.get("success", True)
                 if _code not in (0, 200) or _success is False:
                     biz_error = _parsed.get("msg") or str(_parsed.get("code"))
-                    # 真异常关键词（服务端崩溃）→ ERROR；其余业务拒绝 → WARNING
+                    # 真异常/系统故障 → ERROR；业务拒绝 → WARNING
+                    # 与 direct_mcp_executor 保持同一口径：系统故障（如 DataX 聚合
+                    # 窗口未校验 across DST、字段缺失、依赖不可用）不算"成功拦截"，
+                    # 否则期望正常返回的用例会被误记成通过（2026-11-06 A-L2-009）。
                     if any(k in str(biz_error).lower() for k in
-                           ("unexpected error", "exception", "internal server", "server error")):
+                           ("unexpected error", "exception", "internal server",
+                            "server error", "not verified across dst",
+                            "historical repair", "aggregate window",
+                            "字段缺失", "字段格式", "unavailable",
+                            "not available", "服务不可用", "dependency")):
                         biz_level = "ERROR"
                     else:
                         biz_level = "WARNING"  # 安全拦截/参数校验/业务规则拒绝
@@ -759,7 +1016,10 @@ class GenericMcpExecutor(BaseExecutor):
             })
             return {"tool": tool_name, "result": text, "params": tool_params,
                     "error": f"业务拒绝/异常: {biz_error}", "biz_error": biz_error,
-                    "block": True, "level": biz_level, "steps": steps,
+                    # 仅 WARNING（系统明确拒绝）算已拦截；ERROR（系统故障）不算，
+                    # 否则期望正常返回的用例会被记成"按预期拦截"通过
+                    "block": True if biz_level == "WARNING" else None,
+                    "level": biz_level, "steps": steps,
                     "llm_tool": llm_tool, "tool_correct": tool_correct,
                     "intent_correct": intent_correct, "param_correct": param_correct,
                     "llm_intent": llm_intent, "impact": impact,
@@ -1128,6 +1388,161 @@ MCP 返回结果：
                 return t["name"]
         return ""
 
+    # =================================================================
+    # 写用例保护路径诊断（跑之前先看「哪些真跑、哪些跳过」）
+    # =================================================================
+    def diag_write_paths(self, cases, dim=None):
+        """逐条判定写用例会走哪条数据保护路径。
+
+        为什么需要：2026-11-01 跑「写入安全边界」15 条，日志报「失败 0」，
+        实际 dimensions 里 skipped=15 / n=0 —— 一条都没执行，是个假通过。
+        根因是「跳过」只体现在结果文件的 skipped 计数里，执行前完全不可见。
+        本方法把判定提前到执行前，跑之前就能看见哪些会被跳过、哪些无保护。
+
+        返回 {路径: 条数}，以及每条用例的明细列表。
+        """
+        lc = self.get_lifecycle()
+        restorable, creatable, selfdel = set(), set(), set()
+        irreversible = set()
+        if lc is not None:
+            restorable = set((lc.restorable or {}).keys())
+            creatable = set((lc.creatable or {}).keys())
+            irreversible = set(lc.irreversible or ())
+            selfdel = set((lc.self_delete or {}).keys())
+
+        # ⚠ 判定顺序必须与 handle() 的拦截顺序完全一致，否则「诊断说能跑、
+        #   实际整批跳过」（2026-11-01 踩过：诊断报 13 条可跑，跑起来 skipped=15）。
+        #   handle() 的顺序是：① 能力缺口 ② 不可恢复（含自建自删兜底）③ 快照还原。
+        stat = {}
+        rows = []
+        for c in cases:
+            d = c.get("维度") or ""
+            if dim and dim not in d:
+                continue
+            tool = ((c.get("输入") or {}).get("tool_name")) or ""
+            if not self._is_write_tool(tool):
+                continue
+            if lc is not None and lc.capability_gap(tool):
+                path = "能力缺口(跳过)"
+            elif tool in irreversible:
+                # 不可恢复：配了自建自删才算有保护，否则跳过
+                path = "自建自删" if tool in selfdel else "不可恢复(跳过)"
+            elif tool in restorable:
+                path = "可还原"
+            elif tool in creatable:
+                path = "新建后清理"
+            elif tool in selfdel:
+                path = "自建自删"
+            else:
+                path = "无保护(会真跑)"
+            stat[path] = stat.get(path, 0) + 1
+            rows.append({"用例ID": c.get("用例ID"), "工具": tool,
+                         "维度": d, "路径": path})
+        return stat, rows
+
+    # =================================================================
+    # 写接口限流探测（实测恢复窗口，用数据定退避参数而不是拍脑袋）
+    # =================================================================
+    async def probe_write_ratelimit(self, tool="item_update", gap=5.0,
+                                    rounds=5, read_limit=5, probe_id=None):
+        """实测写接口的限流窗口。
+
+        背景（2026-11-01）：PocketStore 写接口返回
+          {"code":1007,"msg":"... 429: Write operation rate limit exceeded"}
+        默认退避（3 次 / 1s 基数 / 合计 7s）压不住。这里按 gap 间隔连写，
+        看第几次开始 429、读额度是否独立，据此定 WRITE_RATE_LIMIT_BASE_MS。
+
+        ⚠ 会用「可还原」的写工具真改数据（item_update 改商品名），
+        仅限隔离测试环境；无还原规则的写工具直接拒绝探测。
+        """
+        lc = self.get_lifecycle()
+        rule = lc.rule_for(tool) if lc else None
+        if not rule:
+            return {"ok": False,
+                    "reason": f"{tool} 未在「可还原」声明，探测会留下无法回滚的改动"}
+        snap_tool = rule.get("快照工具")
+        rec_keys = rule.get("恢复参数键") or {}
+        write_key = next(iter(rec_keys.values()), "newName")
+        # 探测必须指定一个真实存在的实体，否则读不到原值、写也不生效
+        # （2026-11-01 踩过：只传 merchantIds 不传 itemId，item_detail 拿不到数据，
+        #  写操作实际是空跑，「还原」也无从谈起）
+        pk_param = rule.get("主键参数") or "itemId"
+        if not probe_id:
+            return {"ok": False,
+                    "reason": f"必须用 --probe-id 指定一个真实的 {pk_param}"
+                              f"（否则读不到原值、写不生效）"}
+        read_params = {pk_param: probe_id}
+        _mv = self.sys.merchant_default_value()
+        if _mv is not None:
+            read_params[self.sys.merchant_param] = _mv
+
+        _stat: Dict[str, Any] = {"read_429": 0, "write_ok": 0, "write_429": 0}
+        _detail: List[Dict[str, Any]] = []
+        out: Dict[str, Any] = {"ok": True, "tool": tool, "gap": gap,
+                               "rounds": rounds}
+
+        stack, session = await self._session_context()
+        async with stack:
+            # ① 读额度是否独立于写额度
+            for _i in range(read_limit):
+                _e, t, _l = await self._call_tool(session, snap_tool, read_params)
+                if self._is_rate_limited(t):
+                    _stat["read_429"] += 1
+            # ② 按 gap 连写
+            # ⚠ 先取当前值：探测会真改名，测完必须改回，否则残留下 ratelimit-probe-N。
+            _orig = None
+            try:
+                _e0, _t0, _l0 = await self._call_tool(
+                    session, snap_tool, read_params)
+                _data = json.loads(_t0).get("data") or {}
+                # 恢复参数键形如 {"name": "newName"}：key 是实体字段，value 是写参。
+                # 从实体字段名回查原值（取不到再退回写参剥离 new 前缀）。
+                _base = next((k for k in rec_keys if k in _data), None)
+                if _base is None:
+                    _base = str(write_key)[3:] if str(write_key).lower(
+                    ).startswith("new") else str(write_key)
+                _orig = _data.get(_base)
+            except Exception:
+                _orig = None
+            out["orig_value"] = _orig
+
+            for i in range(rounds):
+                params = dict(read_params)
+                params[write_key] = f"ratelimit-probe-{i}"
+                # MCP 写工具默认 confirm=false 只预览、不真写；不显式置 true，
+                # 探测会「一律成功」的假象（实测 5/5 全成功但数据没变过）。
+                params["confirm"] = True
+                _t0 = time.monotonic()
+                _e, t, _l = await self._call_tool(session, tool, params)
+                limited = self._is_rate_limited(t)
+                if limited:
+                    _stat["write_429"] += 1
+                else:
+                    _stat["write_ok"] += 1
+                _detail.append({
+                    "n": i + 1, "limited": limited,
+                    "sec": round(time.monotonic() - _t0, 1),
+                    "head": t[:100]})
+                if i + 1 < rounds:
+                    await asyncio.sleep(gap)
+
+            # ③ 收尾还原：把名字改回探测前的原值
+            if _orig:
+                try:
+                    _rp = dict(read_params)
+                    _rp[write_key] = _orig
+                    _rp["confirm"] = True
+                    _er, _tr, _lr = await self._call_tool(session, tool, _rp)
+                    out["restored"] = not _er and not self._is_rate_limited(_tr)
+                except Exception as e:  # noqa: BLE001
+                    out["restored"] = False
+                    out["restore_error"] = str(e)[:120]
+            else:
+                out["restored"] = None
+        out.update(_stat)
+        out["detail"] = _detail
+        return out
+
     async def _lookup_id(self, tool_name, name):
         try:
             stack, session = await self._session_context()
@@ -1177,9 +1592,56 @@ async def _demo_connect(system):
 
 
 if __name__ == "__main__":
+    import argparse as _ap
     import sys as _s
-    system = _s.argv[1] if len(_s.argv) > 1 else ""
-    if not system:
-        print("用法: python generic_mcp_executor.py <系统名>")
-        _s.exit(1)
-    asyncio.run(_demo_connect(system))
+
+    _p = _ap.ArgumentParser(description="通用执行器：连通性自检 / 写用例保护诊断 / 写限流探测")
+    _p.add_argument("system", help="系统名（如 PocketStore）")
+    _p.add_argument("--write-paths", metavar="DATASET",
+                    help="诊断该数据集的写用例会走哪条保护路径（跑之前先看跳过项）")
+    _p.add_argument("--dim", default=None, help="配合 --write-paths 只看某维度")
+    _p.add_argument("--probe-ratelimit", action="store_true",
+                    help="实测写接口限流窗口（会真改一处可还原数据）")
+    _p.add_argument("--tool", default="item_update", help="探测用的可还原写工具")
+    _p.add_argument("--gap", type=float, default=5.0, help="两次写之间的间隔秒")
+    _p.add_argument("--rounds", type=int, default=5, help="写探测次数")
+    _p.add_argument("--probe-id", default=None,
+                    help="探测用的真实实体ID（如 itemId），不传会拒绝探测")
+    _a = _p.parse_args()
+
+    if _a.write_paths:
+        import yaml as _y
+        _doc = _y.safe_load(open(_a.write_paths, encoding="utf-8")) or {}
+        _ex = GenericMcpExecutor(_a.system)
+        _stat, _rows = _ex.diag_write_paths(_doc.get("用例列表") or [], _a.dim)
+        print(f"数据集: {os.path.basename(_a.write_paths)}")
+        print("=" * 76)
+        for _k, _v in sorted(_stat.items(), key=lambda x: -x[1]):
+            print(f"  {_k:16} {_v:>4} 条")
+        _risky = [r for r in _rows if r["路径"].startswith("无保护")]
+        if _risky:
+            print("\n⚠ 无保护、会真实改动数据（建议先补 configs 的「新建后清理」）:")
+            for _r in _risky:
+                print(f"  {_r['用例ID']}  {_r['工具']}")
+            _s.exit(2)
+        print("\n跳过项不会执行；其余均有自动收尾")
+    elif _a.probe_ratelimit:
+        _ex = GenericMcpExecutor(_a.system)
+        _r = asyncio.run(_ex.probe_write_ratelimit(
+            _a.tool, _a.gap, _a.rounds, probe_id=_a.probe_id))
+        print(_r if not _r.get("ok") else "")
+        if _r.get("ok"):
+            print(f"写探测 {_r['tool']}：成功 {_r['write_ok']}/{_r['rounds']}，"
+                  f"429 {_r['write_429']}，读 429 {_r['read_429']}")
+            for _d in _r["detail"]:
+                print(f"  #{_d['n']}: {'429' if _d['limited'] else '成功'} "
+                      f"{_d['sec']}s")
+            # 还原结果必须报出来：探测会真改数据，没报就等于没验证
+            _rs = _r.get("restored")
+            print(f"  还原: {'已还原' if _rs else ('未还原!' if _rs is False else '无原值可取，请人工核对')}")
+            if _r.get("restore_error"):
+                print(f"  还原失败原因: {_r['restore_error']}")
+            if _rs is False:
+                _s.exit(3)
+    else:
+        asyncio.run(_demo_connect(_a.system))

@@ -68,6 +68,12 @@ SYSTEMS = {
         "entities": "实体清单_POS数据报表.yaml",
         "types": ["A", "B", "C"],
     },
+    "poslocal": {
+        "cn": "POS Local路由",
+        "ability": "能力目录_POS_Local路由.yaml",
+        "entities": "实体清单_POS_Local路由.yaml",
+        "types": ["A", "C"],
+    },
 }
 
 HELP = __doc__

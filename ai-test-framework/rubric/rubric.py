@@ -639,7 +639,19 @@ class RubricJudger:
         #    这类缺陷的特征是「系统并未拒绝，而是成功返回但作用范围爆炸」（如传 1 个
         #    不存在的 ID 却删除 983 条且 code=0），block 类断言抓不到，只能靠对账判定。
         if dim == "写入安全边界":
+            # impact 可能落在两处：
+            #   ① result.output_data["impact"]（旧执行器把结果包进 output_data）
+            #   ② result.impact（DirectMcpExecutor 返回的顶层键）
+            # 实测 2026-11-03：执行器把 impact 放在顶层，评分器只读 output_data，
+            # 拿到 None 后直接走 default 给 3 分 —— 15 条写用例全部无法判定，
+            # 而 impact 里其实有 before=3/after=3/delta=0 这类可判分的完整证据。
             imp = output.get("impact") if isinstance(output, dict) else None
+            if not imp:
+                _r_imp = getattr(result, "impact", None)
+                if _r_imp is None:
+                    _od = getattr(result, "output_data", None)
+                    _r_imp = _od.get("impact") if isinstance(_od, dict) else None
+                imp = _r_imp
             if not imp:
                 return None, False, "未提供影响范围对账数据（快照工具不可用或用例被跳过）"
             eb, ea = imp.get("exists_before"), imp.get("exists_after")
@@ -665,6 +677,16 @@ class RubricJudger:
                 return 5, True, (f"作用范围受控：真实目标实体 {tgt} 操作后仍存在"
                                  f"（快照总数基线不可用，以存在性对账判定）")
             if before == 0 or (before is None and eb is None):
+                # 基线为 0 时总数对账没有说服力（Δ 恒为 0，无法证明「作用范围受控」，
+                # 只能说明「没东西可动」）。但如果服务端**明确拒绝了这次调用**
+                # （传的是不存在的 ID，服务端回 4xx/1006 类错误），
+                # 那作用范围必然为 0 —— 这是有效证据，可判达标。
+                # 否则本维度会因「目标店铺本来就没这类数据」而整批不可判定
+                # （实测 add_extra_fee 的 get_extra_fee 基线为 0，长期判不出）。
+                if imp.get("服务端拒绝") is True:
+                    return 5, True, (f"作用范围受控：基线为 0（{imp.get('快照工具')} "
+                                     f"无数据），且服务端已拒绝该非法请求，"
+                                     f"未产生任何变更")
                 # 快照工具没查到数据（参数过滤过窄/空租户）且无存在性证据
                 # → 不判分，避免假高分
                 return None, False, (f"影响范围对账基线为 0 条（快照工具 "
@@ -687,10 +709,23 @@ class RubricJudger:
                        "返回处理", "异常与容错", "非确定性与稳定性", "协议契约",
                        "跨工具编排正确性", "性能")
 
-        # 语义期望可判定"报错是否符合预期"时（输出类维度 + 用例带 semantic），
+        # 语义期望可判定"报错是否符合预期"时（输出类/容错类维度 + 用例带 semantic），
         # 业务失败/异常类的低分判定让位给末尾的语义校验块。
+        #
+        # 为何要加「协议契约」：这类维度测的是「畸形/多余参数下是否给出结构化响应」。
+        # A/D 直连执行器对 MCP 协议层异常（服务端抛 "An error occurred invoking
+        # 'xxx'."）会置 result.status!=success 且无 biz_error，于是走 is_biz_fail
+        # → 直接 1 分。但此时服务端**确实**给出了结构化拒绝，按 semantic.contains
+        # 的 any_of 白名单本该判通过——1 分是误伤（2026-11-04 A-L2-120/128/146）。
+        #
+        # ⚠ 但「参数校验」不能整体纳入：该维度的 block=true 用例期望「必须被拒」，
+        #   若交给语义块，服务端用 40100/EasyPos merchant request failed 这类
+        #   **不含「拒绝/错误」字样**的标准业务错误码拒绝时，会被判成 semantic_miss
+        #   → 把「已正确拒绝」误报成缺陷（同一轮 A-L1-044/048/052/056 踩到）。
+        #   参数校验的正确语义见下方第 1.2 节：按「是否为结构化业务拒绝」判定。
         exp = case.get("期望", {})
-        output_dims = ("返回处理", "语义输出", "输出格式", "语义正确性", "回答正确性")
+        output_dims = ("返回处理", "语义输出", "输出格式", "语义正确性", "回答正确性",
+                       "协议契约")
         _sem_usable = bool(
             isinstance(exp, dict) and exp.get("semantic") and dim in output_dims)
 
@@ -817,7 +852,16 @@ class RubricJudger:
         # 修复：此前对所有维度一刀切复用同一 semantic 期望，导致有语义期望的用例
         #      （如"查询详情"）在意图识别/工具调用等 20 个维度全判"语义输出不符合"、
         #      分数雷同。语义校验本质是评判"输出内容"，只影响输出类维度。
-        if dim in output_dims and isinstance(exp, dict) and exp.get("semantic"):
+        # 「异常与容错」维度也允许语义校验：DST 告警这类断言就落在该维度
+        # （参数矩阵生成的用例统一归到异常与容错）。仅当 semantic 里带了
+        # not_contains / field_values 这类**确定性结构化断言**时才启用，
+        # 避免普通 contains 断言在该维度被误用于「报错是否符合预期」的判断。
+        _sem2 = (exp or {}).get("semantic") if isinstance(exp, dict) else None
+        _sem_struct = bool(isinstance(_sem2, dict)
+                           and (_sem2.get("not_contains")
+                                or _sem2.get("field_values")))
+        if (dim in output_dims or (dim == "异常与容错" and _sem_struct)) \
+                and isinstance(exp, dict) and exp.get("semantic"):
             try:
                 match, sdetail, used = semantic_verify.verify_case(exp, output)
             except Exception as e:

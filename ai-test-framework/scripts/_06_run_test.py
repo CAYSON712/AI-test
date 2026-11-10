@@ -162,6 +162,25 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     except Exception:
         pass
 
+    # 人工前置条件提醒：有些场景（断网/停服/灰度开关）无法用参数构造，
+    # 必须在执行前由人确保环境就绪，否则用例会「照常返回数据」而被误判通过。
+    # 用例带「人工前置条件」字段时在此集中提示。
+    try:
+        _needs = [(c.get("用例ID"), c.get("能力"), c.get("人工前置条件"))
+                  for c in cases if c.get("人工前置条件")]
+        if _needs:
+            print(f"\n人工前置条件: {len(_needs)} 条用例需要人工准备环境")
+            _seen = {}
+            for _uid, _cap, _cond in _needs:
+                _seen.setdefault(str(_cond), []).append(_uid)
+            for _cond, _uids in _seen.items():
+                print(f"  ⚠ {_cond}")
+                print(f"    → 涉及 {len(_uids)} 条: {', '.join(_uids[:8])}"
+                      + (" ..." if len(_uids) > 8 else ""))
+            print("  未准备环境时这些用例的结果不可信，请在报告中标注")
+    except Exception:
+        pass
+
     # 记录每条用例的多次运行得分（按 用例 分组，支撑 pass@k 判定）
     dim_case_counts = defaultdict(int)     # 维度 → 用例数
     dim_case_all = defaultdict(dict)       # 维度 → {用例ID: [(score, judgeable, passed), ...各run]}

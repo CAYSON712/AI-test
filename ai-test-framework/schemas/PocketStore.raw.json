@@ -1,0 +1,5797 @@
+{
+ "serverInfo": null,
+ "protocolVersion": null,
+ "tool_count": 119,
+ "tools": [
+  {
+   "name": "set_allow_add_items_to_active_order",
+   "description": "允許增加商品到進行中訂單、關閉加點。Enable or disable adding items to active/in-progress orders. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure order addition for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to allow adding items to active orders, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_delivery_time_slot",
+   "description": "更新配送時間、增加12:00時段、配送時間為11:00-21:00、更改開放時間、準備時間改為15分鐘、預計備餐時長、配送時間改為20分鐘、預計送達時長。Update a delivery time slot within a specific delivery area. Locate the slot by AreaId + Day (e.g., \"Monday\") + SlotIndex (0-based). Only provided fields are modified: open time, close time, preparation minutes, estimated delivery minutes, scheduled delivery time range. Set confirm=false (default) for a change preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the delivery time slot for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "areaId": {
+        "description": "The unique ID of the delivery area (DeliveryPolygon) to update the time slot for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "day": {
+        "description": "The day of the week to update. E.g., \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\", \"Sunday\".",
+        "type": "string"
+       },
+       "slotIndex": {
+        "description": "The 0-based index of the time slot within the day's list to update.",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647
+       },
+       "openTime": {
+        "description": "Optional new opening time in \"HH:mm\" format. E.g., \"09:00\", \"11:00\".",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "closeTime": {
+        "description": "Optional new closing time in \"HH:mm\" format. E.g., \"21:00\", \"23:59\".",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "preparationMinutes": {
+        "description": "Optional new estimated preparation time in minutes.",
+        "type": [
+         "integer",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 2147483647
+       },
+       "estimatedDeliveryMinutes": {
+        "description": "Optional new estimated delivery time in minutes.",
+        "type": [
+         "integer",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 2147483647
+       },
+       "scheduledDeliveryTimeRange": {
+        "description": "Optional new scheduled delivery time range in minutes.",
+        "type": [
+         "integer",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 2147483647
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the delivery time slot. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "areaId",
+       "day",
+       "slotIndex"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "spec_create",
+   "description": "新建規格組、這個菜有大中小、新增一個規格。Create a new modifier/spec group (FoodParameterGroup). Provide Name (required), optional Options and LocalizedNames. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to create the spec group for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "specId": {
+        "description": "The spec group ID. Client should generate a new GUID. If empty, a new GUID will be generated.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "The spec group name.",
+        "type": "string"
+       },
+       "description": {
+        "description": "Optional spec group description.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "minimumSelection": {
+        "description": "Minimum number of options the customer must select. Default is 0.",
+        "type": "integer"
+       },
+       "maximumSelection": {
+        "description": "Maximum number of options the customer can select. Null means unlimited.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "sort": {
+        "description": "Sort order. Default is 0.",
+        "type": "integer"
+       },
+       "options": {
+        "description": "Optional list of spec options/items within this group.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "optionId": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "name": {
+           "type": "string"
+          },
+          "price": {
+           "type": "number"
+          },
+          "sort": {
+           "type": "integer"
+          },
+          "minimumSelection": {
+           "type": "integer"
+          },
+          "maximumSelection": {
+           "type": [
+            "integer",
+            "null"
+           ]
+          }
+         }
+        }
+       },
+       "localizedNames": {
+        "description": "Optional localized spec group names.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "languageCode": {
+           "type": "string"
+          },
+          "name": {
+           "type": "string"
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "name"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_pickup_time_slots",
+   "description": "查看自提時間列表、有哪些取餐時段。List all pickup time slots for a merchant, organized by day of week. Returns open/close times, preparation minutes, and scheduled pickup time range for each slot. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to list pickup time slots for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_user_status",
+   "description": "啟用/停用員工、將帳號設為無效。Enable or disable a store user account by updating IsActive status. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID the user belongs to.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "merchManagerId": {
+        "description": "The manager/user ID to update status for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "isActive": {
+        "description": "Set true to enable/activate the user, false to disable/deactivate.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "merchManagerId",
+       "isActive"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_store_logo",
+   "description": "上傳Logo、更換店鋪標誌。Update the store/shop logo image for a merchant. Supports Base64-encoded image strings or image URLs. Only the Logo field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the logo for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newLogo": {
+        "description": "The new logo image for the store. Can be a Base64-encoded image string or an image URL.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the store logo. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "newLogo"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_store_info",
+   "description": "查看店鋪資料、顯示基本信息。Returns basic store/shop information: name, logo URL, phone number, email, and address. This data is non-sensitive and can be freely queried. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query store info for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to proceed with the actual query and return basic store information.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "category_create",
+   "description": "新建分類、新增一個分類。Create a new category for the merchant. Provide Name (required), optional Description, Sort, MenuIds, BannerUrl, and LocalizedNames. Client should generate a CategoryId GUID. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to create the category for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryId": {
+        "description": "The category ID. Client should generate a new GUID. If empty, a new GUID will be generated automatically.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "The category name in the default language.",
+        "type": "string"
+       },
+       "description": {
+        "description": "Optional category description.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "sort": {
+        "description": "Sort order for the category. Default is 0.",
+        "type": "integer"
+       },
+       "menuIds": {
+        "description": "Optional list of menu IDs to bind to this category.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "bannerUrl": {
+        "description": "Optional banner image URL for the category.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "localizedNames": {
+        "description": "Optional localized category names. Each item contains LanguageCode and Name.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "languageCode": {
+           "type": "string"
+          },
+          "name": {
+           "type": "string"
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change. Set to true to execute category creation. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "name"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_delivery_provider_type",
+   "description": "自行安排配送、改用第三方配送。Set the delivery provider type: 'self' for self-delivery or 'deli_connect' for DeliConnect third-party. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure delivery provider for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "providerType": {
+        "description": "Delivery provider type: 'self' for SelfDelivery, 'deli_connect' for DeliConnect third-party delivery.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "providerType"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_user_detail",
+   "description": "查看用戶XXX的資料、員工資訊。Get detailed information for a specific store user/staff by ID, including roles, email, phone, name, and status. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID the user belongs to.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "merchManagerId": {
+        "description": "The manager/user ID to get details for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "merchManagerId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_auto_accept_orders",
+   "description": "開啟自動接單、關閉自動接單。Enable or disable auto-accept orders for the store. When enabled, incoming orders are automatically accepted. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure auto-accept for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to enable auto-accept orders, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_reward_campaign",
+   "description": "更新優惠券/獎勵活動，支持積分換商品（ProductExchangeFoods：foodId + points）。Update a coupon campaign. Fetches from GET all then POST api/MerchCouponPromotion/update. For points-to-product exchange, provide ProductExchangeFoods with foodId and points. Set confirm=false (default) for preview; confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "campaignId": {
+        "description": "The coupon/reward campaign ID to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "New name. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "startDate": {
+        "description": "New start date/time. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "date-time"
+       },
+       "endDate": {
+        "description": "New end date/time. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "date-time"
+       },
+       "discount": {
+        "description": "New discount value. Only modify if provided.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "couponType": {
+        "description": "New coupon type. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "Cash",
+         "Percentage",
+         "ProductExchange",
+         null
+        ]
+       },
+       "numberOfCoupon": {
+        "description": "New number of coupons. Only modify if provided.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "published": {
+        "description": "Published status. Only modify if provided.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "minimumOrderAmount": {
+        "description": "Minimum order amount. Only modify if provided.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "maximumDiscount": {
+        "description": "Maximum discount cap. Only modify if provided.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "productExchangeFoods": {
+        "description": "Product exchange items for points redemption (foodId + points). Replaces existing exchange foods when provided.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "foodId": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "points": {
+           "type": [
+            "number",
+            "null"
+           ]
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. false (default) for preview; true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "campaignId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_instant_pickup_only",
+   "description": "僅支持即時自提、關閉預約自提。Enable or disable instant pickup only mode. When enabled (true), only instant pickup is supported (scheduled pickup is disabled). When disabled (false), both instant and scheduled pickup are supported. Only the IsAsapOnly field is modified. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure instant pickup for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Whether to enable instant pickup only (true=only instant, no scheduled pickup).",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_social_account",
+   "description": "關聯Instagram、綁定社交賬號。Link or update a social media account for the merchant. Supports: instagram, twitter, facebook, linkedin. If the platform already has a link, it will be updated; otherwise a new link is added. Other platforms' existing links remain unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update social account for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "platform": {
+        "description": "The social media platform to link. Valid values: \"instagram\", \"twitter\", \"facebook\", \"linkedin\" (case-insensitive).",
+        "type": "string"
+       },
+       "linkUrl": {
+        "description": "The social media account link or ID. E.g., \"https://www.instagram.com/yourhandle\" or a username.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with linking the social account. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "platform",
+       "linkUrl"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_extra_fee",
+   "description": "修改服務費、更改包裝費。Update an existing extra fee for a merchant. Only provided fields are modified. Set confirm=false (default) for a change preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the extra fee for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "feeId": {
+        "description": "The unique ID of the charge item to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "Optional new name for the fee. E.g., \"Merchant Service Fee\", \"Packaging fee\".",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "target": {
+        "description": "Optional new target delivery type. \"pickup\", \"delivery\", \"pickup_and_delivery\", \"dine_in\".",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "feeType": {
+        "description": "Optional new fee calculation type. \"percentage\" or \"fixed\".",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "value": {
+        "description": "Optional new fee value.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "isTaxable": {
+        "description": "Optional new taxable flag. true = taxable, false = non-taxable.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "description": {
+        "description": "Optional new help text / description.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the extra fee. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "feeId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_store_video",
+   "description": "上傳視頻、添加店鋪視頻。Upload or update the store/shop display video (BannerVideoUrl) for a merchant. Supports Base64-encoded video strings or video URLs. Only the BannerVideoUrl field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the video for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newVideo": {
+        "description": "The new video for the store. Can be a Base64-encoded video string or a video URL.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with uploading/updating the store video. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "newVideo"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "item_list",
+   "description": "查看所有商品、店裡有哪些商品。Query paginated item/food list for a merchant. Returns name, price, stock, sales status, and category IDs.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query items for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "keyword": {
+        "description": "Optional keyword to filter items by name.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "categoryId": {
+        "description": "Optional category ID to filter items.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "menuId": {
+        "description": "Optional menu ID to filter items.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "salesStatus": {
+        "description": "Optional sales status filter: OffSale, OnSale, or SoldOut.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "OffSale",
+         "OnSale",
+         "SoldOut",
+         null
+        ]
+       },
+       "pageIndex": {
+        "description": "Page number, starting from 1. Default is 1.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "pageSize": {
+        "description": "Number of items per page. Default is 20, max 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "menu_create",
+   "description": "新建菜單、新增一個菜單。Create a new menu for the merchant. Provide Name (required), optional CategoryIds, OnlineTimes (days + time slots), and LocalizedNames. Client should generate a MenuId GUID. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to create the menu for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "menuId": {
+        "description": "The menu ID. Client should generate a new GUID. If empty, a new GUID will be generated automatically.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "The menu name in the default language.",
+        "type": "string"
+       },
+       "localizedNames": {
+        "description": "Optional localized menu names. Each item contains LanguageCode and Name.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "languageCode": {
+           "description": "Language code, e.g. zh-TW, en-US.",
+           "type": "string"
+          },
+          "name": {
+           "description": "Menu name in the specified language.",
+           "type": "string"
+          }
+         }
+        }
+       },
+       "categoryIds": {
+        "description": "Optional list of category IDs to bind to this menu.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "onlineTimes": {
+        "description": "Optional online time slots. Each slot specifies days of week and a time range (HH:mm).",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "name": {
+           "description": "Optional label for this online time slot.",
+           "type": "string"
+          },
+          "sort": {
+           "description": "Sort order. Defaults to input order when not specified.",
+           "type": "integer"
+          },
+          "startTime": {
+           "description": "Start time in HH:mm format.",
+           "type": "string"
+          },
+          "endTime": {
+           "description": "End time in HH:mm format.",
+           "type": "string"
+          },
+          "days": {
+           "description": "Days of week when this slot applies, e.g. Monday, Tuesday.",
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          }
+         }
+        }
+       },
+       "isActive": {
+        "description": "Whether the menu is active. Default is true.",
+        "type": "boolean"
+       },
+       "sort": {
+        "description": "Sort order for the menu. Default is 0.",
+        "type": "integer"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change. Set to true to execute menu creation. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "name"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "add_store_user",
+   "description": "新增員工、添加後台帳號。Add a new store user/staff account with a phone number and role assignment. Use list_merchant_roles to find available role IDs first. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to add the user to.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "phone": {
+        "description": "The phone number of the new user (used as login identifier).",
+        "type": "string"
+       },
+       "roleId": {
+        "description": "The role ID to assign to the new user. Use list_merchant_roles to find available roles.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "phone",
+       "roleId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_auto_switch_ready_status",
+   "description": "自動切換訂單狀態、關閉自動切換。Enable or disable automatic order status switching to ready. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure auto-ready for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to auto-switch order status to ready, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "menu_delete",
+   "description": "刪除這個菜單。Delete a menu by ID. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "menuId": {
+        "description": "The menu ID to delete.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the deletion. Set to true to execute. This operation is irreversible and requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "menuId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_store_name",
+   "description": "修改店名、店鋪名稱改為。Update the store/shop name for a merchant. Only the Name field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the store name for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newName": {
+        "description": "The new store/shop name to set.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the store name. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "newName"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "remove_report_subscription",
+   "description": "移除報表郵件訂閱。Remove a business report email subscription by Id or Email. When using Email, set IsSalesReport and/or IsPayoutReport to avoid deleting the wrong subscription. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "description": "The subscription ID to remove. Either Id or Email must be provided.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "email": {
+        "description": "The subscription email to remove. Used to lookup Id if Id is not provided.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "email"
+       },
+       "isSalesReport": {
+        "description": "When lookup by Email, filter to sales report subscription. Use with IsPayoutReport to disambiguate.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "isPayoutReport": {
+        "description": "When lookup by Email, filter to payout report subscription. Use with IsSalesReport to disambiguate.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the deletion. Set to true to execute. This operation is irreversible and requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      }
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_reward_campaigns",
+   "description": "查看優惠券/獎勵活動列表。Query coupon/reward campaigns for a merchant via GET api/MerchCouponPromotion/all.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query reward/coupon campaigns for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "queryType": {
+        "description": "Query type: All, Published, UnPublished, UnActive. Default is All.",
+        "type": "string",
+        "enum": [
+         "All",
+         "Published",
+         "UnPublished",
+         "UnActive"
+        ]
+       },
+       "pageIndex": {
+        "description": "Page number, starting from 1. Default is 1.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "pageSize": {
+        "description": "Number of items per page. Default is 20, max 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "item_update_stock",
+   "description": "修改商品庫存。庫存沒了、補貨。Update item stock quantity. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "itemId": {
+        "description": "The item ID to update stock for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "stock": {
+        "description": "The new stock quantity.",
+        "type": "integer"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "itemId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_third_party_integrations",
+   "description": "查看第三方接入狀況、會員系統綁定了嗎。Query third-party integration status (e.g., EasyCrm membership system binding). Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query third-party integration status for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_my_merchants",
+   "description": "查看我擁有的所有商家店鋪。List all merchants associated with the current account, including merchant ID, name, address, logo, phone, email, timezone, and type. Important Note: Please call this tool first when you need a MerchId but do not have one.You can use this tool to discover available merchants before calling any tools that require a MerchId.Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to proceed with the actual query and return the merchant list.",
+        "type": "boolean"
+       }
+      }
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "add_delivery_area",
+   "description": "增加配送區域、新增DeliveryArea。Add a new delivery area (DeliveryPolygon) to the merchant. Supports two area types: 'circle' (center point + radius in miles) or 'polygon' (default square centered at the given lat/lng with side length 2× radius). The new area is appended to existing DeliveryPolygons without affecting them. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to add a delivery area for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "The name of the delivery area. E.g., \"Downtown\", \"北區\", \"5km範圍\".",
+        "type": "string"
+       },
+       "areaType": {
+        "description": "The type of delivery area. \"circle\" = draw a circle with center at the given lat/lng and the delivery radius in miles. \"polygon\" = draw a default square polygon centered at the given lat/lng with side length 2× radius.",
+        "type": "string"
+       },
+       "latitude": {
+        "description": "The latitude of the center point for the delivery area.",
+        "type": "number",
+        "minimum": -90,
+        "maximum": 90
+       },
+       "longitude": {
+        "description": "The longitude of the center point for the delivery area.",
+        "type": "number",
+        "minimum": -180,
+        "maximum": 180
+       },
+       "deliveryRadiusMiles": {
+        "description": "The delivery radius in miles. For circle mode, this is the circle radius. For polygon mode, this is half the side length of the square (distance from center to edge).",
+        "type": "number",
+        "minimum": 0.1,
+        "maximum": 1.7976931348623157e+308
+       },
+       "allowAsap": {
+        "description": "Whether to allow ASAP (immediate) delivery for this area. true = allow instant orders, false = scheduled delivery only.",
+        "type": "boolean"
+       },
+       "minimumAmountForDelivery": {
+        "description": "The minimum order amount required for delivery to this area. Set to 0 for no minimum.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1.7976931348623157e+308
+       },
+       "minimumAmountToVoidDeliveryFee": {
+        "description": "The order amount above which delivery fee is waived. Set to 0 or null for no free delivery threshold.",
+        "type": [
+         "number",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 1.7976931348623157e+308
+       },
+       "deliveryFee": {
+        "description": "The fixed delivery fee amount for this area.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1.7976931348623157e+308
+       },
+       "deliveryFeeTaxable": {
+        "description": "Whether the delivery fee is taxable. true = taxable, false = non-taxable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with adding the delivery area. This operation modifies merchant delivery configuration and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "name",
+       "areaType",
+       "latitude",
+       "longitude",
+       "deliveryRadiusMiles",
+       "allowAsap",
+       "minimumAmountForDelivery",
+       "deliveryFee",
+       "deliveryFeeTaxable"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "batch_item_category",
+   "description": "批量改商品分類。Batch update item category assignments. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "categoryIds": {
+        "description": "List of category IDs to assign to the items.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "merchId": {
+        "description": "The merchant/shop ID. Required when resolving items by CategoryId.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryId": {
+        "description": "Optional category ID. When MerchFoodIds is empty, all items in this category are targeted.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "merchFoodIds": {
+        "description": "List of merch food/item IDs to update. Optional if MerchId + CategoryId provided.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "categoryIds"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_store_open_status",
+   "description": "營業中、暫不營業、切換營業狀態。Set the store/shop business status (open or closed). Use \"open\" to set the store to Opening (business hours), or \"closed\" to set it to Closed (temporarily closed). Only the Status field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to set the open status for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "status": {
+        "description": "The business status to set. \"open\" for opening/business hours, \"closed\" for temporarily closed.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with switching the store open status. This operation modifies merchant business status and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "status"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "menu_unbind_category",
+   "description": "從菜單移除這個分類。Remove a single category from a menu. The specified CategoryId will be removed from the menu's bound categories. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "menuId": {
+        "description": "The menu ID to unbind a category from.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryId": {
+        "description": "The category ID to remove from the menu.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change. Set to true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "menuId",
+       "categoryId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "menu_publish",
+   "description": "發布菜單、上線這個菜單、讓顧客看到這個菜單。Publish a menu by setting IsActive=true. Requires at least one category to be bound. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "menuId": {
+        "description": "The menu ID to publish.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the publish action. Set to true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "menuId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "spec_bind_item",
+   "description": "給這個商品加規格、把商品加到規格組。Associate items/foods with a spec group. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "specId": {
+        "description": "The spec group ID to associate items with.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "itemIds": {
+        "description": "List of item/food IDs to associate with the spec group.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "optionPrices": {
+        "description": "Optional spec option price overrides (optionId + price) applied before binding.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "optionId": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "price": {
+           "type": "number"
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "specId",
+       "itemIds"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_merchant_roles",
+   "description": "查看可分配的角色、角色列表。List all available roles for a merchant with their IDs and permission counts. Use this to find role IDs before calling add_store_user. Supports optional keyword filtering. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to list roles for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "keyword": {
+        "description": "Optional keyword to filter roles by name.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "add_extra_fee",
+   "description": "添加服務費、新增包裝費。Add an extra fee (e.g., service fee, packaging fee) to a merchant. The new fee is appended to existing ChargeItems without affecting them. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to add the extra fee for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "The name of the extra fee. E.g., \"Merchant Service Fee\", \"Packaging fee\".",
+        "type": "string"
+       },
+       "target": {
+        "description": "The target delivery type for this fee. \"pickup\" for pickup, \"delivery\" for delivery, \"pickup_and_delivery\" for both, \"dine_in\" for dine-in,The default value is \"pickup_and_delivery\".",
+        "type": "string"
+       },
+       "feeType": {
+        "description": "The fee calculation type. \"percentage\" for percentage-based, \"fixed\" for fixed amount.",
+        "type": "string"
+       },
+       "value": {
+        "description": "The fee value. For percentage mode, this is the percentage (e.g., 10 for 10%). For fixed mode, this is the dollar amount.",
+        "type": "number"
+       },
+       "isTaxable": {
+        "description": "Whether this fee is taxable. true = taxable, false = non-taxable.",
+        "type": "boolean"
+       },
+       "description": {
+        "description": "Optional help text / description for this fee, displayed to customers.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with adding the extra fee. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "name",
+       "target",
+       "feeType",
+       "value",
+       "isTaxable"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "category_list",
+   "description": "查看所有分類、店裡有哪些分類。Query paginated category list for a merchant. Returns category name, description, banner URL, and associated menu names.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query categories for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryName": {
+        "description": "Optional keyword to filter categories by name.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "menuId": {
+        "description": "Optional menu ID to filter categories bound to a specific menu.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "pageIndex": {
+        "description": "Page number, starting from 1. Default is 1.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "pageSize": {
+        "description": "Number of items per page. Default is 20, max 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_support_realtime_messaging",
+   "description": "開啟即時消息、關閉即時消息。Enable or disable realtime instant messaging (IM) support for the store. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure realtime messaging for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to enable realtime messaging (IM), false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "batch_item_tax",
+   "description": "批量把稅率綁到商品。Batch bind tax rates to items. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "taxIds": {
+        "description": "List of tax IDs to assign to the items.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "merchId": {
+        "description": "The merchant/shop ID. Required when resolving items by CategoryId.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryId": {
+        "description": "Optional category ID. When MerchFoodIds is empty, all items in this category are targeted.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "merchFoodIds": {
+        "description": "List of merch food/item IDs to update. Optional if MerchId + CategoryId provided.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "taxIds"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_camera_restaurant_operation_statistics_for_ai",
+   "description": "查看餐廳營運每小時統計 / hourly statistics / 時間區間 / 桌況 / 入店流量 / 走道風險。Use this when you want hourly camera restaurant operation statistics for a time range, including a list of time-bucketed statistics and the merchant's business hours for the relevant day. Provide StartDateTime, EndDateTime, and DataType. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query hourly restaurant operation statistics for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "startDateTime": {
+        "description": "Start of the hourly query window.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "endDateTime": {
+        "description": "End of the hourly query window.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "dataType": {
+        "description": "The camera statistic to query. Examples include table occupancy rate, table turnover rate, vacancy count, entry count, pass-by count, and walk-in rate.",
+        "type": "string",
+        "enum": [
+         "TableOccupancyRate",
+         "TableTurnoverRate",
+         "VacantTableCount",
+         "TableTurnoverCount",
+         "NumberOfEntry",
+         "NumberOfPassBy",
+         "WalkInRate"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to execute the query.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "item_delete",
+   "description": "刪除這個商品（永久刪除，非下架）。Permanently delete an item/food by ID. For off-sale use item_update or batch_item_status. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "itemId": {
+        "description": "The item ID to delete.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview deletion. Set to true to execute. Irreversible.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "itemId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_camera_restaurant_daily_statistics_for_ai",
+   "description": "查看餐廳營運每日統計 / daily statistics / 單日桌況 / 入店流量 / 走道風險。Use this when you want daily camera restaurant operation statistics for one business date, including a list of daily statistics and the merchant's business hours for that day. Provide Date and DataType. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query daily restaurant operation statistics for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "date": {
+        "description": "The business day anchor date for the daily statistics query.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "dataType": {
+        "description": "The camera statistic to query. Examples include table occupancy rate, table turnover rate, vacancy count, entry count, pass-by count, and walk-in rate.",
+        "type": "string",
+        "enum": [
+         "TableOccupancyRate",
+         "TableTurnoverRate",
+         "VacantTableCount",
+         "TableTurnoverCount",
+         "NumberOfEntry",
+         "NumberOfPassBy",
+         "WalkInRate"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to execute the query.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_delivery_areas",
+   "description": "查看配送區域列表、有哪些配送區。List all delivery areas (DeliveryPolygons) for a merchant. Returns complete configuration for each area including daily delivery time slots with their indices. Use this as a prerequisite query before update_delivery_area (to get AreaId) or update_delivery_time_slot (to get AreaId + Day + SlotIndex). Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to list delivery areas for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to proceed with the actual query and return the list of delivery areas.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_camera_cash_drawer_open_record_list",
+   "description": "查看錢箱開啟記錄列表 / camera cash drawer open record list / 收銀錢箱開啟事件 / 分頁 / 游標。Use this when you need camera-detected cash drawer open records for a time range, with cursor-based pagination. Each item includes record ID, open datetime, image URL, and AI summary. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query the camera cash drawer open record list for. Use the merchant ID authorized for this session.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "startDate": {
+        "description": "The start of the date range to query. Must be provided and earlier than or equal to EndDate.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "endDate": {
+        "description": "The end of the date range to query. Must be provided and later than or equal to StartDate.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "cursorDateTime": {
+        "description": "Optional cursor datetime for pagination.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "date-time"
+       },
+       "pageSize": {
+        "description": "Optional page size for pagination. Defaults to 10 if omitted.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to execute the query.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_store_users",
+   "description": "查看所有員工、用戶列表、後台帳號。List all store users/staff accounts with roles, email, phone, and status. Supports keyword search and pagination. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to list users for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "keyword": {
+        "description": "Optional keyword to filter users by email or name.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "page": {
+        "description": "Page number (1-based). Default: 1.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "pageSize": {
+        "description": "Number of results per page. Default: 15, Max: 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_store_link",
+   "description": "獲取店鋪連結、我的店鋪網址。Returns the store/shop public link (StoreLink) and QR code link (StoreLinkQrCode). Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query the store link for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to proceed with the actual query and return the store link.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_delivery_enabled",
+   "description": "開啟配送、關閉外送、提供配送服務。Enable or disable the delivery service for a merchant. Modifies the DeliveryType: enabling delivery adds Delivery capability, disabling removes it. Pickup capability is preserved when toggling delivery. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure delivery service for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Whether to enable (true) or disable (false) the delivery service.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with enabling/disabling delivery service. This operation modifies merchant delivery type and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_tax_rate",
+   "description": "稅率設為10%、修改稅率。Set the tax rate for a merchant. TaxRate is a percentage value (e.g., 10 for 10%, 8.875 for 8.875%). Must be between 0 and 100. Only the Tax field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to set the tax rate for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "taxRate": {
+        "description": "The tax rate as a percentage. E.g., 10 for 10%, 8.875 for 8.875%. Must be between 0 and 100.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the tax rate. This operation modifies merchant tax configuration and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "taxRate"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_store_address",
+   "description": "修改地址、店鋪地址變更為。Update the store/shop address for a merchant. Only the Address field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the address for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newAddress": {
+        "description": "The new store/shop address to set.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the store address. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "newAddress"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_discount_campaign",
+   "description": "修改滿減活動預算、更新新人折扣活動。Update a newbie discount campaign. Fetches existing campaign then POST update. Set confirm=false (default) for preview; confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "campaignId": {
+        "description": "The newbie discount campaign ID to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "New campaign name. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "startDate": {
+        "description": "New start date/time. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "date-time"
+       },
+       "endDate": {
+        "description": "New end date/time. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "date-time"
+       },
+       "budget": {
+        "description": "New budget. Only modify if provided.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "isPublished": {
+        "description": "Published status. Only modify if provided.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "newbieDiscountItems": {
+        "description": "Full replacement list of newbie discount items. Only modify if provided.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "id": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "foodId": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "maxPurchaseQuantity": {
+           "type": "integer"
+          },
+          "sort": {
+           "type": "integer"
+          },
+          "discountType": {
+           "type": "string",
+           "enum": [
+            "PercentagePrice",
+            "FixedPrice"
+           ]
+          },
+          "discountPrice": {
+           "type": "number"
+          },
+          "customPrice": {
+           "type": "number"
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. false (default) for preview; true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "campaignId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_store_phone",
+   "description": "更改電話、電話號碼改成。Update the store/shop phone number for a merchant. Only the Phone field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the phone number for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newPhone": {
+        "description": "The new phone number to set for the store.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the store phone number. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "newPhone"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_report_subscriptions",
+   "description": "查看報表郵件訂閱、誰會收到銷售或結算報表。Query paginated business report email subscriptions for the merchant. Returns email, send day, and report types (sales/payout).",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "pageIndex": {
+        "description": "Page number, starting from 1. Default is 1.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "pageSize": {
+        "description": "Number of items per page. Default is 20, max 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+       }
+      }
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "item_detail",
+   "description": "看這個商品的詳細信息、查看商品。Query item/food detail by ID. Returns name, price, stock, categories, modifier groups, and localized names.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "itemId": {
+        "description": "The item/food ID to query detail for.",
+        "type": "string",
+        "format": "uuid"
+       }
+      },
+      "required": [
+       "itemId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_pickup_order_threshold",
+   "description": "自提門檻設為0美元、最低自提金額。Set the minimum order amount threshold for pickup orders. Set to 0 to disable. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure instant pickup for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "thresholdAmount": {
+        "description": "Set the minimum order amount threshold for pickup orders. Set to 0 to disable.",
+        "type": "integer"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "thresholdAmount"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "item_create",
+   "description": "新建商品、新增一個商品。Create a new item/food for the merchant. Provide Name and Price (required), optional CategoryIds and LocalizedNames. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to create the item for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "itemId": {
+        "description": "The item ID. Client should generate a new GUID. If empty, a new GUID will be generated.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "The item name in the default language.",
+        "type": "string"
+       },
+       "price": {
+        "description": "The item price.",
+        "type": "number"
+       },
+       "stock": {
+        "description": "Stock quantity. Default is 0.",
+        "type": "integer"
+       },
+       "status": {
+        "description": "Sales status: 0=OffSale, 1=OnSale. Default is 1.",
+        "type": "integer"
+       },
+       "categoryIds": {
+        "description": "Optional list of category IDs to bind to this item.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "description": {
+        "description": "Optional item description.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "localizedNames": {
+        "description": "Optional localized item names.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "languageCode": {
+           "type": "string"
+          },
+          "name": {
+           "type": "string"
+          }
+         }
+        }
+       },
+       "taxIds": {
+        "description": "Optional list of tax IDs to bind to this item.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "banner": {
+        "description": "Optional banner/cover image URL. Uses system default if omitted.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "name"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_free_cancel_before_prep_time",
+   "description": "設置免費取消時間、接單前多少分鐘可免費取消。Set the free cancellation window before order acceptance. When enabled, customers can cancel for free during the delay period. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure free cancellation time for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to enable free cancellation delay, false to disable.",
+        "type": "boolean"
+       },
+       "delayMinutes": {
+        "description": "Delay minutes before order is accepted. Customers can cancel for free during this window.",
+        "type": [
+         "integer",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 2147483647
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "create_discount_campaign",
+   "description": "建立滿減活動、做一個滿100減20、新建新人折扣活動。Create a newbie discount / spend-threshold campaign via POST api/MerchNewbieDiscountCampaign/add. Provide Items or flat params foodId + discountType + discountValue + thresholdAmount. Set confirm=false (default) for preview; confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "id": {
+        "description": "Campaign ID. Client should generate a new GUID. If empty, one will be generated.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "Campaign name.",
+        "type": "string"
+       },
+       "startDate": {
+        "description": "Campaign start date/time (ISO 8601).",
+        "type": "string",
+        "format": "date-time"
+       },
+       "endDate": {
+        "description": "Campaign end date/time (ISO 8601).",
+        "type": "string",
+        "format": "date-time"
+       },
+       "budget": {
+        "description": "Optional campaign budget.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "isPublished": {
+        "description": "Whether the campaign is published. Default is false.",
+        "type": "boolean"
+       },
+       "newbieDiscountItems": {
+        "description": "Newbie discount items (food-level discounts).",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "id": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "foodId": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "maxPurchaseQuantity": {
+           "type": "integer"
+          },
+          "sort": {
+           "type": "integer"
+          },
+          "discountType": {
+           "type": "string",
+           "enum": [
+            "PercentagePrice",
+            "FixedPrice"
+           ]
+          },
+          "discountPrice": {
+           "type": "number"
+          },
+          "customPrice": {
+           "type": "number"
+          }
+         }
+        }
+       },
+       "items": {
+        "description": "Excel alias for NewbieDiscountItems.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "$ref": "#/properties/parameters/properties/newbieDiscountItems/items"
+        }
+       },
+       "foodId": {
+        "description": "Flat param: food ID for a single discount item when Items/NewbieDiscountItems omitted.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "discountType": {
+        "description": "Flat param: discount type for FoodId.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "PercentagePrice",
+         "FixedPrice",
+         null
+        ]
+       },
+       "discountValue": {
+        "description": "Flat param: discount value for FoodId.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "thresholdAmount": {
+        "description": "Flat param: threshold amount mapped to CustomPrice for FoodId.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. false (default) for preview; true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "name",
+       "startDate",
+       "endDate"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_order_phone_notification",
+   "description": "開啟訂單電話通知、關閉電話通知。Enable or disable order phone call notifications for new orders. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure phone notification for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to enable order phone notifications, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_utensil_default_required",
+   "description": "默認需要餐具、餐具默認勾選。Set whether utensils are required by default for orders. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure default utensil setting for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to require utensils by default, false to make them optional.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_camera_alert_list_for_ai",
+   "description": "查看警示列表 / camera alert list / 異常事件明細 / 分頁 / 游標 / 類型篩選。Use this when you need alert records for anomaly analysis, incident review, or summarization. Returns camera alerts with optional pagination, cursor-based paging, and alert type filtering. Each item includes device name, title, description, media URL, alert level, alert type, timestamps, and status. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query camera alerts for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "startDate": {
+        "description": "The start of the date range to query. Must be provided and earlier than or equal to EndDate.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "endDate": {
+        "description": "The end of the date range to query. Must be provided and later than or equal to StartDate.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "alertType": {
+        "description": "Optional alert type filter. Leave empty to include all alert types. Available types: KitchenAttireDetection(1), TableClearingTimeout(2), AisleObstructionDetection(3), AisleSlipperyRiskDetection(4), ServiceExperienceDetection(5), PaymentExceptionDetection(6).",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "KitchenAttireDetection",
+         "TableClearingTimeout",
+         "AisleObstructionDetection",
+         "AisleSlipperyRiskDetection",
+         "ServiceExperienceDetection",
+         "PaymentExceptionDetection",
+         "KitchenTicketMissedDetection",
+         "EntryTrafficGenderAgeDetection",
+         null
+        ]
+       },
+       "cursorDateTime": {
+        "description": "Optional cursor datetime for pagination.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "date-time"
+       },
+       "pageSize": {
+        "description": "Optional page size for pagination. Defaults to 10 if omitted.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to execute the query.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "tax_create",
+   "description": "新建稅率、新增一個稅率。Create a new tax rate for the merchant. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to create the tax for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "taxId": {
+        "description": "The tax ID. Client should generate a new GUID. If empty, a new GUID will be generated.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "The tax name.",
+        "type": "string"
+       },
+       "type": {
+        "description": "Tax type: Percentage or FixedAmount. Default is Percentage.",
+        "type": "string",
+        "enum": [
+         "Percentage",
+         "FixedAmount"
+        ]
+       },
+       "tax": {
+        "description": "Tax value. Percentage (e.g. 8.5) or fixed amount.",
+        "type": "number"
+       },
+       "isDefaultForNewFood": {
+        "description": "Whether this tax is default for new food items.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "name",
+       "tax"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_auto_remind_after_pickup_expiry",
+   "description": "超過取餐時間幾分鐘後自動提醒、延遲提醒時間。Set the auto-remind delay in minutes after pickup expiry. Set to 0 to disable auto-reminders. Only the PickupTimeoutSystemTimeoutMinutes field is modified. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure auto-remind for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "delayMinutes": {
+        "description": "The delay in minutes after pickup expiry before auto-reminding. Set to 0 to disable.",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "delayMinutes"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "menu_detail",
+   "description": "看這個菜單的詳細信息、查看菜單。Query menu detail by menu ID. Returns name, online times, active status, sort, bound category IDs, and localized names.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "menuId": {
+        "description": "The menu ID to query detail for.",
+        "type": "string",
+        "format": "uuid"
+       }
+      },
+      "required": [
+       "menuId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_kitch_chat_merch_preview_count_by_id",
+   "description": "查询 KitchChat 商家被预览的次数。 Returns the total number of preview records for a KitchChat merchant by merchant ID.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "kitchChatMerchId": {
+        "description": "The KitchChat merchant/shop ID to query preview count for.",
+        "type": "string",
+        "format": "uuid"
+       }
+      },
+      "required": [
+       "kitchChatMerchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_pickup_parking_available",
+   "description": "開啟停車場自提、關閉停車場自提。Enable or disable parking lot pickup service for a merchant. When enabled, sets MerchParkingLotPickupSupportType to OptionalParkingLot and initializes curbside pickup settings. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure parking lot pickup for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Whether to enable (true) or disable (false) parking lot pickup service.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "generate_store_qr",
+   "description": "生成QR Code、生成店鋪QR Code。Generate or retrieve the store/shop QR code image. If a QR code already exists, it is returned directly without regeneration. Otherwise, the system generates a PNG QR code from the store link and uploads it to cloud storage. Requires the store to have a StoreLink configured. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to generate QR code for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the operation without executing. Set to true to proceed with generating the store QR code. If a QR code already exists, it will be returned directly.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "tax_list",
+   "description": "查看所有稅率、店裡有哪些稅率。Query paginated tax rate list for a merchant. Returns tax name, type, rate, default-for-new-food flag, and related food count.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "search": {
+        "description": "Optional keyword to filter taxes by name.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "pageIndex": {
+        "description": "Page number, starting from 1. Default is 1.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "pageSize": {
+        "description": "Number of items per page. Default is 20, max 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "delete_delivery_area",
+   "description": "刪除配送區域、移除DeliveryArea。Delete a delivery area (DeliveryPolygon) from the merchant by its AreaId. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to delete the delivery area from. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "areaId": {
+        "description": "The unique ID of the delivery area (DeliveryPolygon) to delete.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the deletion without executing. Set to true to proceed with removing the delivery area. This operation is irreversible and requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "areaId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_takeout_number_mode",
+   "description": "取餐號使用訂單號後四位、取餐號模式。Set the takeout number mode: use last 4 digits of order number (true) or sequential numbers (false). Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure takeout number mode for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to use last 4 digits of order number as meal code, false to use sequential numbers.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_allow_customer_notes",
+   "description": "允許客戶備註需求、關閉客戶備註。Enable or disable customer special instructions/notes on orders. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure customer notes for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to allow customers to add special instructions, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "tax_delete",
+   "description": "刪除稅率。Delete tax rates by ID list. Blocked when items are still bound. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "taxId": {
+        "description": "Single tax ID alias. Merged into TaxIds when TaxIds is empty.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "taxIds": {
+        "description": "List of tax IDs to delete.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      }
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_preorder_lead_days",
+   "description": "最少提前0天、最多提前10天、預訂天數設定。Set the minimum and/or maximum number of days in advance for preorders. Leave a field empty to keep its current value. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure preorder lead days for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "leastDays": {
+        "description": "Minimum days in advance for preorders. Default: 0 (same day).",
+        "type": [
+         "integer",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 2147483647
+       },
+       "maxDays": {
+        "description": "Maximum days in advance for preorders. Default: 0 (no limit).",
+        "type": [
+         "integer",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 2147483647
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_payment_methods",
+   "description": "目前支援哪些付款、支付方式設定。Returns all payment methods (Proton Pay, Offline Pay, Gift Card) with their names, enabled/disabled status, and descriptions (fee rates, settlement cycles). Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query payment methods for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to proceed with the actual query and return the list of available payment methods with status and descriptions.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_sales_mode",
+   "description": "常規銷售模式、指定日期模式、切換銷售模式。Set the store sales mode: 'regular' for RegularSalesModel or 'fixed_date' for FixedDateSalesModel. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure sales mode for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "mode": {
+        "description": "Sales mode: 'regular' for RegularSalesModel, 'fixed_date' for FixedDateSalesModel.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "mode"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_payment_method_enabled",
+   "description": "開啟Proton Pay、關閉自定義支付。Enable or disable a payment method for the merchant. Supports: proton_pay (Proton Pay online payment), offline_pay (custom/offline payment), gift_card (gift card payment). This operation does NOT involve sensitive credentials — it only toggles the payment method switch. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to modify payment method for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "paymentType": {
+        "description": "The payment method type to enable or disable. Valid values: \"proton_pay\", \"offline_pay\", \"gift_card\".",
+        "type": "string"
+       },
+       "enabled": {
+        "description": "Whether to enable (true) or disable (false) the specified payment method.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with enabling/disabling the payment method. This operation modifies merchant configuration and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "paymentType",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_tip_type",
+   "description": "小費改為固定值、小費百分比模式。Set the tip calculation type for a merchant. Use \"fixed\" for fixed-amount tips (IsPercentage=false) or \"percentage\" for percentage-based tips (IsPercentage=true). Only the SerializeOrderTipsSetting.IsPercentage field is modified. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to set the tip type for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "tipType": {
+        "description": "The tip calculation type. \"fixed\" for fixed amount tips (IsPercentage=false), \"percentage\" for percentage-based tips (IsPercentage=true).",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the tip type. This operation modifies merchant tip configuration and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "tipType"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_utensil_option_enabled",
+   "description": "開啟餐具選項、關閉餐具選項。Enable or disable the utensil option for customers. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure utensil option for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to enable utensil options, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "spec_delete",
+   "description": "刪除這個規格組。Delete a spec/modifier group by ID. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "specId": {
+        "description": "The spec group ID to delete.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview deletion. Set to true to execute. Irreversible.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "specId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_extra_fee",
+   "description": "获取商家的全部额外费用项。Returns all extra fees (ChargeItems) for a merchant: name, target, fee type, value, taxable status, and description. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query extra fees for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "remove_order_notification_email",
+   "description": "刪除訂單通知郵箱、移除收單郵箱。Remove an order notification email subscriber by ID. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to remove the notification email from.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "subscriberId": {
+        "description": "The ID of the order notification subscriber to remove.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "subscriberId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "menu_update",
+   "description": "改菜單名稱、調整上線時間。Update menu properties (name, online times, sort, active status). Only provided fields are modified; category bindings are NOT changed. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "menuId": {
+        "description": "The menu ID to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newName": {
+        "description": "New menu name in the default language. Only provided fields are modified.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "localizedNames": {
+        "description": "Optional localized name updates. Merged with existing language values.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "languageCode": {
+           "description": "Language code, e.g. zh-TW, en-US.",
+           "type": "string"
+          },
+          "name": {
+           "description": "Menu name in the specified language.",
+           "type": "string"
+          }
+         }
+        }
+       },
+       "isActive": {
+        "description": "Whether the menu is active. Only modify if provided.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "sort": {
+        "description": "New sort order. Only modify if provided.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "isCatering": {
+        "description": "Whether this is a catering menu. Only modify if provided.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "onlineTimes": {
+        "description": "Optional online time slots. If provided, replaces all existing online times.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "name": {
+           "description": "Optional label for this online time slot.",
+           "type": "string"
+          },
+          "sort": {
+           "description": "Sort order. Defaults to input order when not specified.",
+           "type": "integer"
+          },
+          "startTime": {
+           "description": "Start time in HH:mm format.",
+           "type": "string"
+          },
+          "endTime": {
+           "description": "End time in HH:mm format.",
+           "type": "string"
+          },
+          "days": {
+           "description": "Days of week when this slot applies, e.g. Monday, Tuesday.",
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change. Set to true to execute the update. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "menuId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "tax_update",
+   "description": "改稅率名稱、調整稅率值。Update tax rate properties. Fetches existing detail and merges provided fields. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "taxId": {
+        "description": "The tax ID to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newName": {
+        "description": "New tax name. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "type": {
+        "description": "New tax type. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "Percentage",
+         "FixedAmount",
+         null
+        ]
+       },
+       "tax": {
+        "description": "New tax value. Only modify if provided.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "isDefaultForNewFood": {
+        "description": "Whether default for new food. Only modify if provided.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "taxId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_discount_campaigns",
+   "description": "查看進行中的滿減活動、新人折扣活動列表。Query newbie discount campaigns. FilterType Published = in-progress. Supports FilterType: All, Published, Unpublished, Deleted.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query discount campaigns for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "filterType": {
+        "description": "Filter type: All, Published, Unpublished, Deleted. Default is All.",
+        "type": "string",
+        "enum": [
+         "All",
+         "Published",
+         "Unpublished",
+         "Deleted"
+        ]
+       },
+       "pageIndex": {
+        "description": "Page number, starting from 1. Default is 1.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "pageSize": {
+        "description": "Number of items per page. Default is 20, max 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_allow_customer_cancel_before_prep",
+   "description": "允許顧客在備餐前取消、關閉顧客免費取消。Allow or disallow customers to cancel orders for free before meal preparation starts. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure free cancellation for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to allow free cancellation before meal prep, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_auto_print_before_prep",
+   "description": "備餐前自動打印小票、關閉備餐打印。Enable or disable auto-printing of order tickets before food preparation. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure auto-print for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to enable auto-print before prep, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_pickup_time_slot",
+   "description": "修改週一自提時間、更改備餐時間。Update a pickup time slot for a specific day and slot index. Only provided fields are modified. Set confirm=false (default) for a change preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the pickup time slot for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "day": {
+        "description": "The day of the week to update. E.g., \"Monday\", \"Tuesday\".",
+        "type": "string"
+       },
+       "slotIndex": {
+        "description": "The 0-based index of the time slot within the day's list to update. Use get_store_info or query the current OnlineTimes to find the correct index.",
+        "type": "integer"
+       },
+       "openTime": {
+        "description": "Optional new opening time in \"HH:mm\" format. E.g., \"09:00\".",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "closeTime": {
+        "description": "Optional new closing time in \"HH:mm\" format. E.g., \"17:00\".",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "preparationMinutes": {
+        "description": "Optional new preparation time in minutes.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "scheduledPickupTimeRange": {
+        "description": "Optional new scheduled pickup time range in minutes.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "day",
+       "slotIndex"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_brand_story",
+   "description": "修改品牌故事、編輯品牌介紹。Update the store/shop brand story / About Us content for a merchant. Supports multi-language: specify LanguageCode (e.g., \"en-US\", \"zh-CN\") for a language variant, or omit it to update the default AboutUs field. Only the AboutUs field (and related multi-language entries) is modified; all other configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the brand story for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "content": {
+        "description": "The new brand story / About Us content. Supports plain text or HTML format.",
+        "type": "string"
+       },
+       "languageCode": {
+        "description": "Optional language code for multi-language support (e.g., \"en-US\", \"zh-CN\", \"zh-TW\"). If not specified, the default AboutUs field is updated.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the brand story. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "content"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "batch_item_price",
+   "description": "批量改商品價格。支持全店漲價、按分類打折。Batch update item prices. Supports Regular, Percentage, and FixedValue adjustment types. Provide MerchFoodIds, or MerchId + CategoryId to target all items in a category. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "price": {
+        "description": "Target price or adjustment value.",
+        "type": "number"
+       },
+       "priceAdjustmentType": {
+        "description": "Price adjustment type: Regular, Percentage, or FixedValue. Default is Regular.",
+        "type": "string",
+        "enum": [
+         "Regular",
+         "Percentage",
+         "FixedValue"
+        ]
+       },
+       "merchId": {
+        "description": "The merchant/shop ID. Required when resolving items by CategoryId.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryId": {
+        "description": "Optional category ID. When MerchFoodIds is empty, all items in this category are targeted.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "merchFoodIds": {
+        "description": "List of merch food/item IDs to update. Optional if MerchId + CategoryId provided.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "price"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "add_order_notification_email",
+   "description": "添加訂單通知郵箱、新增收單郵箱。Add an email address to receive order notifications. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to add the notification email for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "email": {
+        "description": "The email address to subscribe for order notifications.",
+        "type": "string",
+        "format": "email"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "email"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "delete_extra_fee",
+   "description": "刪除服務費、移除包裝費。Delete an extra fee from a merchant by its FeeId. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to delete the extra fee from.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "feeId": {
+        "description": "The unique ID of the charge item to delete.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the deletion without executing. Set to true to proceed with removing the extra fee. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "feeId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_camera_queue_monitoring_snapshot",
+   "description": "查看排隊監控快照 / camera queue monitoring snapshot / 等待人數 / 排隊時間（秒）/ 營業中狀態。Use this when you need the latest queue status for a merchant, including business-hours state, waiting people count, queue waiting duration (seconds), average queue waiting duration (seconds), and thumbnail URL. The backend request always forces IsNeedToSendMessage=false, so this tool never triggers message sending. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query the camera queue monitoring snapshot for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to execute the query.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "spec_update",
+   "description": "改規格名稱、選項、選擇限制。Update spec group properties. Fetches current data via list-with-items then saves merged result. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "specId": {
+        "description": "The spec group ID to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newName": {
+        "description": "New spec group name. Only provided fields are modified.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "description": {
+        "description": "New description. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "minimumSelection": {
+        "description": "New minimum selection count.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "maximumSelection": {
+        "description": "New maximum selection count.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "sort": {
+        "description": "New sort order.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "options": {
+        "description": "Optional spec options. If provided, replaces all existing options.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "optionId": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "name": {
+           "type": "string"
+          },
+          "price": {
+           "type": "number"
+          },
+          "sort": {
+           "type": "integer"
+          },
+          "minimumSelection": {
+           "type": "integer"
+          },
+          "maximumSelection": {
+           "type": [
+            "integer",
+            "null"
+           ]
+          }
+         }
+        }
+       },
+       "localizedNames": {
+        "description": "Optional localized name updates.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "languageCode": {
+           "type": "string"
+          },
+          "name": {
+           "type": "string"
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "specId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "tax_bind_item",
+   "description": "這個商品要收稅、把稅率綁到商品上。Bind tax rates to food items via merchFoodIds + taxIds batch-update. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchFoodIds": {
+        "description": "List of merch food/item IDs to bind taxes to.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "taxIds": {
+        "description": "List of tax IDs to bind to the items.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchFoodIds",
+       "taxIds"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_camera_alert_count",
+   "description": "查看警示數量 / camera alert count / 某段時間內的異常總數 / 快速統計。Use this when you need the total number of camera alerts within a selected date range, optionally filtered by alert type. Returns the total alert count only, without alert item details. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query camera alert count for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "startDate": {
+        "description": "The start of the date range to query. Must be provided and earlier than or equal to EndDate.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "endDate": {
+        "description": "The end of the date range to query. Must be provided and later than or equal to StartDate.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "alertType": {
+        "description": "Optional alert type filter. Leave empty to include all alert types. Available types: KitchenAttireDetection(1), TableClearingTimeout(2), AisleObstructionDetection(3), AisleSlipperyRiskDetection(4), ServiceExperienceDetection(5), PaymentExceptionDetection(6).",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "KitchenAttireDetection",
+         "TableClearingTimeout",
+         "AisleObstructionDetection",
+         "AisleSlipperyRiskDetection",
+         "ServiceExperienceDetection",
+         "PaymentExceptionDetection",
+         "KitchenTicketMissedDetection",
+         "EntryTrafficGenderAgeDetection",
+         null
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to execute the query.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "item_bind_category",
+   "description": "把分類加到商品、這個商品屬於哪些分類。Bind categories to an item by setting the complete list of category IDs. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "itemId": {
+        "description": "The item ID to bind categories to.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryIds": {
+        "description": "The complete list of category IDs to bind (including existing and new categories).",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "itemId",
+       "categoryIds"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "create_reward_campaign",
+   "description": "新建優惠券/獎勵活動，支持積分換商品（ProductExchangeFoods：foodId + points）。Create a coupon/reward campaign via POST api/MerchCouponPromotion/create. For points-to-product exchange, provide ProductExchangeFoods with foodId and points. Set confirm=false (default) for preview; confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "description": "Campaign ID. Client should generate a new GUID. If empty, one will be generated.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "Campaign/coupon name.",
+        "type": "string"
+       },
+       "startDate": {
+        "description": "Campaign start date/time (ISO 8601).",
+        "type": "string",
+        "format": "date-time"
+       },
+       "endDate": {
+        "description": "Campaign end date/time (ISO 8601).",
+        "type": "string",
+        "format": "date-time"
+       },
+       "discount": {
+        "description": "Discount value (amount or percentage depending on CouponType). Optional when ProductExchangeFoods provided.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "couponType": {
+        "description": "Coupon type: CashWholeOrder, CashBySpendAmount, Percentage, ProductExchange. Default is CashWholeOrder.",
+        "type": "string",
+        "enum": [
+         "Cash",
+         "Percentage",
+         "ProductExchange"
+        ]
+       },
+       "numberOfCoupon": {
+        "description": "Number of coupons to issue. Default is 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "published": {
+        "description": "Whether published. Default is true.",
+        "type": "boolean"
+       },
+       "minimumOrderAmount": {
+        "description": "Minimum order amount to activate the coupon.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "maximumDiscount": {
+        "description": "Maximum discount cap.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "productExchangeFoods": {
+        "description": "Product exchange items for points redemption (foodId + points). Sets CouponType to ProductExchange when provided.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "foodId": {
+           "type": "string",
+           "format": "uuid"
+          },
+          "points": {
+           "type": [
+            "number",
+            "null"
+           ]
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. false (default) for preview; true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "name",
+       "startDate",
+       "endDate"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_pickup_enabled",
+   "description": "開啟自提、關閉外帶、提供自提服務。Enable or disable the pickup service for a merchant. Modifies the DeliveryType: enabling pickup adds Pickup capability, disabling removes it. Delivery capability is preserved when toggling pickup. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure pickup service for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Whether to enable (true) or disable (false) the pickup service.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with enabling/disabling pickup service. This operation modifies merchant delivery type and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "menu_list",
+   "description": "查看所有菜單、店裡有哪些菜單。Query paginated menu list for a merchant. Returns menu name, online time summary, category count, and item count. Note: IsActive (published status) is not in the list response — use menu_detail for that.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query menus for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "keyword": {
+        "description": "Optional keyword to filter menus by name.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "pageIndex": {
+        "description": "Page number, starting from 1. Default is 1.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+       },
+       "pageSize": {
+        "description": "Number of items per page. Default is 20, max 100.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "menu_bind_categories",
+   "description": "把分類加到菜單、這個菜單要顯示哪些分類。Bind categories to a menu by setting the complete list of category IDs. Include both existing and newly added category IDs. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "menuId": {
+        "description": "The menu ID to bind categories to.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryIds": {
+        "description": "The complete list of category IDs to bind to the menu (including existing and new categories).",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change. Set to true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "menuId",
+       "categoryIds"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_camera_traffic_gender_age_detection_list",
+   "description": "查看客流性別年齡檢測列表 / camera traffic gender-age detection list / 進店客群性別與年齡段 / 分頁 / 游標 / 篩選。Use this when you need detected customer traffic records with gender and age group for a time range, optionally filtered by gender or age group, with cursor-based pagination. Each item includes event ID, gender, age group, entry datetime, and screenshot URL. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query the camera traffic gender-age detection list for. Use the merchant ID authorized for this session.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "startDate": {
+        "description": "The start of the date range to query. Must be provided and earlier than or equal to EndDate. The range must not exceed 90 days.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "endDate": {
+        "description": "The end of the date range to query. Must be provided and later than or equal to StartDate. The range must not exceed 90 days.",
+        "type": "string",
+        "format": "date-time"
+       },
+       "gender": {
+        "description": "Optional gender filter. Leave empty to include all genders. Available values: Male(1), Female(2), Unspecified(3).",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "Male",
+         "Female",
+         "Unspecified",
+         null
+        ]
+       },
+       "ageGroup": {
+        "description": "Optional age group filter. Leave empty to include all age groups. Available values: Child(1), Youth(2), MiddleAge(3), Elderly(4), Unspecified(5).",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "Child",
+         "Youth",
+         "MiddleAge",
+         "Elderly",
+         "Unspecified",
+         null
+        ]
+       },
+       "cursorDateTime": {
+        "description": "Optional cursor datetime for pagination.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "date-time"
+       },
+       "pageSize": {
+        "description": "Optional page size for pagination. Defaults to 10 if omitted.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to execute the query.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "add_report_subscription",
+   "description": "添加報表郵件訂閱、讓某人收到銷售或結算報表。Add a business report email subscription. Provide Email, SendDay (1-28), IsSalesReport, and IsPayoutReport. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "email": {
+        "description": "The email address to receive business reports.",
+        "type": "string",
+        "format": "email"
+       },
+       "sendDay": {
+        "description": "Day of the month to send reports (1-28). Default is 10.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 28
+       },
+       "isSalesReport": {
+        "description": "Whether to subscribe to sales reports. Default is true.",
+        "type": "boolean"
+       },
+       "isPayoutReport": {
+        "description": "Whether to subscribe to payout reports. Default is true.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change. Set to true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "email"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_tip_options",
+   "description": "設小費選項1,2,3美元、修改小費額度。Set the tip amount options and default tip for a merchant. TipValues is a list of tip amounts (e.g., [1.00, 2.00, 3.00] for fixed, or [10, 15, 20] for percentages). DefaultTip is optional; if omitted, the first value in TipValues is used as default. Only the SerializeOrderTipsSetting.Values and DefaultValue fields are modified. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to set tip options for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "tipValues": {
+        "description": "The list of tip amount options. E.g., [1.00, 2.00, 3.00] for fixed amounts, or [10, 15, 20] for percentages.",
+        "type": "array",
+        "items": {
+         "type": "number"
+        }
+       },
+       "defaultTip": {
+        "description": "Optional default tip amount. If not specified, the first value in TipValues is used as the default.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the tip options. This operation modifies merchant tip configuration and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "tipValues"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "batch_item_stock",
+   "description": "批量改商品庫存。支持全部補貨、按分類售罄。Batch update item stock quantities. Provide MerchFoodIds or MerchId + CategoryId. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "stock": {
+        "description": "Target stock quantity.",
+        "type": "integer"
+       },
+       "merchId": {
+        "description": "The merchant/shop ID. Required when resolving items by CategoryId.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryId": {
+        "description": "Optional category ID. When MerchFoodIds is empty, all items in this category are targeted.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "merchFoodIds": {
+        "description": "List of merch food/item IDs to update. Optional if MerchId + CategoryId provided.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "stock"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_store_email",
+   "description": "修改郵箱、聯絡信箱改為。Update the store/shop contact email for a merchant. Only the Mail field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the email for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newEmail": {
+        "description": "The new contact email address to set for the store.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the store email. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "newEmail"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_user_role",
+   "description": "修改XXX的角色、將設定為管理員。Update a store user's role assignment. Use list_merchant_roles to find available role IDs first. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID the user belongs to.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "merchManagerId": {
+        "description": "The manager/user ID to update the role for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "roleId": {
+        "description": "The new role ID to assign. Use list_merchant_roles to find available roles.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "merchManagerId",
+       "roleId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "delete_pickup_time_slot",
+   "description": "刪除自提時段、移除取餐時間。Delete a pickup time slot for a specific day and slot index. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to delete the pickup time slot from.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "day": {
+        "description": "The day of the week to delete the time slot from. E.g., \"Monday\", \"Tuesday\".",
+        "type": "string"
+       },
+       "slotIndex": {
+        "description": "The 0-based index of the time slot within the day's list to delete.",
+        "type": "integer"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. This operation is irreversible and requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "day",
+       "slotIndex"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "delete_store_user",
+   "description": "刪除員工、移除後台帳號。Delete a store user/staff account. This is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID the user belongs to.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "merchManagerId": {
+        "description": "The manager/user ID to delete.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "merchManagerId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_order_notification_emails",
+   "description": "查看訂單通知郵箱、收單郵箱列表。List all subscribed order notification emails with their IDs. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to list notification emails for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "batch_item_status",
+   "description": "批量上架或下架商品。支持全部上架/下架。Batch change item on-sale/off-sale status. Provide MerchFoodIds or MerchId + CategoryId. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "status": {
+        "description": "Target status: OnSale or OffSale.",
+        "type": "string",
+        "enum": [
+         "OffSale",
+         "OnSale"
+        ]
+       },
+       "merchId": {
+        "description": "The merchant/shop ID. Required when resolving items by CategoryId.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "categoryId": {
+        "description": "Optional category ID. When MerchFoodIds is empty, all items in this category are targeted.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "uuid"
+       },
+       "merchFoodIds": {
+        "description": "List of merch food/item IDs to update. Optional if MerchId + CategoryId provided.",
+        "type": "array",
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "status"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_cover_image",
+   "description": "上傳封面圖、更換封面。Update the store/shop cover/banner image for a merchant. Supports Base64-encoded image strings or image URLs. Only the Banner field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the cover image for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newCoverImage": {
+        "description": "The new cover/banner image for the store. Can be a Base64-encoded image string or an image URL.",
+        "type": "string"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the store cover image. This operation modifies merchant information and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "newCoverImage"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "category_update",
+   "description": "改分類名稱、調整排序。Update category properties (name, description, sort, menu bindings, banner). Only provided fields are modified. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "categoryId": {
+        "description": "The category ID to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newName": {
+        "description": "New category name in the default language. Only provided fields are modified.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "description": {
+        "description": "New category description. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "sort": {
+        "description": "New sort order. Only modify if provided.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "menuIds": {
+        "description": "Optional complete list of menu IDs to bind. If provided, replaces all existing menu bindings.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        }
+       },
+       "bannerUrl": {
+        "description": "New banner image URL. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "localizedNames": {
+        "description": "Optional localized name updates. Merged with existing language values.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "languageCode": {
+           "type": "string"
+          },
+          "name": {
+           "type": "string"
+          }
+         }
+        }
+       },
+       "status": {
+        "description": "Optional category status: Active or Inactive.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "Inactive",
+         "Active",
+         null
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change. Set to true to execute the update. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "categoryId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_user_info",
+   "description": "修改員工郵箱、更新電話號碼。Update a store user's email and/or phone number. Leave fields empty to keep them unchanged. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID the user belongs to.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "merchManagerId": {
+        "description": "The manager/user ID to update info for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "email": {
+        "description": "New email address. Leave empty to keep unchanged.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "email"
+       },
+       "phone": {
+        "description": "New phone number. Leave empty to keep unchanged.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "merchManagerId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_push_to_pos",
+   "description": "馬上推送訂單到POS、關閉POS推送。Enable or disable immediate push of orders to the POS system. Requires the store to be bound to a POS system first (IsPushToPosBound). Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to configure POS push for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "enabled": {
+        "description": "Set true to push orders to POS immediately, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "enabled"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "category_delete",
+   "description": "刪除這個分類。Delete a category by ID. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "categoryId": {
+        "description": "The category ID to delete.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the deletion. Set to true to execute. This operation is irreversible and requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "categoryId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "list_all_campaigns",
+   "description": "查看全部類型活動（滿減、新人折扣、優惠券、限時搶購）。Aggregate campaigns from MerchPromotion, NewbieDiscount, CouponPromotion, and FlashSale APIs. Returns a unified list with CampaignType field. Optional Type and Status filters.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to aggregate all campaign types for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "type": {
+        "description": "Optional filter by unified campaign type: MerchPromotion, NewbieDiscount, CouponReward, FlashSale.",
+        "type": [
+         "string",
+         "null"
+        ],
+        "enum": [
+         "MerchPromotion",
+         "NewbieDiscount",
+         "CouponReward",
+         "FlashSale",
+         null
+        ]
+       },
+       "status": {
+        "description": "Optional filter by published status (true=published, false=unpublished).",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "update_delivery_area",
+   "description": "修改區域名稱、調整起送價、配送費等。Update an existing delivery area (DeliveryPolygon) by its AreaId. Only provided fields are modified; all other configuration remains unchanged. Supports updating: name, area type (circle/polygon), lat/lng, radius, delivery fee, minimum amounts, taxable flag, enabled state, and ASAP setting. Set confirm=false (default) for a change preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to update the delivery area for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "areaId": {
+        "description": "The unique ID of the delivery area (DeliveryPolygon) to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "description": "Optional new name for the delivery area. E.g., \"Downtown\", \"北區\", \"5km範圍\".",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "areaType": {
+        "description": "Optional new area type. \"circle\" or \"polygon\". Changing the type will also update the corresponding center/radius or areas data.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "latitude": {
+        "description": "Optional new latitude of the center point.",
+        "type": [
+         "number",
+         "null"
+        ],
+        "minimum": -90,
+        "maximum": 90
+       },
+       "longitude": {
+        "description": "Optional new longitude of the center point.",
+        "type": [
+         "number",
+         "null"
+        ],
+        "minimum": -180,
+        "maximum": 180
+       },
+       "deliveryRadiusMiles": {
+        "description": "Optional new delivery radius in miles.",
+        "type": [
+         "number",
+         "null"
+        ],
+        "minimum": 0.1,
+        "maximum": 1.7976931348623157e+308
+       },
+       "minimumAmountForDelivery": {
+        "description": "Optional new minimum order amount for delivery.",
+        "type": [
+         "number",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 1.7976931348623157e+308
+       },
+       "minimumAmountToVoidDeliveryFee": {
+        "description": "Optional new order amount above which delivery fee is waived.",
+        "type": [
+         "number",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 1.7976931348623157e+308
+       },
+       "deliveryFee": {
+        "description": "Optional new delivery fee amount.",
+        "type": [
+         "number",
+         "null"
+        ],
+        "minimum": 0,
+        "maximum": 1.7976931348623157e+308
+       },
+       "deliveryFeeTaxable": {
+        "description": "Optional new taxable flag. true = taxable, false = non-taxable.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "isEnabled": {
+        "description": "Optional new enabled state. true = enabled, false = disabled.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "allowAsap": {
+        "description": "Optional new ASAP setting. true = allow instant delivery, false = scheduled only.",
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the delivery area. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "areaId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "get_bank_account_info",
+   "description": "查看我的收款帳戶、銀行帳號末四碼。Returns desensitized bank account information: bank name, masked routing number, last 4 digits of account number, account name, and description. Full sensitive data (complete account/routing numbers) is never returned. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to query bank account for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview what will be returned without executing. Set to true to proceed with the actual query and return desensitized bank account information (bank name, masked routing number, last 4 digits of account number, account name, description).",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "add_pickup_time_slot",
+   "description": "添加自提時間、新增取餐時段。Add a pickup time slot for specified days of the week. Set OpenTime/CloseTime in \"HH:mm\" format, PreparationMinutes, and optional ScheduledPickupTimeRange. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to add a pickup time slot for.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "days": {
+        "description": "The days of the week to add the time slot for. E.g., [\"Monday\", \"Tuesday\", \"Wednesday\"]. Valid: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.",
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "openTime": {
+        "description": "The opening time in \"HH:mm\" format. E.g., \"09:00\".",
+        "type": "string"
+       },
+       "closeTime": {
+        "description": "The closing time in \"HH:mm\" format. E.g., \"17:00\".",
+        "type": "string"
+       },
+       "preparationMinutes": {
+        "description": "Estimated preparation time in minutes.",
+        "type": "integer"
+       },
+       "scheduledPickupTimeRange": {
+        "description": "Scheduled pickup time range in minutes. Optional.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview, true to execute. Requires explicit merchant confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId",
+       "days",
+       "openTime",
+       "closeTime",
+       "preparationMinutes"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "set_stripe_invoice_note",
+   "description": "修改Stripe帳單備註、設定備註內容。Set or update the custom Stripe invoice/transaction descriptor for a merchant. This field is non-sensitive and can be freely modified. Provide TransactionDescriptor (the note text) and IsEnabled (whether to enable it). Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "merchId": {
+        "description": "The merchant/shop ID to set Stripe invoice note for. Must match the authenticated merchant.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "transactionDescriptor": {
+        "description": "The custom descriptor text to display on Stripe invoices. Set to empty string to clear the note.",
+        "type": "string"
+       },
+       "isEnabled": {
+        "description": "Whether to enable the custom transaction descriptor on Stripe invoices. Set to true to enable, false to disable.",
+        "type": "boolean"
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview the change without executing. Set to true to proceed with updating the Stripe invoice note. This operation modifies merchant payment configuration and requires explicit confirmation.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "merchId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  },
+  {
+   "name": "item_update",
+   "description": "改商品名稱、價格、庫存、描述。Update item properties (name, price, stock, status, description). Category bindings are NOT changed. Set confirm=false (default) for a preview; set confirm=true to execute.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "itemId": {
+        "description": "The item ID to update.",
+        "type": "string",
+        "format": "uuid"
+       },
+       "newName": {
+        "description": "New item name. Only provided fields are modified.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "price": {
+        "description": "New price. Only modify if provided.",
+        "type": [
+         "number",
+         "null"
+        ]
+       },
+       "stock": {
+        "description": "New stock quantity. Only modify if provided.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "status": {
+        "description": "New sales status: 0=OffSale, 1=OnSale.",
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "description": {
+        "description": "New description. Only modify if provided.",
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "localizedNames": {
+        "description": "Optional localized name updates.",
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "properties": {
+          "languageCode": {
+           "type": "string"
+          },
+          "name": {
+           "type": "string"
+          }
+         }
+        }
+       },
+       "confirm": {
+        "description": "Confirmation flag. Set to false (default) to preview. Set to true to execute.",
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "itemId"
+      ]
+     }
+    },
+    "required": [
+     "parameters"
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,7902 @@
+系统: POS Local路由
+需求类型: A
+分层说明:
+  L1: 黄金集(60%)：手工精选，覆盖能力×核心维度
+  L2: 场景演化(30%)：纯规则变异，不用LLM
+  L3: 生产回放(10%)：需生产日志，暂未接入不预留接口
+数据源: 实体清单_POS_Local路由.yaml
+用例数: 274
+用例列表:
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id001
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id001
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-001
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id002
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id002
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-002
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '0'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id001
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-003
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id003
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortField: Date
+  期望:
+    intent: 查询Local店铺经营汇总（sortField=Date）
+    params: *id003
+    output: 按 sortField=Date 过滤后正常返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 参数覆盖
+  - sortField=Date
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-004
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id004
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortField: Amount
+  期望:
+    intent: 查询Local店铺经营汇总（sortField=Amount）
+    params: *id004
+    output: 按 sortField=Amount 过滤后正常返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 参数覆盖
+  - sortField=Amount
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-005
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id005
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortField: Quantity
+  期望:
+    intent: 查询Local店铺经营汇总（sortField=Quantity）
+    params: *id005
+    output: 按 sortField=Quantity 过滤后正常返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 参数覆盖
+  - sortField=Quantity
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-006
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id006
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortDirection: Ascending
+  期望:
+    intent: 查询Local店铺经营汇总（sortDirection=Ascending）
+    params: *id006
+    output: 按 sortDirection=Ascending 过滤后正常返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 参数覆盖
+  - sortDirection=Ascending
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-007
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id007
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortDirection: Descending
+  期望:
+    intent: 查询Local店铺经营汇总（sortDirection=Descending）
+    params: *id007
+    output: 按 sortDirection=Descending 过滤后正常返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 参数覆盖
+  - sortDirection=Descending
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-008
+- 维度: 返回处理
+  能力: 查询Local店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id008
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id008
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-009
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id009
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id009
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-010
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id010
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id010
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-011
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '0'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id009
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-012
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id011
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Date
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（sortField=Date）
+    params: *id011
+    output: 按 sortField=Date 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - sortField=Date
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-013
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id012
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Amount
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（sortField=Amount）
+    params: *id012
+    output: 按 sortField=Amount 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - sortField=Amount
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-014
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id013
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Quantity
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（sortField=Quantity）
+    params: *id013
+    output: 按 sortField=Quantity 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - sortField=Quantity
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-015
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id014
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortDirection: Ascending
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（sortDirection=Ascending）
+    params: *id014
+    output: 按 sortDirection=Ascending 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - sortDirection=Ascending
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-016
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id015
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortDirection: Descending
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（sortDirection=Descending）
+    params: *id015
+    output: 按 sortDirection=Descending 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - sortDirection=Descending
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-017
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id016
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（relativePeriod=Today）
+    params: *id016
+    output: 按 relativePeriod=Today 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=Today
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-018
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id017
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（relativePeriod=Yesterday）
+    params: *id017
+    output: 按 relativePeriod=Yesterday 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=Yesterday
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-019
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id018
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（relativePeriod=ThisWeek）
+    params: *id018
+    output: 按 relativePeriod=ThisWeek 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=ThisWeek
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-020
+- 维度: 异常与容错
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id019
+      merchantId: '11897214392730629'
+      startAt: '2026-10-30'
+      endAt: '2026-10-30'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（DST 前一日（对照，不含31，不应有 DST 警告）：2026-10-30 单日）
+    params: *id019
+    output: DST 前一日（对照，不含31，不应有 DST 警告）：2026-10-30 单日
+    block: false
+    semantic:
+      not_contains:
+      - AGGREGATE_DAY_WINDOW_UNVERIFIED
+  标签:
+  - 参数矩阵
+  - DST 前一日（对照，不含31，不应有 DST 警告）：2026-10-30 单日
+  - 告警断言
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-021
+- 维度: 异常与容错
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id020
+      merchantId: '11897214392730629'
+      startAt: '2026-10-31'
+      endAt: '2026-10-31'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（DST 切换日：2026-10-31 单日）
+    params: *id020
+    output: DST 切换日：2026-10-31 单日
+    block: false
+    semantic:
+      contains:
+      - AGGREGATE_DAY_WINDOW_UNVERIFIED
+      any_of: false
+      field_values:
+        aggregateWindowUnverifiedDates: '2026-10-31'
+  标签:
+  - 参数矩阵
+  - DST 切换日：2026-10-31 单日
+  - 告警断言
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-022
+- 维度: 异常与容错
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id021
+      merchantId: '11897214392730629'
+      startAt: '2026-11-01'
+      endAt: '2026-11-01'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（DST 后一日（对照，不含31，不应有 DST 警告）：2026-11-01 单日）
+    params: *id021
+    output: DST 后一日（对照，不含31，不应有 DST 警告）：2026-11-01 单日
+    block: false
+    semantic:
+      not_contains:
+      - AGGREGATE_DAY_WINDOW_UNVERIFIED
+  标签:
+  - 参数矩阵
+  - DST 后一日（对照，不含31，不应有 DST 警告）：2026-11-01 单日
+  - 告警断言
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-023
+- 维度: 异常与容错
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id022
+      merchantId: '11897214392730629'
+      startAt: '2026-10-26'
+      endAt: '2026-11-02'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（跨切换周：2026-10-26 ~ 2026-11-02）
+    params: *id022
+    output: 跨切换周：2026-10-26 ~ 2026-11-02
+    block: false
+    semantic:
+      contains:
+      - AGGREGATE_DAY_WINDOW_UNVERIFIED
+      any_of: false
+      field_values:
+        aggregateWindowUnverifiedDates: '2026-10-31'
+  标签:
+  - 参数矩阵
+  - 跨切换周：2026-10-26 ~ 2026-11-02
+  - 告警断言
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-024
+- 维度: 异常与容错
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id023
+      merchantId: '11897214392730629'
+      startAt: '2026-10-01'
+      endAt: '2026-11-01'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)（跨切换整月：2026-10-01 ~ 2026-11-01）
+    params: *id023
+    output: 跨切换整月：2026-10-01 ~ 2026-11-01
+    block: false
+    semantic:
+      contains:
+      - AGGREGATE_DAY_WINDOW_UNVERIFIED
+      any_of: false
+      field_values:
+        aggregateWindowUnverifiedDates: '2026-10-31'
+  标签:
+  - 参数矩阵
+  - 跨切换整月：2026-10-01 ~ 2026-11-01
+  - 告警断言
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-025
+- 维度: 安全与权限
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id024
+      merchantId: '99999999999999'
+      relativePeriod: Today
+  期望:
+    intent: 权限拒绝
+    params: *id024
+    output: 查询不存在的店铺的经营汇总
+    block: true
+    semantic:
+      contains:
+      - 权限拒绝
+      - 无权限
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 越权
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-026
+  sample_extra: 5
+- 维度: 返回处理
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id025
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id025
+    output: 返回结构化结果
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-027
+- 维度: 调用正确性
+  能力: 查询Local店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id026
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id026
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - orderId
+      - orderStatus
+      - paymentType
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-028
+- 维度: 参数校验
+  能力: 查询Local店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id027
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id027
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-029
+- 维度: 参数校验
+  能力: 查询Local店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      merchantId: '0'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id026
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-030
+- 维度: 安全与权限
+  能力: 查询Local店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id028
+      merchantId: '99999999999999'
+      relativePeriod: Today
+  期望:
+    intent: 权限拒绝
+    params: *id028
+    output: 查询不存在的店铺的订单明细
+    block: true
+    semantic:
+      contains:
+      - 权限拒绝
+      - 无权限
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 越权
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-031
+  sample_extra: 5
+- 维度: 返回处理
+  能力: 查询Local店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id029
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id029
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - orderId
+      - orderStatus
+      - paymentType
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-032
+- 维度: 调用正确性
+  能力: 查询Local店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id030
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288461317'
+      name: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id030
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - name
+      - type
+      - amount
+      - quantity
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-033
+- 维度: 参数校验
+  能力: 查询Local店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id031
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288461317'
+      name: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id031
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-034
+- 维度: 参数校验
+  能力: 查询Local店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '0'
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288461317'
+      name: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id030
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-035
+- 维度: 返回处理
+  能力: 查询Local店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id032
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288592389'
+      name: ZH_Rooster_Local 商品 SOUP-FILLED SIU MAI
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id032
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - name
+      - type
+      - amount
+      - quantity
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-036
+- 维度: 调用正确性
+  能力: 查询Local店铺订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id033
+      merchantId: '11897214392730629'
+      orderIds: &id034
+      - '11897214392730629'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id033
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - items
+      - name
+      - quantity
+      - price
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-037
+- 维度: 参数校验
+  能力: 查询Local店铺订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id035
+      orderIds: *id034
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id035
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-038
+- 维度: 参数校验
+  能力: 查询Local店铺订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params:
+      merchantId: '0'
+      orderIds: *id034
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id033
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-039
+- 维度: 返回处理
+  能力: 查询Local店铺订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id036
+      merchantId: '11897214392730629'
+      orderIds:
+      - '11897214392730629'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id036
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - items
+      - name
+      - quantity
+      - price
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-040
+- 维度: 调用正确性
+  能力: 查询Local店铺员工考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id037
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id037
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-041
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id038
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id038
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-042
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      merchantId: '0'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id037
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-043
+- 维度: 调用正确性
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id039
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺员工考勤（relativePeriod=Today）
+    params: *id039
+    output: 按 relativePeriod=Today 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=Today
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-044
+- 维度: 调用正确性
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id040
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Local店铺员工考勤（relativePeriod=Yesterday）
+    params: *id040
+    output: 按 relativePeriod=Yesterday 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=Yesterday
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-045
+- 维度: 调用正确性
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id041
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Local店铺员工考勤（relativePeriod=ThisWeek）
+    params: *id041
+    output: 按 relativePeriod=ThisWeek 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=ThisWeek
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-046
+- 维度: 返回处理
+  能力: 查询Local店铺员工考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id042
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id042
+    output: 返回结构化结果
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-047
+- 维度: 调用正确性
+  能力: 修改Local店铺商品属性
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id043
+      merchantIds: &id166
+      - '11897214392730629'
+      productIds: &id044
+      - '11897285288461317'
+      status: 'Off'
+      price: 10.0
+      stockStatus: InStock
+      nameLocalization: &id045
+        en-US: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+  期望:
+    intent: 拒绝
+    params: *id043
+    output: 无权限/非法操作被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 无权限
+      - 权限
+      - 拒绝
+      - 非法
+      any_of: true
+  标签:
+  - 对抗
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-048
+  sample_extra: 5
+- 维度: 参数校验
+  能力: 修改Local店铺商品属性
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id046
+      productIds: *id044
+      status: 'Off'
+      price: 10.0
+      stockStatus: InStock
+      nameLocalization: *id045
+  期望:
+    intent: 修改Local店铺商品属性
+    params: *id046
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-049
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 修改Local店铺商品属性
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      merchantIds:
+      - '0'
+      productIds: *id044
+      status: 'Off'
+      price: 10.0
+      stockStatus: InStock
+      nameLocalization: *id045
+  期望:
+    intent: 修改Local店铺商品属性
+    params: *id043
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-050
+  sample_extra: 3
+- 维度: 安全与权限
+  能力: 修改Local店铺商品属性
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id047
+      merchantIds:
+      - '11897214392730629'
+      productIds:
+      - '11897285288461317'
+      status: 'Off'
+  期望:
+    intent: 权限拒绝
+    params: *id047
+    output: 对 Local 店铺执行商品状态变更，应返回标准业务拒绝结果
+    block: true
+    semantic:
+      contains:
+      - 权限拒绝
+      - 无权限
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 越权
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-051
+  sample_extra: 5
+- 维度: 调用正确性
+  能力: 删除Local店铺商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id048
+      merchantIds: &id188
+      - '11897214392730629'
+      productIds: &id049
+      - '11897285288461317'
+  期望:
+    intent: 拒绝
+    params: *id048
+    output: 无权限/非法操作被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 无权限
+      - 权限
+      - 拒绝
+      - 非法
+      any_of: true
+  标签:
+  - 对抗
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-052
+  sample_extra: 5
+- 维度: 参数校验
+  能力: 删除Local店铺商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id050
+      productIds: *id049
+  期望:
+    intent: 删除Local店铺商品
+    params: *id050
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-053
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 删除Local店铺商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params:
+      merchantIds:
+      - '0'
+      productIds: *id049
+  期望:
+    intent: 删除Local店铺商品
+    params: *id048
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-054
+  sample_extra: 3
+- 维度: 安全与权限
+  能力: 删除Local店铺商品
+  层: L2
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id051
+      merchantIds:
+      - '11897214392730629'
+      productIds:
+      - '11897285288461317'
+  期望:
+    intent: 权限拒绝
+    params: *id051
+    output: 对 Local 店铺执行删除商品，应返回标准业务拒绝结果
+    block: true
+    semantic:
+      contains:
+      - 权限拒绝
+      - 无权限
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 越权
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-055
+  sample_extra: 5
+- 维度: 调用正确性
+  能力: 新增Local店铺商品
+  层: L1
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id052
+      merchantId: '11897214392730629'
+      products: &id053
+      - ''
+  期望:
+    intent: 拒绝
+    params: *id052
+    output: 无权限/非法操作被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 无权限
+      - 权限
+      - 拒绝
+      - 非法
+      any_of: true
+  标签:
+  - 对抗
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-056
+  sample_extra: 5
+- 维度: 参数校验
+  能力: 新增Local店铺商品
+  层: L1
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id054
+      products: *id053
+  期望:
+    intent: 新增Local店铺商品
+    params: *id054
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-057
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 新增Local店铺商品
+  层: L1
+  输入:
+    tool_name: batch_insert_products
+    tool_params:
+      merchantId: '0'
+      products: *id053
+  期望:
+    intent: 新增Local店铺商品
+    params: *id052
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-058
+  sample_extra: 3
+- 维度: 安全与权限
+  能力: 新增Local店铺商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id055
+      merchantId: '11897214392730629'
+      products: []
+  期望:
+    intent: 权限拒绝
+    params: *id055
+    output: 对 Local 店铺执行新增商品，应返回标准业务拒绝结果
+    block: true
+    semantic:
+      contains:
+      - 权限拒绝
+      - 无权限
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 越权
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-059
+  sample_extra: 5
+- 维度: 异常与容错
+  能力: 断网时查询菜单
+  层: L2
+  输入:
+    tool_name: query_menus
+    tool_params: &id056
+      merchantIds:
+      - '11897214392730629'
+  人工前置条件: 目标 Local 店铺断网/服务停止
+  期望:
+    intent: 断网时查询菜单（断网时查询该店菜单（应报错，不得返回空成功））
+    params: *id056
+    output: 断网时查询该店菜单（应报错，不得返回空成功）
+    block: false
+  标签:
+  - 参数矩阵
+  - 需人工前置
+  - 断网时查询该店菜单（应报错，不得返回空成功）
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-060
+- 维度: 异常与容错
+  能力: 断网时查询分类
+  层: L2
+  输入:
+    tool_name: query_categories
+    tool_params: &id057
+      merchantIds:
+      - '11897214392730629'
+  人工前置条件: 目标 Local 店铺断网/服务停止
+  期望:
+    intent: 断网时查询分类（断网时查询该店分类（应报错，不得返回空成功））
+    params: *id057
+    output: 断网时查询该店分类（应报错，不得返回空成功）
+    block: false
+  标签:
+  - 参数矩阵
+  - 需人工前置
+  - 断网时查询该店分类（应报错，不得返回空成功）
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-061
+- 维度: 异常与容错
+  能力: 断网时查询商品
+  层: L2
+  输入:
+    tool_name: query_products_by_filter
+    tool_params: &id058
+      merchantIds:
+      - '11897214392730629'
+  人工前置条件: 目标 Local 店铺断网/服务停止
+  期望:
+    intent: 断网时查询商品（断网时查询该店商品（应报错，不得返回空成功））
+    params: *id058
+    output: 断网时查询该店商品（应报错，不得返回空成功）
+    block: false
+  标签:
+  - 参数矩阵
+  - 需人工前置
+  - 断网时查询该店商品（应报错，不得返回空成功）
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-062
+- 维度: 异常与容错
+  能力: 断网时查询经营汇总(对照)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id059
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+  人工前置条件: 目标 Local 店铺断网/服务停止
+  期望:
+    intent: 断网时查询经营汇总(对照)（断网时查询经营汇总（已知正确报 50001））
+    params: *id059
+    output: 断网时查询经营汇总（已知正确报 50001）
+    block: false
+  标签:
+  - 参数矩阵
+  - 需人工前置
+  - 断网时查询经营汇总（已知正确报 50001）
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-063
+- 维度: 异常与容错
+  能力: 断网时查询订单明细(对照)
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id060
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+  人工前置条件: 目标 Local 店铺断网/服务停止
+  期望:
+    intent: 断网时查询订单明细(对照)（断网时查询订单明细（已知正确报 50001））
+    params: *id060
+    output: 断网时查询订单明细（已知正确报 50001）
+    block: false
+  标签:
+  - 参数矩阵
+  - 需人工前置
+  - 断网时查询订单明细（已知正确报 50001）
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-064
+- 维度: 异常与容错
+  能力: 断网时查询员工考勤(对照)
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id061
+      merchantId: '11897214392730629'
+      startAt: '2026-11-01'
+      endAt: '2026-11-08'
+  人工前置条件: 目标 Local 店铺断网/服务停止
+  期望:
+    intent: 断网时查询员工考勤(对照)（断网时查询员工考勤（已知正确报 50001））
+    params: *id061
+    output: 断网时查询员工考勤（已知正确报 50001）
+    block: false
+  标签:
+  - 参数矩阵
+  - 需人工前置
+  - 断网时查询员工考勤（已知正确报 50001）
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-065
+- 维度: 调用正确性
+  能力: 查询Cloud店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id062
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id062
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-066
+- 维度: 参数校验
+  能力: 查询Cloud店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id063
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id063
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-067
+- 维度: 参数校验
+  能力: 查询Cloud店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      merchantId: '0'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id062
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-068
+- 维度: 返回处理
+  能力: 查询Cloud店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id064
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id064
+    output: 返回结构化结果
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-069
+- 维度: 调用正确性
+  能力: 查询Cloud店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id065
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id065
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-070
+- 维度: 参数校验
+  能力: 查询Cloud店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id066
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id066
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-071
+- 维度: 参数校验
+  能力: 查询Cloud店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      merchantId: '0'
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id065
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-072
+- 维度: 返回处理
+  能力: 查询Cloud店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id067
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id067
+    output: 返回结构化结果
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-073
+- 维度: 调用正确性
+  能力: 查询Cloud店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id068
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id068
+    output: 工具调用成功
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-074
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id069
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id069
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-075
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      merchantId: '0'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id068
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-076
+- 维度: 调用正确性
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id070
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      relativePeriod: Today
+  期望:
+    intent: 查询Cloud店铺经营汇总（relativePeriod=Today）
+    params: *id070
+    output: 按 relativePeriod=Today 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=Today
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-077
+- 维度: 调用正确性
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id071
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Cloud店铺经营汇总（relativePeriod=Yesterday）
+    params: *id071
+    output: 按 relativePeriod=Yesterday 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=Yesterday
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-078
+- 维度: 调用正确性
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id072
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Cloud店铺经营汇总（relativePeriod=ThisWeek）
+    params: *id072
+    output: 按 relativePeriod=ThisWeek 过滤后正常返回结构化结果
+    block: false
+  标签:
+  - 参数覆盖
+  - relativePeriod=ThisWeek
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-079
+- 维度: 返回处理
+  能力: 查询Cloud店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id073
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id073
+    output: 返回结构化结果
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-080
+- 维度: 调用正确性
+  能力: 查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id074
+      merchantIds: &id076
+      - '11897214392730629'
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+  期望:
+    intent: 查询Local店铺商品
+    params: *id074
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-081
+- 维度: 参数校验
+  能力: 查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id075
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+  期望:
+    intent: 查询Local店铺商品
+    params: *id075
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-082
+- 维度: 参数校验
+  能力: 查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params:
+      merchantIds:
+      - '0'
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+  期望:
+    intent: 查询Local店铺商品
+    params: *id074
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-083
+- 维度: 调用正确性
+  能力: 查询Local店铺商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id077
+      merchantIds: *id076
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      status: 'Off'
+  期望:
+    intent: 查询Local店铺商品（status=Off）
+    params: *id077
+    output: 按 status=Off 过滤后正常返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 参数覆盖
+  - status=Off
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-084
+- 维度: 调用正确性
+  能力: 查询Local店铺商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id078
+      merchantIds: *id076
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      status: Selling
+  期望:
+    intent: 查询Local店铺商品（status=Selling）
+    params: *id078
+    output: 按 status=Selling 过滤后正常返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 参数覆盖
+  - status=Selling
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-085
+- 维度: 调用正确性
+  能力: 查询Local店铺商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id079
+      merchantIds: *id076
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      status: Unknown
+  期望:
+    intent: 查询Local店铺商品（status=Unknown）
+    params: *id079
+    output: 按 status=Unknown 过滤后正常返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 参数覆盖
+  - status=Unknown
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-086
+- 维度: 返回处理
+  能力: 查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id080
+      merchantIds:
+      - '11897214392730629'
+      productName: ZH_Rooster_Local 商品 SOUP-FILLED SIU MAI
+  期望:
+    intent: 查询Local店铺商品
+    params: *id080
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-087
+- 维度: 调用正确性
+  能力: 查询Local店铺商品详情
+  层: L1
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id081
+      merchantId: '11897214392730629'
+      productId: '11897285288461317'
+      includeCategory: true
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id081
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - stock
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-088
+- 维度: 参数校验
+  能力: 查询Local店铺商品详情
+  层: L1
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id082
+      productId: '11897285288461317'
+      includeCategory: true
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id082
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-089
+- 维度: 参数校验
+  能力: 查询Local店铺商品详情
+  层: L1
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params:
+      merchantId: '0'
+      productId: '11897285288461317'
+      includeCategory: true
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id081
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-090
+- 维度: 返回处理
+  能力: 查询Local店铺商品详情
+  层: L1
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id083
+      merchantId: '11897214392730629'
+      productId: '11897285288461317'
+      includeCategory: true
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id083
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - stock
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-091
+- 维度: 调用正确性
+  能力: 按ID批量查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params: &id084
+      merchantIds: &id164
+      - '11897214392730629'
+      productIds: &id085
+      - '11897285288461317'
+  期望:
+    intent: 按ID批量查询Local店铺商品
+    params: *id084
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-092
+- 维度: 参数校验
+  能力: 按ID批量查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params: &id086
+      productIds: *id085
+  期望:
+    intent: 按ID批量查询Local店铺商品
+    params: *id086
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-093
+- 维度: 参数校验
+  能力: 按ID批量查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params:
+      merchantIds:
+      - '0'
+      productIds: *id085
+  期望:
+    intent: 按ID批量查询Local店铺商品
+    params: *id084
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-094
+- 维度: 返回处理
+  能力: 按ID批量查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params: &id087
+      merchantIds:
+      - '11897214392730629'
+      productIds:
+      - '11897285288461317'
+  期望:
+    intent: 按ID批量查询Local店铺商品
+    params: *id087
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-095
+- 维度: 调用正确性
+  能力: 按条件筛选Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params: &id088
+      merchantIds:
+      - '11897214392730629'
+      status: Selling
+      type: Normal
+      categoryIds: &id089
+      - '13273427280397317'
+  期望:
+    intent: 按条件筛选Local店铺商品
+    params: *id088
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-096
+- 维度: 参数校验
+  能力: 按条件筛选Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params: &id090
+      status: Selling
+      type: Normal
+      categoryIds: *id089
+  期望:
+    intent: 按条件筛选Local店铺商品
+    params: *id090
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-097
+- 维度: 参数校验
+  能力: 按条件筛选Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params:
+      merchantIds:
+      - '0'
+      status: Selling
+      type: Normal
+      categoryIds: *id089
+  期望:
+    intent: 按条件筛选Local店铺商品
+    params: *id088
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-098
+- 维度: 返回处理
+  能力: 按条件筛选Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params: &id091
+      merchantIds:
+      - '11897214392730629'
+      status: Selling
+      type: Normal
+      categoryIds:
+      - '13273427280397317'
+  期望:
+    intent: 按条件筛选Local店铺商品
+    params: *id091
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-099
+- 维度: 调用正确性
+  能力: 查询Local店铺菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params: &id092
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺菜单
+    params: *id092
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-100
+- 维度: 参数校验
+  能力: 查询Local店铺菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params: &id093 {}
+  期望:
+    intent: 查询Local店铺菜单
+    params: *id093
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-101
+- 维度: 参数校验
+  能力: 查询Local店铺菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params:
+      merchantIds:
+      - '0'
+  期望:
+    intent: 查询Local店铺菜单
+    params: *id092
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-102
+- 维度: 返回处理
+  能力: 查询Local店铺菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params: &id094
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺菜单
+    params: *id094
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-103
+- 维度: 调用正确性
+  能力: 查询Local店铺分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params: &id095
+      merchantIds: &id181
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺分类
+    params: *id095
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-104
+- 维度: 参数校验
+  能力: 查询Local店铺分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params: &id096 {}
+  期望:
+    intent: 查询Local店铺分类
+    params: *id096
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-105
+- 维度: 参数校验
+  能力: 查询Local店铺分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params:
+      merchantIds:
+      - '0'
+  期望:
+    intent: 查询Local店铺分类
+    params: *id095
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-106
+- 维度: 返回处理
+  能力: 查询Local店铺分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params: &id097
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺分类
+    params: *id097
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-107
+- 维度: 调用正确性
+  能力: 查询Local店铺员工
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &id098
+      merchantIds: &id148
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺员工
+    params: *id098
+    output: 工具调用成功
+    block: false
+    semantic:
+      fields:
+      - id
+      - firstName
+      - isActive
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-108
+- 维度: 参数校验
+  能力: 查询Local店铺员工
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &id099 {}
+  期望:
+    intent: 查询Local店铺员工
+    params: *id099
+    output: 参数校验失败，返回错误
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-109
+- 维度: 参数校验
+  能力: 查询Local店铺员工
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params:
+      merchantIds:
+      - '0'
+  期望:
+    intent: 查询Local店铺员工
+    params: *id098
+    output: 非法参数被拒绝
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 边界
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-110
+- 维度: 返回处理
+  能力: 查询Local店铺员工
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &id100
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺员工
+    params: *id100
+    output: 返回结构化结果
+    block: false
+    semantic:
+      fields:
+      - id
+      - firstName
+      - isActive
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-111
+- 维度: 协议契约
+  能力: 查询店铺路由模式
+  层: L1
+  输入:
+    tool_name: query_merchants
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-112
+- 维度: 异常与容错
+  能力: 查询店铺路由模式
+  层: L1
+  输入:
+    tool_name: query_merchants
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-113
+- 维度: 协议契约
+  能力: 查询公司店铺清单
+  层: L1
+  输入:
+    tool_name: query_companies
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-114
+- 维度: 异常与容错
+  能力: 查询公司店铺清单
+  层: L1
+  输入:
+    tool_name: query_companies
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-115
+- 维度: 协议契约
+  能力: 查询Local店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-116
+- 维度: 工具描述与发现
+  能力: 查询Local店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id101
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id101
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-117
+- 维度: 性能与资源
+  能力: 查询Local店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id102
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id102
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - orderCount
+      - totalSales
+      - netSales
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-118
+- 维度: 异常与容错
+  能力: 查询Local店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-119
+- 维度: 协议契约
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-120
+- 维度: 工具描述与发现
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id103
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id103
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-121
+- 维度: 性能与资源
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id104
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id104
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-122
+- 维度: 异常与容错
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-123
+- 维度: 协议契约
+  能力: 查询Local店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-124
+- 维度: 工具描述与发现
+  能力: 查询Local店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id105
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id105
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - orderId
+      - orderStatus
+      - paymentType
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-125
+- 维度: 性能与资源
+  能力: 查询Local店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id106
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id106
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - orderId
+      - orderStatus
+      - paymentType
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-126
+- 维度: 异常与容错
+  能力: 查询Local店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-127
+- 维度: 协议契约
+  能力: 查询Local店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-128
+- 维度: 工具描述与发现
+  能力: 查询Local店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id107
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288592389'
+      name: ZH_Rooster_Local 商品 SOUP-FILLED SIU MAI
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id107
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - name
+      - type
+      - amount
+      - quantity
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-129
+- 维度: 性能与资源
+  能力: 查询Local店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id108
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288461317'
+      name: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id108
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - name
+      - type
+      - amount
+      - quantity
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-130
+- 维度: 异常与容错
+  能力: 查询Local店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-131
+- 维度: 协议契约
+  能力: 查询Local店铺订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-132
+- 维度: 工具描述与发现
+  能力: 查询Local店铺订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id109
+      merchantId: '11897214392730629'
+      orderIds:
+      - '11897214392730629'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id109
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - items
+      - name
+      - quantity
+      - price
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-133
+- 维度: 性能与资源
+  能力: 查询Local店铺订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id110
+      merchantId: '11897214392730629'
+      orderIds:
+      - '11897214392730629'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id110
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - items
+      - name
+      - quantity
+      - price
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-134
+- 维度: 异常与容错
+  能力: 查询Local店铺订单商品明细
+  层: L1
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-135
+- 维度: 协议契约
+  能力: 查询Local店铺员工考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-136
+- 维度: 工具描述与发现
+  能力: 查询Local店铺员工考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id111
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id111
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-137
+- 维度: 性能与资源
+  能力: 查询Local店铺员工考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id112
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id112
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-138
+- 维度: 异常与容错
+  能力: 查询Local店铺员工考勤
+  层: L1
+  输入:
+    tool_name: query_staff_attendances
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-139
+- 维度: 协议契约
+  能力: 修改Local店铺商品属性
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-140
+  sample_extra: 3
+- 维度: 异常与容错
+  能力: 修改Local店铺商品属性
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      merchantIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-141
+  sample_extra: 3
+- 维度: 写入安全边界
+  能力: 修改Local店铺商品属性
+  层: L1
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id113
+      merchantIds:
+      - '11897214392730629'
+      productIds:
+      - '11897285288461317'
+      status: 'Off'
+      price: 10.0
+      stockStatus: InStock
+      nameLocalization:
+        en-US: ZH_Rooster_Local 商品 SOUP-FILLED SIU MAI
+  期望:
+    intent: 修改Local店铺商品属性
+    params: *id113
+    output: 目标不存在时影响 0 条，不得越范围改删其他数据
+    block: false
+    影响范围对账: &id114
+      快照工具: query_products_by_ids
+      快照参数:
+        merchantIds:
+        - '11897214392730629'
+        productIds:
+        - '8566308680959061'
+      最大影响条数: 0
+      存在性检查:
+        工具: query_product_detail_by_id
+        参数:
+          productId: '8566308680959061'
+        目标ID: '8566308680959061'
+    判定语义: 拒绝非法ID且不波及真实数据
+    高危: true
+  影响范围对账: *id114
+  高危: true
+  标签:
+  - 异常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-142
+  sample_extra: 5
+- 维度: 协议契约
+  能力: 删除Local店铺商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-143
+  sample_extra: 3
+- 维度: 异常与容错
+  能力: 删除Local店铺商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      merchantIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-144
+  sample_extra: 3
+- 维度: 写入安全边界
+  能力: 删除Local店铺商品
+  层: L1
+  输入:
+    tool_name: delete_products_by_ids
+    tool_params: &id115
+      merchantIds:
+      - '11897214392730629'
+      productIds:
+      - '11897285288461317'
+  期望:
+    intent: 删除Local店铺商品
+    params: *id115
+    output: 目标不存在时影响 0 条，不得越范围改删其他数据
+    block: false
+    影响范围对账: &id116
+      快照工具: query_products_by_ids
+      快照参数:
+        merchantIds:
+        - '11897214392730629'
+        productIds:
+        - '8566308680959061'
+      最大影响条数: 0
+      存在性检查:
+        工具: query_product_detail_by_id
+        参数:
+          productId: '8566308680959061'
+        目标ID: '8566308680959061'
+    判定语义: 拒绝非法ID且不波及真实数据
+    高危: true
+  影响范围对账: *id116
+  高危: true
+  标签:
+  - 异常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-145
+  sample_extra: 5
+- 维度: 协议契约
+  能力: 新增Local店铺商品
+  层: L1
+  输入:
+    tool_name: batch_insert_products
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-146
+  sample_extra: 3
+- 维度: 异常与容错
+  能力: 新增Local店铺商品
+  层: L1
+  输入:
+    tool_name: batch_insert_products
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-147
+  sample_extra: 3
+- 维度: 写入安全边界
+  能力: 新增Local店铺商品
+  层: L1
+  输入:
+    tool_name: batch_insert_products
+    tool_params: &id117
+      merchantId: '11897214392730629'
+      products:
+      - ''
+  期望:
+    intent: 新增Local店铺商品
+    params: *id117
+    output: 目标不存在时影响 0 条，不得越范围改删其他数据
+    block: false
+    影响范围对账: &id118
+      快照工具: query_products_by_ids
+      快照参数:
+        merchantIds:
+        - '11897214392730629'
+        productIds:
+        - '8566308680959061'
+      最大影响条数: 1
+      存在性检查:
+        工具: query_product_detail_by_id
+        参数:
+          productId: '8566308680959061'
+        目标ID: '8566308680959061'
+    判定语义: 创建成功且新增≤1条
+    高危: true
+  影响范围对账: *id118
+  高危: true
+  标签:
+  - 异常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-148
+  sample_extra: 5
+- 维度: 协议契约
+  能力: 查询Cloud店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-149
+- 维度: 工具描述与发现
+  能力: 查询Cloud店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id119
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id119
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-150
+- 维度: 性能与资源
+  能力: 查询Cloud店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id120
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id120
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-151
+- 维度: 异常与容错
+  能力: 查询Cloud店铺订单明细
+  层: L1
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-152
+- 维度: 协议契约
+  能力: 查询Cloud店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-153
+- 维度: 工具描述与发现
+  能力: 查询Cloud店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id121
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id121
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-154
+- 维度: 性能与资源
+  能力: 查询Cloud店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id122
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id122
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-155
+- 维度: 异常与容错
+  能力: 查询Cloud店铺目录报表
+  层: L1
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-156
+- 维度: 协议契约
+  能力: 查询Cloud店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-157
+- 维度: 工具描述与发现
+  能力: 查询Cloud店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id123
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id123
+    output: 工具可正常调用
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-158
+- 维度: 性能与资源
+  能力: 查询Cloud店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id124
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id124
+    output: 单次调用延迟可接受
+    block: false
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-159
+- 维度: 异常与容错
+  能力: 查询Cloud店铺经营汇总
+  层: L1
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-160
+- 维度: 协议契约
+  能力: 查询Cloud店铺路由模式
+  层: L1
+  输入:
+    tool_name: query_merchants
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-161
+- 维度: 异常与容错
+  能力: 查询Cloud店铺路由模式
+  层: L1
+  输入:
+    tool_name: query_merchants
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L1-162
+- 维度: 协议契约
+  能力: 查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-163
+- 维度: 工具描述与发现
+  能力: 查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id125
+      merchantIds:
+      - '11897214392730629'
+      productName: ZH_Rooster_Local 商品 SOUP-FILLED SIU MAI
+  期望:
+    intent: 查询Local店铺商品
+    params: *id125
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-164
+- 维度: 性能与资源
+  能力: 查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id126
+      merchantIds:
+      - '11897214392730629'
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+  期望:
+    intent: 查询Local店铺商品
+    params: *id126
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-165
+- 维度: 异常与容错
+  能力: 查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: search_products_by_name
+    tool_params:
+      unknown_param_malformed: x
+      merchantIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-166
+- 维度: 协议契约
+  能力: 查询Local店铺商品详情
+  层: L1
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-167
+- 维度: 工具描述与发现
+  能力: 查询Local店铺商品详情
+  层: L1
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id127
+      merchantId: '11897214392730629'
+      productId: '11897285288461317'
+      includeCategory: true
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id127
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - stock
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-168
+- 维度: 性能与资源
+  能力: 查询Local店铺商品详情
+  层: L1
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id128
+      merchantId: '11897214392730629'
+      productId: '11897285288461317'
+      includeCategory: true
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id128
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - stock
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-169
+- 维度: 异常与容错
+  能力: 查询Local店铺商品详情
+  层: L1
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params:
+      unknown_param_malformed: x
+      merchantId:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-170
+- 维度: 协议契约
+  能力: 按ID批量查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-171
+- 维度: 工具描述与发现
+  能力: 按ID批量查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params: &id129
+      merchantIds:
+      - '11897214392730629'
+      productIds:
+      - '11897285288461317'
+  期望:
+    intent: 按ID批量查询Local店铺商品
+    params: *id129
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-172
+- 维度: 性能与资源
+  能力: 按ID批量查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params: &id130
+      merchantIds:
+      - '11897214392730629'
+      productIds:
+      - '11897285288461317'
+  期望:
+    intent: 按ID批量查询Local店铺商品
+    params: *id130
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-173
+- 维度: 异常与容错
+  能力: 按ID批量查询Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_ids
+    tool_params:
+      unknown_param_malformed: x
+      merchantIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-174
+- 维度: 协议契约
+  能力: 按条件筛选Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-175
+- 维度: 工具描述与发现
+  能力: 按条件筛选Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params: &id131
+      merchantIds:
+      - '11897214392730629'
+      status: Selling
+      type: Normal
+      categoryIds:
+      - '13273427280397317'
+  期望:
+    intent: 按条件筛选Local店铺商品
+    params: *id131
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-176
+- 维度: 性能与资源
+  能力: 按条件筛选Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params: &id132
+      merchantIds:
+      - '11897214392730629'
+      status: Selling
+      type: Normal
+      categoryIds:
+      - '13273427280397317'
+  期望:
+    intent: 按条件筛选Local店铺商品
+    params: *id132
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - price
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-177
+- 维度: 异常与容错
+  能力: 按条件筛选Local店铺商品
+  层: L1
+  输入:
+    tool_name: query_products_by_filter
+    tool_params:
+      unknown_param_malformed: x
+      merchantIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-178
+- 维度: 协议契约
+  能力: 查询Local店铺菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-179
+- 维度: 工具描述与发现
+  能力: 查询Local店铺菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params: &id133
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺菜单
+    params: *id133
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-180
+- 维度: 性能与资源
+  能力: 查询Local店铺菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params: &id134
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺菜单
+    params: *id134
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+      - status
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-181
+- 维度: 异常与容错
+  能力: 查询Local店铺菜单
+  层: L1
+  输入:
+    tool_name: query_menus
+    tool_params:
+      unknown_param_malformed: x
+      merchantIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-182
+- 维度: 协议契约
+  能力: 查询Local店铺分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-183
+- 维度: 工具描述与发现
+  能力: 查询Local店铺分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params: &id135
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺分类
+    params: *id135
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-184
+- 维度: 性能与资源
+  能力: 查询Local店铺分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params: &id136
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺分类
+    params: *id136
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - id
+      - name
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-185
+- 维度: 异常与容错
+  能力: 查询Local店铺分类
+  层: L1
+  输入:
+    tool_name: query_categories
+    tool_params:
+      unknown_param_malformed: x
+      merchantIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-186
+- 维度: 协议契约
+  能力: 查询Local店铺员工
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-187
+- 维度: 工具描述与发现
+  能力: 查询Local店铺员工
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &id137
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺员工
+    params: *id137
+    output: 工具可正常调用
+    block: false
+    semantic:
+      fields:
+      - id
+      - firstName
+      - isActive
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-188
+- 维度: 性能与资源
+  能力: 查询Local店铺员工
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &id138
+      merchantIds:
+      - '11897214392730629'
+  期望:
+    intent: 查询Local店铺员工
+    params: *id138
+    output: 单次调用延迟可接受
+    block: false
+    semantic:
+      fields:
+      - id
+      - firstName
+      - isActive
+  标签:
+  - 正常
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-189
+- 维度: 异常与容错
+  能力: 查询Local店铺员工
+  层: L1
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params:
+      unknown_param_malformed: x
+      merchantIds:
+      - '0'
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L1-190
+- 维度: 协议契约
+  能力: 列出可用工具
+  层: L1
+  输入:
+    tool_name: '*'
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 协议错误
+    params: {}
+    output: 返回参数错误，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 畸形
+  用例ID: A-L1-191
+- 维度: 异常与容错
+  能力: 列出可用工具
+  层: L1
+  输入:
+    tool_name: '*'
+    tool_params:
+      unknown_param_malformed: x
+  期望:
+    intent: 容错
+    params: {}
+    output: 非法输入被友好处理，不崩溃
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 容错
+  用例ID: A-L1-192
+- 维度: 参数校验
+  能力: 查询Cloud店铺目录报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id139
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: abc
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id139
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-193
+- 维度: 调用正确性
+  能力: 查询Local店铺目录报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288461317'
+      name: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id030
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-194
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id140
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Date
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id140
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-195
+- 维度: 调用正确性
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id041
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-196
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id141
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 9999999999999999
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id141
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-197
+- 维度: 参数校验
+  能力: 查询Cloud店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id142
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      unknown_param: x
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id142
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-198
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id143
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortField: Amount
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id143
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-199
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id144
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      relativePeriod: Today
+      unknown_param: x
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id144
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-200
+- 维度: 参数校验
+  能力: 查询Local店铺商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id145
+      merchantId: '11897214392730629'
+      productId: '11897285288461317'
+      includeCategory: -1
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id145
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-201
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id146
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id146
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-202
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id147
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Amount
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id147
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-203
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Date
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id011
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-204
+- 维度: 参数校验
+  能力: 查询Local店铺员工
+  层: L2
+  输入:
+    tool_name: query_merchant_staffs
+    tool_params: &id149
+      merchantIds: *id148
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺员工
+    params: *id149
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-205
+- 维度: 调用正确性
+  能力: 新增Local店铺商品
+  层: L2
+  输入:
+    tool_name: batch_insert_products_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      products: *id053
+  期望:
+    intent: 新增Local店铺商品
+    params: *id052
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-206
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 查询Local店铺订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id150
+      merchantId: '11897214392730629'
+      orderIds: *id034
+      page: 0
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id150
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-207
+- 维度: 调用正确性
+  能力: 查询Local店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id026
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-208
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id151
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 9999999999999999
+      size: 1
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id151
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-209
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id152
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+      relativePeriod: Yesterday
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id152
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-210
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id153
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: -1
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id153
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-211
+- 维度: 调用正确性
+  能力: 查询Cloud店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports_typo
+    tool_params:
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id062
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-212
+- 维度: 参数校验
+  能力: 查询Local店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id154
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: -1
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id154
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-213
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id155
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: abc
+      size: 1
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id155
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-214
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id156
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id156
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-215
+- 维度: 参数校验
+  能力: 查询Local店铺目录报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id157
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288461317'
+      name: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      sortField: Date
+      sortDirection: Ascending
+      limit: 0
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id157
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-216
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id158
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: abc
+      size: 1
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id158
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-217
+- 维度: 调用正确性
+  能力: 查询Local店铺商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      productId: '11897285288461317'
+      includeCategory: true
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id081
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-218
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id159
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortDirection: Descending
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id159
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-219
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id160
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      relativePeriod: ThisWeek
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id160
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-220
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id161
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id161
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-221
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id162
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 9999999999999999
+      size: 1
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id162
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-222
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Amount
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id012
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-223
+- 维度: 参数校验
+  能力: 查询Local店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id163
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 0
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id163
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-224
+- 维度: 参数校验
+  能力: 按ID批量查询Local店铺商品
+  层: L2
+  输入:
+    tool_name: query_products_by_ids
+    tool_params: &id165
+      merchantIds: *id164
+      productIds: *id085
+      unknown_param: x
+  期望:
+    intent: 按ID批量查询Local店铺商品
+    params: *id165
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-225
+- 维度: 参数校验
+  能力: 修改Local店铺商品属性
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id167
+      merchantIds: *id166
+      productIds: *id044
+      status: 'Off'
+      price: 9999999999999999
+      stockStatus: InStock
+      nameLocalization: *id045
+  期望:
+    intent: 修改Local店铺商品属性
+    params: *id167
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-226
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id168
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id168
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-227
+- 维度: 参数校验
+  能力: 查询Local店铺订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id169
+      merchantId: '11897214392730629'
+      orderIds: *id034
+      page: abc
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id169
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-228
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id170
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 9999999999999999
+      relativePeriod: Today
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id170
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-229
+- 维度: 参数校验
+  能力: 查询Local店铺商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id171
+      merchantId: '11897214392730629'
+      productId: '11897285288461317'
+      includeCategory: 0
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id171
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-230
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortDirection: Descending
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id007
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-231
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id172
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortDirection: Descending
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id172
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-232
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id173
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortField: Amount
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id173
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-233
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id174
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: abc
+      relativePeriod: Today
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id174
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-234
+- 维度: 参数校验
+  能力: 查询Local店铺商品详情
+  层: L2
+  输入:
+    tool_name: query_product_detail_by_id
+    tool_params: &id175
+      merchantId: '11897214392730629'
+      productId: '11897285288461317'
+      includeCategory: 9999999999999999
+      includeMenu: true
+      includeSpecificationGroup: true
+  期望:
+    intent: 查询Local店铺商品详情
+    params: *id175
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-235
+- 维度: 参数校验
+  能力: 查询Cloud店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id176
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 9999999999999999
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id176
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-236
+- 维度: 参数校验
+  能力: 查询Local店铺订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids
+    tool_params: &id177
+      merchantId: '11897214392730629'
+      orderIds: *id034
+      page: -1
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id177
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-237
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id178
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      relativePeriod: Yesterday
+      unknown_param: x
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id178
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-238
+- 维度: 调用正确性
+  能力: 查询Local店铺订单商品明细
+  层: L2
+  输入:
+    tool_name: query_order_details_by_ids_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      orderIds: *id034
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺订单商品明细
+    params: *id033
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-239
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id179
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id179
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-240
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id180
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: -1
+      size: 1
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id180
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-241
+- 维度: 调用正确性
+  能力: 修改Local店铺商品属性
+  层: L2
+  输入:
+    tool_name: update_products_by_ids_typo
+    tool_params:
+      merchantIds: *id166
+      productIds: *id044
+      status: 'Off'
+      price: 10.0
+      stockStatus: InStock
+      nameLocalization: *id045
+  期望:
+    intent: 修改Local店铺商品属性
+    params: *id043
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-242
+  sample_extra: 3
+- 维度: 调用正确性
+  能力: 查询Local店铺分类
+  层: L2
+  输入:
+    tool_name: query_categories_typo
+    tool_params:
+      merchantIds: *id181
+  期望:
+    intent: 查询Local店铺分类
+    params: *id095
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-243
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id182
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortField: Date
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id182
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-244
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id183
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 0
+      relativePeriod: Today
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id183
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-245
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id018
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-246
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id184
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: abc
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id184
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-247
+- 维度: 参数校验
+  能力: 查询Cloud店铺目录报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id185
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: 0
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id185
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-248
+- 维度: 调用正确性
+  能力: 查询Local店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      merchantName: ZH_Rooster_Local
+      relativePeriod: Today
+      sortField: Date
+  期望:
+    intent: 查询Local店铺经营汇总
+    params: *id003
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-249
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id186
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: abc
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id186
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-250
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id187
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 9999999999999999
+      size: 1
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id187
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-251
+- 维度: 调用正确性
+  能力: 删除Local店铺商品
+  层: L2
+  输入:
+    tool_name: delete_products_by_ids_typo
+    tool_params:
+      merchantIds: *id188
+      productIds: *id049
+  期望:
+    intent: 删除Local店铺商品
+    params: *id048
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-252
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 查询Local店铺目录报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id189
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      type: Menu
+      refId: '11897285288461317'
+      name: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      sortField: Date
+      sortDirection: Ascending
+      limit: abc
+  期望:
+    intent: 查询Local店铺目录报表
+    params: *id189
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-253
+- 维度: 调用正确性
+  能力: 查询Local店铺商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name_typo
+    tool_params:
+      merchantIds: *id076
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      status: Unknown
+  期望:
+    intent: 查询Local店铺商品
+    params: *id079
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-254
+- 维度: 参数校验
+  能力: 查询Cloud店铺目录报表
+  层: L2
+  输入:
+    tool_name: query_datax_menu_product_category_reports
+    tool_params: &id190
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      type: Menu
+      refId: '8566308680959061'
+      name: Fresh Grapefruit Tea
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      unknown_param: x
+  期望:
+    intent: 查询Cloud店铺目录报表
+    params: *id190
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-255
+- 维度: 参数校验
+  能力: 修改Local店铺商品属性
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id191
+      merchantIds: *id166
+      productIds: *id044
+      status: 'Off'
+      price: abc
+      stockStatus: InStock
+      nameLocalization: *id045
+  期望:
+    intent: 修改Local店铺商品属性
+    params: *id191
+    output: 参数类型错误被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 类型错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-256
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 修改Local店铺商品属性
+  层: L2
+  输入:
+    tool_name: update_products_by_ids
+    tool_params: &id192
+      merchantIds: *id166
+      productIds: *id044
+      status: 'Off'
+      price: 0
+      stockStatus: InStock
+      nameLocalization: *id045
+  期望:
+    intent: 修改Local店铺商品属性
+    params: *id192
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-257
+  sample_extra: 3
+- 维度: 参数校验
+  能力: 查询Local店铺商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id193
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      status: Selling
+  期望:
+    intent: 查询Local店铺商品
+    params: *id193
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-258
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id194
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 9999999999999999
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id194
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-259
+- 维度: 参数校验
+  能力: 查询Cloud店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id195
+      merchantId: '8563036762604549'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: -1
+  期望:
+    intent: 查询Cloud店铺订单明细
+    params: *id195
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-260
+- 维度: 调用正确性
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id040
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-261
+- 维度: 调用正确性
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports_typo
+    tool_params:
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id071
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-262
+- 维度: 参数校验
+  能力: 查询Local店铺商品
+  层: L2
+  输入:
+    tool_name: search_products_by_name
+    tool_params: &id196
+      merchantIds: *id076
+      productName: ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺商品
+    params: *id196
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-263
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id197
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Date
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id197
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-264
+- 维度: 调用正确性
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances_typo
+    tool_params:
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 1
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id037
+    output: 工具无效，拒绝触发
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 工具错配
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-265
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id198
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: 0
+      size: 1
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id198
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-266
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id199
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: -1
+      size: 1
+      relativePeriod: Today
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id199
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-267
+- 维度: 参数校验
+  能力: 查询Local店铺订单明细
+  层: L2
+  输入:
+    tool_name: query_datax_order_sales_reports
+    tool_params: &id200
+      merchantId: '11897214392730629'
+      relativePeriod: Today
+      orderType: DineIn
+      orderStatus: Progressing
+      paymentStatus: Captured
+      paymentType: Cash
+      sourceName: POS
+      orderSourceType: EasyPos
+      paymentTerminalName: POS Terminal
+      sortField: Date
+      sortDirection: Ascending
+      limit: 9999999999999999
+  期望:
+    intent: 查询Local店铺订单明细
+    params: *id200
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-268
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id201
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortDirection: Descending
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id201
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-269
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id202
+      merchantId: '8563036762604549'
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: -1
+      relativePeriod: ThisWeek
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id202
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-270
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id203
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortDirection: Descending
+      unknown_param: x
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id203
+    output: 未知参数被忽略并正常执行（或结构化校验响应）
+    block: false
+    semantic:
+      contains:
+      - 查询成功
+      - 成功
+      - 错误
+      - 参数
+      - 校验
+      - 失败
+      - 不存在
+      - 未找到
+      - 无效
+      - 无法
+      - 拒绝
+      - exception
+      - error
+      - invalid
+      - not found
+      - failed
+      - unsupported
+      any_of: true
+  标签:
+  - 未知参数
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-271
+- 维度: 参数校验
+  能力: 查询Local店铺员工考勤
+  层: L2
+  输入:
+    tool_name: query_staff_attendances
+    tool_params: &id204
+      merchantId: '11897214392730629'
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      page: -1
+      size: 1
+      relativePeriod: Yesterday
+  期望:
+    intent: 查询Local店铺员工考勤
+    params: *id204
+    output: 越界参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 数值变异
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-272
+- 维度: 参数校验
+  能力: 查询Cloud店铺经营汇总
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id205
+      startAt: '2026-08-01'
+      endAt: '2026-08-08'
+      sortField: Date
+      sortDirection: Ascending
+      limit: 100
+      relativePeriod: Today
+  期望:
+    intent: 查询Cloud店铺经营汇总
+    params: *id205
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '8563028055426053'
+  用例ID: A-L2-273
+- 维度: 参数校验
+  能力: 查询Local店铺经营汇总(夏令时切换区间)
+  层: L2
+  输入:
+    tool_name: query_datax_total_reports
+    tool_params: &id206
+      startAt: '2026-11-04'
+      endAt: '2026-11-05'
+      sortField: Quantity
+  期望:
+    intent: 查询Local店铺经营汇总(夏令时切换区间)
+    params: *id206
+    output: 缺失参数被拒绝/提示
+    block: true
+    semantic:
+      contains:
+      - 错误
+      - 拒绝
+      any_of: true
+  标签:
+  - 参数缺失
+  运行时上下文:
+    companyId: '11897209476088837'
+  用例ID: A-L2-274

@@ -28,29 +28,88 @@
 实体名参数名: "name"
 连接演示工具: "query_merchants"
 
+# 服务端 schema 快照（含完整 inputSchema 类型/枚举），供生成器造值与 schema 契约检查。
+# 系统名（POS数据报表）与文件名（roosterpos）不同，故显式声明。
+原始schema: "roosterpos.raw.json"
+
 # ---- 参数取值域（避免生成器按参数名跨域取错值）----
 # type：仅 query_datax_menu_product_category_reports 使用，合法值 Menu/Product/Category。
 #   不声明会被生成器从实体 paymentType(CreditCard) 误取 → 服务端拒绝（2026-10-08 修）。
+#
+# ★ 2026-11-06 加强：原只声明 type，导致 4 个报表工具的参数覆盖率极低
+#   （order_sales 19 个参数只用到 3 个），过滤/排序/分页维度完全没测。
+#   现按实测补充枚举，并配合「参数完整性.查询参数覆盖」自动生成逐枚举值用例。
+#
+# ⚠ 枚举值必须实测确认：公鸡 POS 对非法枚举返回的是 MCP 协议层裸异常
+#   "An error occurred invoking 'xxx'."，猜错的值会让整批用例报废。
+#   实测环境：公鸡 Local 店 11897214392730629，2026-08 区间。
 param_enums:
   type: [Menu, Product, Category]
+  # 产品设计无「本年/去年」，ThisYear/LastYear 不在枚举内属正常不支持，非缺陷
+  relativePeriod: [Today, Yesterday, ThisWeek, LastMonth, LastWeek, ThisMonth]
+  # 实测 sortField 各工具都只支持 Date（含 menu_product_category_reports）。
+  # ⚠ 必须把**所有用到该参数的工具**都列出：生成器对「未命中 tools 限定」的
+  #   参数会回退到全局/内置口径，实测数据报表的目录报表能力因此取到了
+  #   内置的 Amount/Quantity → 校验器判「意图-参数矛盾」2 条。
+  sortField:
+    - {tools: [query_datax_order_sales_reports,
+               query_datax_total_reports,
+               query_datax_menu_product_category_reports], values: [Date]}
+  sortDirection: [Ascending, Descending]
+  orderType:
+    - {tools: [query_datax_order_sales_reports], values: [DineIn, Delivery, Pickup]}
+  # ⚠ schema enum 不完整：实测服务端还接受 Progressing / Unpaid，
+  #   schema 只列了 Completed/Cancelled 与 Captured。按实测补齐（取并集）。
+  orderStatus:
+    - {tools: [query_datax_order_sales_reports],
+       values: [Progressing, Completed, Cancelled, BeMerged]}
+  paymentStatus:
+    - {tools: [query_datax_order_sales_reports],
+       values: [Captured, Unpaid, PartiallyPaid]}
+  paymentType:
+    - {tools: [query_datax_order_sales_reports],
+       values: [Cash, CreditCard, DebitCard, ThirdParty]}
+  sourceName:
+    - {tools: [query_datax_order_sales_reports], values: [POS, Online, App]}
+  # orderSourceType 暂不声明：实测 EasyPos 可正常返回，但校验器内置枚举
+  # （AutoMart/PocketStore/Deliverect/AiPhoneOrder）与之冲突，会被判
+  # 「意图-参数矛盾」。待与开发确认正式枚举后再启用。
+
+# ---- 参数覆盖策略 ----
+# 查询参数覆盖=true 时，为上面声明了枚举的过滤参数逐个合法值生成正向用例。
+参数完整性:
+  启用: true
+  查询参数覆盖: true
+  查询参数上限: 8
+  枚举取值上限: 3
+  最大单缺数: 3
 
 # ---- MCP 工具 schema（DataX 三报表 + 订单商品明细）----
 mcp_tools:
   - name: query_datax_total_reports
     description: 查询 DataX 店铺经营汇总报表（FlatTotalReport）。必填 merchantId；时间用 relativePeriod(Today/Yesterday/ThisWeek/LastWeek/ThisMonth/LastMonth) 或 startAt+endAt(店铺本地时间，不带时区；汇总含结束日期)。返回 orderCount/totalSales/netSales/preTaxRevenue/actualRevenue/dueAmount/unpaidAmount/refundAmount/totalTaxAmount/totalTipsAmount/totalDiscountAmount/totalSurchargeAmount/cancelledOrders/各支付方式金额/各订单类型金额 等，并含 timeZoneId/requestedDateRange。
-    params: [merchantId, relativePeriod, startAt, endAt, limit, sortField, sortDirection]
+    # merchantName：按店铺名称关键字筛选（2026-11-09 按 schema 补全）
+    params: [merchantId, merchantName, relativePeriod, startAt, endAt, limit,
+             sortField, sortDirection]
     required: [merchantId]
   - name: query_datax_order_sales_reports
     description: 查询 DataX 订单销售报表（FlatOrderSalesReport），可按订单/状态/支付/来源筛选。必填 merchantId；时间用 relativePeriod 或 startAt+endAt（订单 endAt 不含，须 endAt=次日才能覆盖当天）。可按 orderId/orderSerial/orderType/orderStatus/paymentStatus/paymentType/operatorName/sourceName/orderSourceType/paymentTerminalType/customizedPaymentName 筛选；sortField=Amount/Date，limit 上限 1000。
-    params: [orderId, orderSerial, orderType, orderStatus, paymentStatus, paymentType, operatorName, sourceName, orderSourceType, paymentTerminalType, customizedPaymentName, merchantId, relativePeriod, startAt, endAt, sortField, sortDirection, limit]
+    # paymentTerminalName：按支付终端名称精确筛选（2026-11-09 按 schema 补全）
+    params: [orderId, orderSerial, orderType, orderStatus, paymentStatus,
+             paymentType, operatorName, sourceName, orderSourceType,
+             paymentTerminalType, paymentTerminalName, customizedPaymentName,
+             merchantId, relativePeriod, startAt, endAt, sortField,
+             sortDirection, limit]
     required: [merchantId]
   - name: query_datax_menu_product_category_reports
-    description: 查询 DataX 菜单商品分类报表（FlatMenuProductCategoryReport），可按 refId/name/type 筛选。type 枚举 Menu/Product/Category。必填 merchantId；时间用 relativePeriod 或 startAt+endAt(含结束日期)。sortField 可用 Amount/Quantity，sortDirection 枚举 Ascending/Descending，limit 上限 1000。
+    description: 查询 DataX 菜单商品分类报表（FlatMenuProductCategoryReport），可按 refId/name/type 筛选。type 枚举 Menu/Product/Category。必填 merchantId；时间用 relativePeriod 或 startAt+endAt(含结束日期)。实测 sortField 仅支持 Date（schema 列出 Amount/Quantity 但服务端不接受），sortDirection 枚举 Ascending/Descending，limit 上限 1000。
     params: [refId, name, type, merchantId, relativePeriod, startAt, endAt, sortField, sortDirection, limit]
     required: [merchantId]
   - name: query_order_details_by_ids
     description: 按 merchantId 和 orderIds（1~500 个）查询完整订单商品明细，含成交名称/规格/数量/价格/折扣/加收/金额。用于折扣/加收下钻（itemDiscountAmount/couponDiscountAmount/rechargeDiscountAmount/discountAmount/itemChargeAmount/chargeAmount）。
-    params: [merchantId, orderIds]
+    # page/size 分页（2026-11-06 补：实测 Local 与 Cloud 均可用，返回 orders.list
+    # + 分页信息；原配置漏声明导致分页维度完全没测）
+    params: [merchantId, orderIds, page, size]
     required: [merchantId, orderIds]
   - name: query_companies
     description: 查询当前账号授权范围内的所有公司，返回公司ID、名称和下属店铺列表。

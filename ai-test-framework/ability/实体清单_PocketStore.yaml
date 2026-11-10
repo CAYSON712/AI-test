@@ -1,15 +1,18 @@
+# 实体清单：PocketStore cayson店鋪3（直连 MCP 实测重新采集）
+# 采集时间：2026-10-29 21:42
+# 店铺：cayson店鋪3  merchId=d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+# 商品 45 / 分类 4 / 菜单 3 / 税率 1 / 配送区 7 / 支付 3 / 活动 10 / 邮箱 1 / 报表 1 / 员工 4 / 角色 2
+# 原则：只写真实存在的数据；非 UUID 的 id 不进清单（服务端对部分
+#       支付方式返回枚举名作 id，不能当实体主键）。
 实体清单:
 - 名称: cayson店鋪3
   id: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
   merchantId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
   merchantName: cayson店鋪3
-  accountId: 45a2ca8d-1192-400b-bfb3-5771dab46c20
   phone: '9023162140'
   email: 944600294qq123@gmail.com
   address: 中国广东省中山市
-  txStatus: open
-  status: open
 - 名称: Cream Soda Drink
   id: 183e9b52-59a4-4526-88e5-8891209a4939
   itemId: 183e9b52-59a4-4526-88e5-8891209a4939
@@ -48,7 +51,7 @@
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
   name: Pork Chop w. Curry Sauce
   price: '12.95'
-  stock: 99999
+  stock: 99998
   status: OnSale
 - 名称: Baked Fillet Of Sole
   id: af148be3-10ab-49bd-9955-e102d593e312
@@ -85,98 +88,70 @@
 - 名称: all
   id: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
   categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-  categoryIds:
-  - 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-  categoryName: all
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: 午餐
   id: 436eb1dd-095c-4eb9-99c2-df593b8ea2e5
   categoryId: 436eb1dd-095c-4eb9-99c2-df593b8ea2e5
-  categoryIds:
-  - 436eb1dd-095c-4eb9-99c2-df593b8ea2e5
-  categoryName: 午餐
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: probe
+  id: 3e14c847-6d90-4add-9480-74bb4646b387
+  categoryId: 3e14c847-6d90-4add-9480-74bb4646b387
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: 晚餐
   id: 952acc9d-703b-4c98-8c8f-e50c4434a3c8
   categoryId: 952acc9d-703b-4c98-8c8f-e50c4434a3c8
-  categoryIds:
-  - 952acc9d-703b-4c98-8c8f-e50c4434a3c8
-  categoryName: 晚餐
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: all
   id: 4c67c792-6f81-4aae-94f4-cb6b5b7ceb0b
   menuId: 4c67c792-6f81-4aae-94f4-cb6b5b7ceb0b
-  menuIds:
-  - 4c67c792-6f81-4aae-94f4-cb6b5b7ceb0b
-  menuName: all
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: 晚餐菜单
   id: a2fc3714-01e1-433a-8fee-87518f72e039
   menuId: a2fc3714-01e1-433a-8fee-87518f72e039
-  menuIds:
-  - a2fc3714-01e1-433a-8fee-87518f72e039
-  menuName: 晚餐菜单
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: 午餐菜单
   id: e524a059-4a0a-4042-8a75-e6651d3759bc
   menuId: e524a059-4a0a-4042-8a75-e6651d3759bc
-  menuIds:
-  - e524a059-4a0a-4042-8a75-e6651d3759bc
-  menuName: 午餐菜单
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: 0税率
   id: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
   taxId: 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-  taxIds:
-  - 11b6d16a-65dc-4bba-b9fa-db5b085db25b
-  taxName: 0税率
-  taxRate: 0.0
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+  rate: null
 - 名称: DeliConnect Area 1
   id: 9d07709e-6301-466b-9eb7-fd474c0b66c4
   areaId: 9d07709e-6301-466b-9eb7-fd474c0b66c4
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-  minimumAmountForDelivery: 0.0
-  deliveryFee: 0.0
 - 名称: Delivery Area 1
   id: b967a7bf-1bab-4ee1-9bc1-b97eb55f2d6a
   areaId: b967a7bf-1bab-4ee1-9bc1-b97eb55f2d6a
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-  minimumAmountForDelivery: 0.0
-  deliveryFee: 4.0
 - 名称: Delivery Area 2
   id: 30aa0d29-eaff-4785-87fd-fc337164b5ee
   areaId: 30aa0d29-eaff-4785-87fd-fc337164b5ee
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-  minimumAmountForDelivery: 0.0
-  deliveryFee: 5.0
 - 名称: Delivery Area 3
   id: 64251b73-0dd8-4c21-8e65-b4c270e1f3da
   areaId: 64251b73-0dd8-4c21-8e65-b4c270e1f3da
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-  minimumAmountForDelivery: 0.0
-  deliveryFee: 0.0
 - 名称: Delivery Area 4
   id: 8f34093e-0160-4162-a7a9-05354b2fa75d
   areaId: 8f34093e-0160-4162-a7a9-05354b2fa75d
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-  minimumAmountForDelivery: 0.0
-  deliveryFee: 0.0
 - 名称: Delivery Area 5
   id: fd4e201b-56c2-4191-87f4-27e00cbb64b5
   areaId: fd4e201b-56c2-4191-87f4-27e00cbb64b5
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-  minimumAmountForDelivery: 0.0
-  deliveryFee: 0.0
 - 名称: Delivery Area 6
   id: d0390a71-1263-4bd1-b23f-b26702ac3b44
   areaId: d0390a71-1263-4bd1-b23f-b26702ac3b44
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-  minimumAmountForDelivery: 0.0
-  deliveryFee: 0.0
-- 名称: ''
+- 名称: Proton Pay
   id: 6b4adc17-37c3-11f1-94d6-00224808ba53
-  paymentType: ''
+  paymentId: 6b4adc17-37c3-11f1-94d6-00224808ba53
+  paymentType: proton_pay
+  type: proton_pay
+  isEnabled: true
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: Get $10 off for order $10 or more
   id: 92ac8eda-2372-43df-b3eb-ac48ffc3fae1
@@ -239,8 +214,8 @@
   isPublished: false
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: 944600294qq@gmail.com
-  id: 08ddd582-ca66-4f9e-85dd-e934b1bf57c2
-  emailId: 08ddd582-ca66-4f9e-85dd-e934b1bf57c2
+  id: 08df3403-9017-494e-81df-c3e704bf30f4
+  emailId: 08df3403-9017-494e-81df-c3e704bf30f4
   email: 944600294qq@gmail.com
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
 - 名称: 944600294qq@gmail.com
@@ -249,68 +224,41 @@
   email: 944600294qq@gmail.com
   sendDay: 10
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: 店員
-  id: 1e6b1564-a5eb-4e4e-9019-8b87de5513b1
-  roleId: 1e6b1564-a5eb-4e4e-9019-8b87de5513b1
-  name: 店員
-  permissionCount: 60
-  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: all
-  id: 16a474af-9487-46ad-a8ba-70e4bc1221ab
-  roleId: 16a474af-9487-46ad-a8ba-70e4bc1221ab
-  name: all
-  permissionCount: 60
-  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: '9023162140'
-  id: 08dd61e8-5526-40f6-8bed-9ea14c66da1f
-  merchManagerId: 08dd61e8-5526-40f6-8bed-9ea14c66da1f
-  email: 944600294qq@gmail.com
-  phone: '9023162140'
-  roleNames:
-  - 店員
-  isActive: true
-  isAdmin: false
-  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: '9033927968'
-  id: 08dda714-12b9-4426-8158-98e3a38d394d
-  merchManagerId: 08dda714-12b9-4426-8158-98e3a38d394d
-  email: lorakwan12@gmail.com
-  phone: '9033927968'
-  roleNames:
-  - all
-  isActive: true
-  isAdmin: false
-  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: '9023162149'
+- 名称: 944600294qq@gmail.com
   id: af7038a4-3ecd-419c-850f-4549d186897f
   merchManagerId: af7038a4-3ecd-419c-850f-4549d186897f
   email: 944600294qq@gmail.com
   phone: '9023162149'
-  roleNames:
-  - 店員
   isActive: false
-  isAdmin: false
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: '9023162141'
+- 名称: lorakwan12@gmail.com
+  id: 08dda714-12b9-4426-8158-98e3a38d394d
+  merchManagerId: 08dda714-12b9-4426-8158-98e3a38d394d
+  email: lorakwan12@gmail.com
+  phone: '9033927968'
+  isActive: true
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: 944600294qq@gmail.com
+  id: 08dd61e8-5526-40f6-8bed-9ea14c66da1f
+  merchManagerId: 08dd61e8-5526-40f6-8bed-9ea14c66da1f
+  email: 944600294qq@gmail.com
+  phone: '9023162140'
+  isActive: true
+  merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
+- 名称: 944600294qq@gmail.com
   id: fab134b0-4839-429a-941b-ce23cc46acc3
   merchManagerId: fab134b0-4839-429a-941b-ce23cc46acc3
   email: 944600294qq@gmail.com
   phone: '9023162141'
-  roleNames: []
   isActive: true
-  isAdmin: true
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: Proton Pay
-  id: 6b4adc17-37c3-11f1-94d6-00224808ba53
-  paymentId: 6b4adc17-37c3-11f1-94d6-00224808ba53
-  paymentType: proton_pay
-  type: proton_pay
-  isEnabled: true
+- 名称: all
+  id: 16a474af-9487-46ad-a8ba-70e4bc1221ab
+  roleId: 16a474af-9487-46ad-a8ba-70e4bc1221ab
+  roleName: all
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-- 名称: Proton Pay
-  id: 6b4adc17-37c3-11f1-94d6-00224808ba53
-  paymentId: 6b4adc17-37c3-11f1-94d6-00224808ba53
-  paymentType: proton_pay
-  type: proton_pay
-  isEnabled: true
+- 名称: 店员
+  id: 1e6b1564-a5eb-4e4e-9019-8b87de5513b1
+  roleId: 1e6b1564-a5eb-4e4e-9019-8b87de5513b1
+  roleName: 店员
   merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed

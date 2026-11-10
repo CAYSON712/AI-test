@@ -145,18 +145,34 @@ def _lifecycle_gate(dataset_path, system):
     import yaml as _yaml
 
     print("①.7 数据保护门禁（写用例是否都有防护）")
-    # 定位系统配置
+    # 定位系统配置：configs 文件名与数据集「系统」名常不一致
+    # （数据集叫 PocketStore商家经营后台，配置文件叫 PocketStore.yaml），
+    # 故按「名称包含 / 被包含」双向模糊匹配，而非精确等值。
     cfg_path = None
+    all_cfgs = _glob.glob(os.path.join(_ROOT, "configs", "*.yaml"))
     if system:
         cand = os.path.join(_ROOT, "configs", f"{system}.yaml")
         if os.path.exists(cand):
             cfg_path = cand
+        else:
+            _s = str(system).lower()
+            # 双向子串匹配，取最长匹配（最具体）
+            scored = []
+            for f in all_cfgs:
+                stem = os.path.splitext(os.path.basename(f))[0].lower()
+                if stem and (stem in _s or _s in stem):
+                    scored.append((len(stem), f))
+            if scored:
+                scored.sort(reverse=True)
+                cfg_path = scored[0][1]
+                print(f"   配置匹配: {os.path.basename(cfg_path)}"
+                      f"（系统名 {system}）")
     if not cfg_path:
-        hits = _glob.glob(os.path.join(_ROOT, "configs", "*.yaml"))
+        hits = all_cfgs
         if len(hits) == 1:
             cfg_path = hits[0]
     if not cfg_path:
-        print("   [跳过] 未定位到唯一的系统配置，无法检查")
+        print(f"   [跳过] 未定位到系统配置（{len(all_cfgs)} 个候选），无法检查")
         print()
         return True
 

@@ -1,0 +1,214 @@
+# =====================================================================
+# 实体清单：POS Local 店铺服务器路由（AI POS 1.2）
+# =====================================================================
+# 需求：A-1 店铺服务器路由 / A-2 Local 报表查询转发 / A-3 Local 能力与版本管控
+#
+# ★ 本清单的核心：每条店铺自带 companyId ★
+#   同一 TOKEN 可见多间公司，但 CompanyId 请求头决定能操作哪间公司。
+#   Local 店与 Cloud 店分属不同公司，只换 merchantId 不换 CompanyId 会稳定
+#   报 40100 "The requested merchant is not authorized for the current company."，
+#   请求到不了路由层，会被误判成「Local 路由失效」。
+#   生成器据此把 companyId 注入用例的「运行时上下文」，执行器按实体换请求头。
+#
+# 数据来源：2026-11-04 实调公鸡 MCP 拉取（query_companies / query_merchants /
+#   query_datax_* / query_menus / query_categories / query_merchant_staffs）
+# 时区：America/Los_Angeles（PDT=UTC-7 / PST=UTC-8）
+#
+# ⚠ 店铺可用性（用户 2026-11-04 确认）：
+#   - 11897214392730629 ZH_Rooster_Local  = 唯一确认「已升级 MCP 版本」的 Local 店 ★可用
+#   - 8563036762604549 chongqing hot      = Cloud 对照组 ★可用
+#   - 其余 3 家 serverMode=Local 的店铺（Torch Rooster local66 / Liam Dev / dio-local）
+#     均为开发或他人环境，未确认版本状态，**不纳入本清单**，避免误用。
+#
+# ⚠ 待补（拿不到就宁缺毋假）：
+#   - Local 且「未升级 MCP 版本」的店铺 → A-3 版本校验用例暂时只能靠占位/人工
+# =====================================================================
+
+实体清单:
+  # -------------------------------------------------------------------
+  # 1. Local 店铺（已升级 MCP 版本）—— A-2 查询应成功 / A-3 写操作应被拦截
+  # -------------------------------------------------------------------
+  - 名称: "ZH_Rooster_Local"
+    id: "11897214392730629"
+    merchantId: "11897214392730629"
+    merchantIds: ["11897214392730629"]
+    companyId: "11897209476088837"
+    companyName: "中环公鸡Local"
+    serverMode: "Local"
+    mcpVersionSupported: true
+    timeZoneId: "America/Los_Angeles"
+    relativePeriod: "Today"
+    startAt: "2026-11-04"
+    endAt: "2026-11-05"
+    sortField: "Date"
+    sortDirection: "Descending"
+    limit: 100
+    # 实测基线（2026-11-04 Today）：可用于校验「不得返回 0 条」类断言
+    baselineTodayOrderCount: 14
+    baselineTodayTotalSales: 337.72
+
+  # -------------------------------------------------------------------
+  # 2. Cloud 对照组 —— A-2 结果一致性基线（同一组查询语义应等价）
+  # -------------------------------------------------------------------
+  - 名称: "chongqing hot"
+    id: "8563036762604549"
+    merchantId: "8563036762604549"
+    merchantIds: ["8563036762604549"]
+    companyId: "8563028055426053"
+    companyName: "BBEEII"
+    serverMode: "Cloud"
+    mcpVersionSupported: true
+    timeZoneId: "America/Los_Angeles"
+    # ⚠ 该 Cloud 店「今日无销售数据」（实测 Today 返回 0 条），
+    #   故对照基线取有数据的历史区间 2026-08-01~08-08（实测 44 单）。
+    #   一致性对照用例应使用下面这组日期，否则会拿 0 条去比 Local 的 14 单。
+    relativePeriod: "Today"
+    startAt: "2026-08-01"
+    endAt: "2026-08-08"
+    sortField: "Date"
+    sortDirection: "Descending"
+    limit: 100
+    # 实测基线（2026-08-01~08-08）：44 笔订单，可用于「不得为空」类断言
+    baselineCloudOrderCount: 44
+    # ⚠ 已知缺陷：Cloud 店 query_datax_total_reports 当前全参数组合返回
+    #   code=50001 "EasyPos 近期报表字段 todayLocalAt 缺失…"（2026-11-04 稳定复现），
+    #   Local 店同参数正常。故 Cloud 侧「经营汇总」不可用作一致性基线，
+    #   一致性对照请用 query_datax_order_sales_reports。
+
+  # -------------------------------------------------------------------
+  # 3. Local 店铺的真实订单样本 —— A-2 订单/明细下钻用
+  # -------------------------------------------------------------------
+  - 名称: "ZH_Rooster_Local 订单样本"
+    id: "13872561357915141"
+    orderId: "13872561357915141"
+    orderIds: ["13872561357915141"]
+    merchantId: "11897214392730629"
+    merchantIds: ["11897214392730629"]
+    companyId: "11897209476088837"
+    serverMode: "Local"
+    mcpVersionSupported: true
+    orderStatus: "Progressing"
+    paymentStatus: "FullyPaid"
+    paymentType: "Cash"
+    orderType: "Pickup"
+    relativePeriod: "Today"
+    startAt: "2026-11-04"
+    endAt: "2026-11-05"
+    limit: 100
+
+  - 名称: "ZH_Rooster_Local 订单样本2"
+    id: "13872523599873029"
+    orderId: "13872523599873029"
+    orderIds: ["13872523599873029"]
+    merchantId: "11897214392730629"
+    merchantIds: ["11897214392730629"]
+    companyId: "11897209476088837"
+    serverMode: "Local"
+    mcpVersionSupported: true
+    orderStatus: "Progressing"
+    paymentStatus: "FullyPaid"
+    relativePeriod: "Today"
+    startAt: "2026-11-04"
+    endAt: "2026-11-05"
+    limit: 100
+
+  # -------------------------------------------------------------------
+  # 3b. Cloud 店铺的真实订单样本 —— A-2 一致性对照用（2026-08 有数据）
+  # -------------------------------------------------------------------
+  - 名称: "chongqing hot 订单样本"
+    id: "13369674950509573"
+    orderId: "13369674950509573"
+    orderIds: ["13369674950509573"]
+    merchantId: "8563036762604549"
+    merchantIds: ["8563036762604549"]
+    companyId: "8563028055426053"
+    serverMode: "Cloud"
+    mcpVersionSupported: true
+    orderStatus: "Completed"
+    paymentStatus: "Captured"
+    paymentType: "Cash"
+    orderType: "DineIn"
+    startAt: "2026-08-01"
+    endAt: "2026-08-08"
+    limit: 100
+
+  # -------------------------------------------------------------------
+  # 3c. Cloud 店铺的真实商品 —— A-3 对照（Cloud 写操作应放行，与 Local 形成对照）
+  # -------------------------------------------------------------------
+  - 名称: "chongqing hot 商品 Fresh Grapefruit Tea"
+    id: "8566308680959061"
+    productId: "8566308680959061"
+    productIds: ["8566308680959061"]
+    productName: "Fresh Grapefruit Tea"
+    merchantId: "8563036762604549"
+    merchantIds: ["8563036762604549"]
+    companyId: "8563028055426053"
+    serverMode: "Cloud"
+    mcpVersionSupported: true
+    startAt: "2026-08-01"
+    endAt: "2026-08-08"
+    limit: 100
+
+  # -------------------------------------------------------------------
+  # 4. Local 店铺的菜单 / 分类实体 —— A-2 目录报表用
+  # -------------------------------------------------------------------
+  - 名称: "ZH_Rooster_Local 菜单 Lunch"
+    id: "12191724499174405"
+    menuId: "12191724499174405"
+    menuIds: ["12191724499174405"]
+    merchantId: "11897214392730629"
+    merchantIds: ["11897214392730629"]
+    companyId: "11897209476088837"
+    serverMode: "Local"
+    mcpVersionSupported: true
+    relativePeriod: "Today"
+    startAt: "2026-11-04"
+    endAt: "2026-11-05"
+    limit: 100
+
+  - 名称: "ZH_Rooster_Local 分类 DUMPLINGS"
+    id: "13273427280397317"
+    categoryId: "13273427280397317"
+    categoryIds: ["13273427280397317"]
+    merchantId: "11897214392730629"
+    merchantIds: ["11897214392730629"]
+    companyId: "11897209476088837"
+    serverMode: "Local"
+    mcpVersionSupported: true
+    relativePeriod: "Today"
+    startAt: "2026-11-04"
+    endAt: "2026-11-05"
+    limit: 100
+
+  # -------------------------------------------------------------------
+  # 5. Local 店铺的真实商品 —— A-3 写操作拦截用（写工具必填 merchantIds）
+  #    ⚠ 写类用例一律 ALLOW_DESTRUCTIVE 关闭 + 传「格式合法但不存在」的 ID，
+  #      绝不用这些真实 ID 去改，避免污染 Local 店数据。
+  # -------------------------------------------------------------------
+  - 名称: "ZH_Rooster_Local 商品 JUICY PORK DUMPLINGS"
+    id: "11897285288461317"
+    productId: "11897285288461317"
+    productIds: ["11897285288461317"]
+    merchantId: "11897214392730629"
+    merchantIds: ["11897214392730629"]
+    companyId: "11897209476088837"
+    serverMode: "Local"
+    mcpVersionSupported: true
+    relativePeriod: "Today"
+    startAt: "2026-11-04"
+    endAt: "2026-11-05"
+    limit: 100
+
+  - 名称: "ZH_Rooster_Local 商品 SOUP-FILLED SIU MAI"
+    id: "11897285288592389"
+    productId: "11897285288592389"
+    productIds: ["11897285288592389"]
+    merchantId: "11897214392730629"
+    merchantIds: ["11897214392730629"]
+    companyId: "11897209476088837"
+    serverMode: "Local"
+    mcpVersionSupported: true
+    relativePeriod: "Today"
+    startAt: "2026-11-04"
+    endAt: "2026-11-05"
+    limit: 100

@@ -79,6 +79,55 @@ python scripts/_01_mcp_setup.py ... --no-probe
 > 业务域分类等判断逻辑应**沉淀进 `_01_mcp_setup.py`**（见下），而非散落成一次性文件。
 > 唯一的例外是**与具体 MCP 无关**的「中文路径绕乱码」辅助（见本文件末「Windows 中文路径」）。
 
+### 探测类调用：一律走常驻入口，禁止写 `_tmp_*.py`
+
+> 上面那条铁律**不区分场景**：不光是「接入」，任何手工探测（复测某个 bug、
+> 查一次数据、验证开发修没修）都**不得新建一次性脚本**。
+> 判定标准不是「我这次算不算接入」，而是「我是不是在为一个具体 MCP 写新文件」。
+
+**唯一允许的做法**：走该 MCP 的常驻入口脚本，一个系统一个，长期存在、持续增强。
+
+| 系统 | 常驻入口 |
+|---|---|
+| PocketStore | `scripts/pocketstore_mcp.py` |
+| Rooster POS | `scripts/rooster_mcp.py` |
+| POS | `scripts/pos_mcp.py` |
+
+**入口不存在怎么办**：**先建入口**（照抄现有入口的结构），再用它探测；
+不要先写临时脚本、事后再补入口。
+
+```powershell
+# 标准用法（PocketStore 为例）
+python scripts/pocketstore_mcp.py tools                    # 列工具
+python scripts/pocketstore_mcp.py tools menu -v            # 过滤 + 显示必填
+python scripts/pocketstore_mcp.py schema menu_create       # 看完整入参
+python scripts/pocketstore_mcp.py stores                   # 店铺清单 + 别名
+
+# 读操作
+python scripts/pocketstore_mcp.py call menu_list --store 3 --json pageIndex=1,pageSize=100
+
+# 写操作：默认 confirm=false 只预览；加 --go 才真正执行
+python scripts/pocketstore_mcp.py call menu_delete --store 3 --json menuId=xxx
+python scripts/pocketstore_mcp.py call menu_delete --store 3 --json menuId=xxx --go
+```
+
+**入口脚本应内置的通用能力**（现在才发现需要就补进入口，不要在外面临时加逻辑）：
+
+| 能力 | 原因 |
+|---|---|
+| 参数外壳自动包（读 config 的 `参数包装`） | 每个 MCP 外壳不同，手工包易错 |
+| `merchId` 默认值 + 店铺别名 | 避免每次手敲 uuid、避免拿错店铺 ID |
+| `confirm` 二段式（默认 false / `--go` 才执行） | 写操作零风险预览 |
+| **429 写限流自动退避重试** | 大部分 MCP 对写操作限流，密集探测必踩 |
+| `--json` 宽松解析（裸 key / 单引号 / `key=value`） | PowerShell 会吞双引号 |
+| 统一格式化输出（code/msg/items 分开） | 避免整段转义 JSON 刷屏、看漏关键字段 |
+
+> 📌 **本条约定的由来（2026-10-29）**：为复测若干 PocketStore 缺陷，逐个新建了
+> `_tmp_check_*.py` 共 10 余个，每个都在重复同一段 `httpx + streamable_http_client +
+> ClientSession + initialize + call_tool` 样板。结果是：浪费确认时间、反复清理垃圾文件、
+> 限流处理没有沉淀（每次都在临时脚本里重踩 429）。根因是把「探测」当成「不算接入」，
+> 钻了原铁律的语义空子。故补此条消除歧义。
+
 ### 脚本自动识别「参数外壳」，勿手工判断
 
 不同 MCP 把入参包在不同外壳里，`_01_mcp_setup.py` 会自动探测并写进 config 的 `参数包装`：

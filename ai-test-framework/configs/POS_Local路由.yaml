@@ -1,0 +1,253 @@
+# =====================================================================
+# 系统配置：POS Local 店铺服务器路由（AI POS 1.2 / MCP 支持 Local 店铺看数据）
+# =====================================================================
+# 需求三条：
+#   A-1 店铺服务器路由      —— 仅按 store_id 路由；Cloud 走既有链路；Local 需过 A-3 校验
+#   A-2 Local 报表查询转发  —— 仅报表查询类；语义与 Cloud 一致；失败不得解读为零数据
+#   A-3 Local 能力与版本管控 —— 操作类工具对 Local 一律禁用；未升级版本拒绝报表查询
+#
+# 真实 MCP：https://roosterpos-test-mcp.proton-system.com/mcp/company-account
+# 同一 TOKEN 可见 18 家公司 58 家店；CompanyId 请求头决定能操作哪间公司。
+# ★ Local 店与 Cloud 店分属不同公司，companyId 由「实体清单」按店铺提供，
+#   生成器写入用例的「运行时上下文」，执行器据此换请求头（见 实体上下文字段）。
+# =====================================================================
+
+# 服务端 schema 快照（含完整 inputSchema 类型/枚举），供：
+#   ① 生成器按真实类型造值（load_param_types）
+#   ② 校验器做 schema 契约检查（configs ↔ schema 双向比对）
+# 系统名（POS Local路由）与文件名（roosterpos）不同，故显式声明。
+原始schema: "roosterpos.raw.json"
+
+# ---- 连接配置（复用公鸡 POS 的凭证，从 .env 读）----
+连接:
+  需求类型: "A"                  # A=工具直连（网关层断言：拒绝/字段不回传/零下游请求）
+  base_url_env: "ROOSTER_MCP_URL"
+  token_env: "ROOSTER_MCP_TOKEN"
+  company_id_env: "ROOSTER_MCP_COMPANY_ID"    # 默认 Cloud 公司 BBEEII
+  merchant_id_env: "ROOSTER_MERCHANT_ID"      # 默认 Cloud 店铺 chongqing hot
+  llm_base_url_env: "LLM_API_BASE"
+  llm_api_key_env: "LLM_API_KEY"
+  llm_model_env: "LLM_MODEL"
+  system_prompt_env: "POS_SYSTEM_PROMPT"
+  请求头: {Authorization: "Bearer {{token}}", CompanyId: "{{company_id}}"}
+  参数包装: "toolParams"
+
+# ---- 实体上下文（按店铺覆盖请求头）----
+# 实体清单每条带 companyId → 生成器写入用例「运行时上下文」→ 执行器换头。
+# 缺了它：Local 店用例会带着 Cloud 公司的 CompanyId 调用，稳定 40100 越权，
+# 表现为"查不到数据"，会被误判成 Local 路由失效。
+实体上下文字段: "companyId"
+
+# ---- 通用命名（沿用公鸡 POS 约定）----
+公司ID请求头: "CompanyId"
+默认上下文参数名: "merchantIds"
+实体ID参数名: "orderIds"
+实体名参数名: "name"
+连接演示工具: "query_merchants"
+
+# ---- 参数取值域 ----
+# store_id 就是 merchantId（用户 2026-11-04 确认），无新字段。
+# server_mode 是需求定义的枚举，但它是「路由服务内部回传」字段、不在任何工具入参里，
+# 故不在此声明；测试通过 query_merchants 的返回字段 serverMode 断言。
+#
+# ★ 以下枚举值全部来自 2026-11-06 实测（Local 店 ZH_Rooster_Local 真实调用），
+#   不是猜测。非法值会返回 MCP 协议层裸异常 "An error occurred invoking ..."，
+#   生成器若瞎猜枚举会整批用例报废，故必须按实测值声明。
+#
+# 实测真值表（Local 店，2026-08 区间）：
+#   orderType      : DineIn(166) / Delivery(15) / Pickup(18)
+#                    TakeOut、WalkIn → 协议层异常（不在枚举内）
+#   orderStatus    : Completed(95) / Cancelled(39)
+#                    Void、Refunded → 协议层异常
+#   paymentStatus  : Captured(77)；Pending/Refunded/Failed → 协议层异常
+#   paymentType    : Cash(67) / CreditCard(91) / DebitCard(0) / ThirdParty(0)
+#   sourceName     : POS(236) / Online(0) / App(0)
+#   orderSourceType: EasyPos(236)；ThirdParty → 协议层异常
+#   sortField      : **仅 Date 可用**；TotalSales/OrderSerial/createAt → 协议层异常
+#   sortDirection  : Ascending / Descending
+#   limit          : 1~1000（越界有清晰文案「返回行数必须在 1 到 1000 之间」）
+#   type(目录报表) : Menu(28) / Product(106) / Category(27)
+#   relativePeriod : Today/Yesterday/ThisWeek/LastWeek/ThisMonth/LastMonth
+#                    （产品设计上无「本年/去年」能力，ThisYear/LastYear 不在枚举内，
+#                     属正常不支持，非缺陷；LastWeek/LastMonth 在 total_reports 上
+#                     会命中 2026-10-31 的 DST 窗口报错，见下方参数矩阵专项用例）
+param_enums:
+  type: [Menu, Product, Category]
+  relativePeriod: [Today, Yesterday, ThisWeek, LastWeek, ThisMonth, LastMonth]
+  # 实测只有 Date 合法，不能写 Amount/Quantity（会全部协议层异常）
+  sortField: [Date]
+  sortDirection: [Ascending, Descending]
+  orderType:
+    - {tools: [query_datax_order_sales_reports], values: [DineIn, Delivery, Pickup]}
+  # ⚠ orderStatus / paymentStatus 的 schema enum **不完整**：
+  #   schema 只列 Completed/Cancelled、paymentStatus 只列 Captured，
+  #   但实测服务端还接受 Progressing（本月有 73 单该状态，是最大头）与 Unpaid。
+  #   只按 schema 造值会漏掉最常用的状态 → 过滤类用例覆盖不到真实场景。
+  #   故此处按实测补齐（生成器/校验器取 schema ∪ config 的并集）。
+  orderStatus:
+    - {tools: [query_datax_order_sales_reports],
+       values: [Progressing, Completed, Cancelled, BeMerged]}
+  paymentStatus:
+    - {tools: [query_datax_order_sales_reports],
+       values: [Captured, Unpaid, PartiallyPaid]}
+  paymentType:
+    - {tools: [query_datax_order_sales_reports],
+       values: [Cash, CreditCard, DebitCard, ThirdParty]}
+  sourceName:
+    - {tools: [query_datax_order_sales_reports], values: [POS, Online, App]}
+  # 商品筛选（实测 2026-11-06，Local 店）：
+  #   status 仅 Selling/Off；type 仅 Normal；其余值均返回协议层异常
+  # 用 {tools, values} 对象形式限定作用域。
+  # ⚠ Off / On / Yes / No 在 YAML 1.1 里会被解析成布尔值 False / True！
+  #   实测 values: [Selling, Off] 被 PyYAML 读成 ['Selling', False]，
+  #   导致生成 status=False 的非法用例（A-L2-068 报错）。
+  #   故这类值必须加引号：["Off"]。
+  status:
+    - {tools: [query_products_by_filter], values: [Selling, "Off"]}
+  type:
+    - {tools: [query_products_by_filter], values: [Normal]}
+  # 库存状态（服务端 schema enum: InStock/OutOfStock/Unknown）
+  stockStatus:
+    - {tools: [update_products_by_ids], values: [InStock, OutOfStock]}
+  # orderSourceType：公鸡实测取值 = EasyPos（可正常返回 236 单）。
+  # 校验器内置表是 POS 历史口径（AutoMart/PocketStore/Deliverect…），与公鸡不同；
+  # 但只要 config 声明了 param_enums，_03 就完全信任 config、不叠加内置表
+  # （use_builtin_enums = not bool(raw_enums)），故此处声明即可通过。
+  orderSourceType:
+    - {tools: [query_datax_order_sales_reports], values: [EasyPos]}
+
+# 布尔参数：生成器只填 True/False，不要按 ID/实体取值。
+# include* 三个是 query_product_detail_by_id 的开关（是否附带分类/菜单/规格组），
+# 若不声明会被当成普通 ID 参数，被填成分类 ID（实测 A-L1-074 填了
+# includeCategory='13273427280397317'，明显类型错配）。
+# ⚠ 必须写在 param_enums 之外的顶层，否则会把后面的枚举项吞进列表里。
+param_bools:
+  - includeCategory
+  - includeMenu
+  - includeSpecificationGroup
+
+# ---- MCP 工具 schema（公鸡 POS 17 个工具中的报表/查询面）----
+mcp_tools:
+  - name: query_datax_total_reports
+    description: 查询 DataX 店铺经营汇总报表。必填 merchantId；时间用 relativePeriod(Today/Yesterday/ThisWeek/LastWeek/ThisMonth/LastMonth) 或 startAt+endAt（店铺本地时间，不带时区；含结束日期）。返回 orderCount/totalSales/netSales/actualRevenue 等，并含 timeZoneId/requestedDateRange。
+    params: [merchantId, merchantName, relativePeriod, startAt, endAt, limit,
+             sortField, sortDirection]
+    required: [merchantId]
+
+  - name: query_datax_order_sales_reports
+    description: 查询 DataX 订单销售报表。必填 merchantId；时间用 relativePeriod 或 startAt+endAt（endAt 不含，须给次日才能覆盖当天）。可按 orderId/orderStatus/paymentStatus/paymentType/orderSourceType 筛选；limit 上限 1000。
+    params: [orderId, orderSerial, orderType, orderStatus, paymentStatus,
+             paymentType, operatorName, sourceName, orderSourceType,
+             paymentTerminalType, paymentTerminalName, customizedPaymentName,
+             merchantId, relativePeriod, startAt, endAt, sortField,
+             sortDirection, limit]
+    required: [merchantId]
+
+  - name: query_datax_menu_product_category_reports
+    description: 查询 DataX 菜单商品分类报表。可按 refId/name/type 筛选，type 枚举 Menu/Product/Category。必填 merchantId；时间用 relativePeriod 或 startAt+endAt。
+    params: [refId, name, type, merchantId, relativePeriod, startAt, endAt, sortField, sortDirection, limit]
+    required: [merchantId]
+
+  - name: query_order_details_by_ids
+    description: 按 merchantId 和 orderIds（1~500 个）查询完整订单商品明细。
+    params: [merchantId, orderIds, page, size]
+    required: [merchantId, orderIds]
+
+  - name: query_staff_attendances
+    description: 查询员工考勤记录（list + 分页）。2026-11-06 实测 Local 店可用；无数据时返回空列表。
+    params: [merchantId, merchantStaffIds, startAt, endAt, relativePeriod, page, size]
+    required: [merchantId]
+
+  - name: query_companies
+    description: 查询当前账号可见的所有公司，返回公司 ID、名称和下属店铺列表（含 serverMode）。
+    params: [companyName, companyIds]
+    required: []
+
+  - name: query_merchants
+    description: 获取当前账号可见的所有店铺列表，返回值含 serverMode（Cloud/Local）—— 路由结果的直接断言依据。
+    params: [merchantName]
+    required: []
+
+  - name: query_menus
+    description: 查询菜单列表。返回含 serverMode / merchantId / status。
+    params: [merchantIds, statuses, saleChannel, menuName]
+    required: []
+
+  - name: query_categories
+    description: 查询商品分类列表。返回含 serverMode / merchantId。
+    params: [merchantIds, categoryName, menuIds, categoryIds]
+    required: []
+
+  - name: query_products_by_filter
+    description: 按分类/类型/状态查询商品。注意：该工具无店铺参数，不支持按店过滤。
+    params: [categoryIds, type, status]
+    required: []
+
+  - name: search_products_by_name
+    description: 按商品名称模糊搜索，支持 merchantIds 按店铺过滤。返回商品 ID、名称、价格等。productName 必填。
+    params: [merchantIds, productName, status]
+    required: [productName]
+
+  # ★ 2026-11-06 更正：这三个工具在 Local 店均可正常使用。
+  #   此前判定「不可用」是参数名传错（把 merchantIds 复数传成了 merchantId 单数）。
+  #   ⚠ 注意 query_products_by_ids / query_products_by_filter 的 schema 里没写
+  #     merchantIds，但实际必传，否则 40100 —— 属接口契约与实现不一致，需提开发。
+  - name: query_product_detail_by_id
+    description: 按商品 ID 查详情，返回 product 与所属 categories。必填 merchantId（单数）与 productId；不传 merchantId 报 40000「店铺 ID 不能为空」。includeCategory/includeMenu/includeSpecificationGroup 为布尔选填，控制是否附带分类/菜单/规格组。
+    params: [merchantId, productId, includeCategory, includeMenu,
+             includeSpecificationGroup]
+    required: [merchantId, productId]
+
+  - name: query_products_by_ids
+    description: 按 productIds 批量查商品。必填 merchantIds（复数列表）与 productIds；传单数 merchantId 会报 40100。
+    params: [merchantIds, productIds]
+    required: [merchantIds, productIds]
+
+  - name: query_products_by_filter
+    description: 按 status/type/categoryIds 筛选商品。必填 merchantIds（复数列表）；实测 status 仅 Selling/Off，type 仅 Normal。
+    params: [merchantIds, status, type, categoryIds]
+    required: [merchantIds]
+
+  - name: query_merchant_staffs
+    description: 查询店铺员工列表。返回含 serverMode / merchantId。
+    params: [merchantIds]
+    required: [merchantIds]
+
+  # ---- A-3 操作类工具（对 Local 店必须一律禁用）----
+  # 只登记 schema 用于生成「应被拦截」的负向用例；
+  # 执行时默认跳过（高危），仅隔离环境且 ALLOW_DESTRUCTIVE=1 才真跑。
+  - name: update_products_by_ids
+    description: 批量更新商品属性（状态/库存/价格/名称）。操作类工具，对 Local 店铺应被禁用。stockStatus 取 InStock/OutOfStock；nameLocalization 为对象（如 {"en-US":"New Name"}）。
+    params: [merchantIds, productIds, status, price, stockStatus, nameLocalization]
+    required: [merchantIds, productIds]
+
+  - name: delete_products_by_ids
+    description: 按 ID 批量删除商品。操作类工具，对 Local 店铺应被禁用。
+    params: [merchantIds, productIds]
+    required: [merchantIds, productIds]
+
+  # ⚠ 三个写工具的店铺参数风格**不一致**（实测 2026-11-09，按服务端 schema）：
+  #   batch_insert_products  → merchantId   （单数）
+  #   delete_products_by_ids → merchantIds  （数组）
+  #   update_products_by_ids → merchantIds  （数组）
+  # 此前本处误写成 merchantIds，被 schema 契约检查抓出「configs 有、schema 无」，
+  # 那条告警是**我的配置错**，不是服务端缺陷。
+  # 另：该工具描述明确「Local 店鋪暂不支持」，正好对应 A-3 拦截预期。
+  - name: batch_insert_products
+    description: 在指定 Cloud 店铺中批量新增商品（单次最多 200 个）。操作类工具，Local 店铺不支持，应被 A-3 拦截。
+    params: [merchantId, products]
+    required: [merchantId, products]
+
+# ---- 参数覆盖策略 ----
+# 查询参数覆盖：为「上面 param_enums 声明了枚举」的过滤参数逐个合法值生成
+#   正向用例（如 orderType=DineIn/Delivery/Pickup 各一条）。
+#   不启用时报表工具只会被 merchantId+时间 覆盖，过滤/排序/分页维度全空。
+参数完整性:
+  启用: true              # create/update 类工具的字段完整性（沿用原逻辑）
+  查询参数覆盖: true       # ★ 查询类工具的枚举过滤参数覆盖（2026-11-06 新增）
+  查询参数上限: 8          # 单工具最多覆盖几个过滤参数（含分页）
+  枚举取值上限: 3          # 单参数最多取几个枚举值
+  最大单缺数: 3
+
+# ---- 需要自动补默认店铺的工具 ----
+需要默认上下文参数的工具: []
