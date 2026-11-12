@@ -74,8 +74,15 @@
 param_enums:
   type: [Menu, Product, Category]
   relativePeriod: [Today, Yesterday, ThisWeek, LastWeek, ThisMonth, LastMonth]
-  # 实测只有 Date 合法，不能写 Amount/Quantity（会全部协议层异常）
-  sortField: [Date]
+  # 实测只有 Date 合法，不能写 Amount/Quantity（会全部协议层异常）。
+  # ⚠ 必须用 {tools, values} 限定作用域：写成裸列表会走「schema ∪ config 并集」
+  #   分支，schema 的 sortField enum 含 Amount/Quantity，并集后又被带回来，
+  #   生成出必失败的用例（2026-11-10 实测 A-L2-006/015 因此失分）。
+  #   工具限定规则优先级最高、不回退 schema，是唯一能推翻 schema 的写法。
+  sortField:
+    - {tools: [query_datax_total_reports,
+               query_datax_order_sales_reports,
+               query_datax_menu_product_category_reports], values: [Date]}
   sortDirection: [Ascending, Descending]
   orderType:
     - {tools: [query_datax_order_sales_reports], values: [DineIn, Delivery, Pickup]}
@@ -103,7 +110,8 @@ param_enums:
   #   导致生成 status=False 的非法用例（A-L2-068 报错）。
   #   故这类值必须加引号：["Off"]。
   status:
-    - {tools: [query_products_by_filter], values: [Selling, "Off"]}
+    - {tools: [query_products_by_filter, search_products_by_name],
+       values: [Selling, "Off"]}
   type:
     - {tools: [query_products_by_filter], values: [Normal]}
   # 库存状态（服务端 schema enum: InStock/OutOfStock/Unknown）

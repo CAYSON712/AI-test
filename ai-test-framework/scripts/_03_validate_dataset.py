@@ -317,9 +317,13 @@ class Checker:
             if not cid:
                 self.error(f"第 {i} 条用例缺少用例ID")
                 continue
-            m = re.fullmatch(rf"{self.req_type}-L[12]-\d{{3}}", str(cid))
+            # 序号位数：最少 3 位，允许更多。
+            # 原规则写死 \d{3}，数据集规模超过 999 条后（PocketStore 补全能力后已达
+            # 1300+ 条）生成器产出的 4 位 ID 会整批被判「格式非法」，属于校验器
+            # 与生成器的容量不一致，非用例本身有问题。保持向后兼容（3 位仍合法）。
+            m = re.fullmatch(rf"{self.req_type}-L[12]-\d{{3,}}", str(cid))
             if not m:
-                self.error(f"用例ID 格式非法: {cid}（应为 {self.req_type}-L1/L2-3位数字）")
+                self.error(f"用例ID 格式非法: {cid}（应为 {self.req_type}-L1/L2-至少3位数字）")
                 continue
             seq = int(str(cid).rsplit("-", 1)[1])
             if seq != i:

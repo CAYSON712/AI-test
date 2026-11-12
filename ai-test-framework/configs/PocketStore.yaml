@@ -1,440 +1,1054 @@
-# =====================================================================
-# 系统配置：PocketStore 商家经营后台（BossApp / test 环境）
-# =====================================================================
-# 真实 MCP：https://testmcp.aipocketstore.com/mcp（PocketStore MCP Server 1.0.0）
-# 用途：给 generic_mcp_executor 提供「连接 + 工具 schema」。
-#
-# !! 2026-10-08 探针事实 !!
-#   1. 服务端按 JWT 的 sourceSystem 动态下发工具：
-#        匿名=119、BossApp=111（本系统）、CameraAi=8（摄像头只读）、WebMerchant=0（不可用）
-#      token 获取：POST https://aimanager.testomenow.com/api/McpOperation/mcpClientSignIn
-#        body {clientType:0, codeOrPassword:"91923qjc", phoneOrEmail:"9023162140", signInMethod:2}
-#        取 mcpClientCredential.mcpServers.pocketstore.headers.Authorization
-#   2. 「参数包装」= parameters（自动探测，勿手改）
-#   3. confirm 二段式：几乎所有工具带 confirm（false=仅预览不执行，true=真正执行）
-#   4. ID 类参数一律 string（uuid）；merchId 跨店可用（不锁定 token 自带店铺，已实测）
-#   5. ⚠ 大量写工具必填参数【不含 merchId】（item_update 只要 itemId、batch_item_price
-#      只要 price、category_delete 只要 categoryId）→ 高危写入面，测试用「自建自删」
-#   6. 默认店铺：cayson店鋪4444（33 商品 / 4 分类 / 3 菜单 / 1 税率 / 0 员工）
-# =====================================================================
 连接:
   需求类型: C
   base_url_env: POCKETSTORE_MCP_URL
   token_env: POCKETSTORE_MCP_TOKEN
   merchant_id_env: POCKETSTORE_MCP_MERCHANT_ID
   参数包装: parameters
-  干跑开关参数名: confirm   # CONFIRM_DRYRUN=1 时该参数强制 false（服务端只预览不执行）
+  干跑开关参数名: confirm
 连接演示工具: list_pickup_time_slots
-
-# ---- 参数取值域：让生成器收敛枚举，非法值回退首个合法值（2026-10-08 按真实 schema 提取）----
-# 注意：status 在 PocketStore 语义有分叉——
-#   batch_item_status.status / 商品上下架: 字符串枚举 ['OnSale','OffSale']
-#   item_update.status / item_create.status: 整数（1=上架 0=下架）
-#   店铺营业状态: 'open'/'closed'
-# 这里按【字符串枚举】收敛（覆盖内置 POS 的 Selling/Off，避免误判），
-# 整数型 status 由生成器按 schema type=integer 处理。
 param_enums:
-  # status 必须【按工具】区分（同名不同义）：
-  #   batch_item_status → OnSale/OffSale；set_store_open_status → open/closed；
-  #   item_update/item_create → 整数（由 schema type 处理，此处不收敛）
   status:
-    - {tools: [batch_item_status], values: [OnSale, OffSale]}
-    - {tools: [set_store_open_status], values: [open, closed]}
-  # paymentType：PocketStore 取值与 POS 系（Cash/CreditCard）完全不同，
-  #   不覆盖会沿用内置 POS 枚举误判（生成器已从描述提取 proton_pay 等）。
-  paymentType: [proton_pay, offline_cash, offline_card, offline_other]
-  priceAdjustmentType: [Regular, Percentage, FixedValue]
-  discountType: [PercentagePrice, FixedPrice]
-  couponType: [Cash, Percentage, ProductExchange]
-  filterType: [All, Published, Unpublished, Deleted]
-  queryType: [All, Published, UnActive, UnPublished]
+  - tools:
+    - batch_item_status
+    values:
+    - OnSale
+    - OffSale
+  - tools:
+    - set_store_open_status
+    values:
+    - open
+    - closed
+  paymentType:
+  - proton_pay
+  - offline_cash
+  - offline_card
+  - offline_other
+  priceAdjustmentType:
+  - Regular
+  - Percentage
+  - FixedValue
+  discountType:
+  - PercentagePrice
+  - FixedPrice
+  couponType:
+  - Cash
+  - Percentage
+  - ProductExchange
+  filterType:
+  - All
+  - Published
+  - Unpublished
+  - Deleted
+  queryType:
+  - All
+  - Published
+  - UnActive
+  - UnPublished
 param_bools:
-  - confirm
-  - enabled
-  - isActive
-  - isEnabled
-  - isTaxable
-  - isSalesReport
-  - isPayoutReport
-  - isDefaultForNewFood
-  - allowAsap
-  - deliveryFeeTaxable
-
-# =====================================================================
-# 参数约束：JSON Schema 表达不了的「跨字段/条件约束」
-# =====================================================================
-# 为什么需要这一段：
-#   MCP 的 inputSchema 只能声明「某参数必填」和「类型」，表达不了：
-#     - 条件必填：merchFoodIds 或 merchId+categoryId 二选一
-#     - 时间先后：endDate 必须晚于 startDate
-#     - 互斥开关：isSalesReport / isPayoutReport 至少一个为真
-#   生成器只按 schema 的 required 补参，补不出这些，导致「生成即可执行失败」。
-#   实测 PocketStore 30 条失分全部由此而来（Parameter validation failed）。
-#
-# 三种约束写法：
-#   至少一个:     参数列表中至少提供一个（可选 _同传 表示需同时提供）
-#   时间先后:     {开始: 参数A, 结束: 参数B}，保证 B > A
-#   至少一个为真: 布尔参数中至少一个为 true
+- confirm
+- enabled
+- isActive
+- isEnabled
+- isTaxable
+- isSalesReport
+- isPayoutReport
+- isDefaultForNewFood
+- allowAsap
+- deliveryFeeTaxable
 参数约束:
-  # ---- 批量操作：必须给 merchFoodIds，或 merchId+categoryId ----
-  # 服务端报错原文：
-  #   "MerchFoodIds must contain at least one item ID, or provide MerchId + CategoryId."
   至少一个:
-    batch_item_price: [merchFoodIds, [merchId, categoryId]]
-    batch_item_stock: [merchFoodIds, [merchId, categoryId]]
-    batch_item_status: [merchFoodIds, [merchId, categoryId]]
-
-  # ---- 活动创建：结束日期必须晚于开始日期 ----
-  # 服务端报错原文："EndDate must be after StartDate."
+    batch_item_price:
+    - merchFoodIds
+    - - merchId
+      - categoryId
+    batch_item_stock:
+    - merchFoodIds
+    - - merchId
+      - categoryId
+    batch_item_status:
+    - merchFoodIds
+    - - merchId
+      - categoryId
   时间先后:
-    create_discount_campaign: {开始: startDate, 结束: endDate}
-    create_reward_campaign: {开始: startDate, 结束: endDate}
-
-  # ---- 报表订阅：两种报表至少开一种 ----
-  # 服务端报错原文：
-  #   "At least one report type (IsSalesReport or IsPayoutReport) must be enabled."
+    create_discount_campaign:
+      开始: startDate
+      结束: endDate
+    create_reward_campaign:
+      开始: startDate
+      结束: endDate
   至少一个为真:
-    add_report_subscription: [isSalesReport, isPayoutReport]
-
-# =====================================================================
-# 参数完整性：补齐维度表要求的「构造缺失字段」与「全字段覆盖」
-# =====================================================================
-# 为什么需要（维度表已有要求，此前生成器只实现了一半）：
-#   dimensions/A_MCP工具.yaml：
-#     协议契约   → 「语法变异法：构造缺失字段」
-#     调用正确性 → 「正向覆盖所有合法参数组合」
-#   但生成器只按能力目录声明的少量参数造用例，schema 里大量选填参数
-#   （如 menu_create 的 categoryIds / onlineTimes）从未出现，
-#   导致「不传业务关键参数也能成功」这类缺陷永远测不到。
-#
-# 数量控制（避免组合爆炸）：
-#   · 只对 创建/新增/更新 类工具生成，读/删/批量类不生成
-#   · 缺失字段只测「关联型/业务关键」参数，且不做两两组合
-#   · 单工具最多生成「最大单缺数」条缺失用例
-#   · 全字段每个工具只生成 1 条
-# 实测增量：+54 条左右（756 → 约 810，约 +7%）
+    add_report_subscription:
+    - isSalesReport
+    - isPayoutReport
 参数完整性:
   启用: true
-  # 工具类型关键字：同时匹配前缀与后缀命名
-  #   前缀式 create_menu / add_store_user → 命中
-  #   后缀式 menu_create / item_update    → 命中（PocketStore 多为后缀式）
-  测试工具前缀: [create, add, update]
-
-  # 业务关键参数（显式补充；不写则按命名自动推断：
-  # 含 categoryIds / menuIds / taxIds / itemIds / onlineTimes / price 等的参数）
+  测试工具前缀:
+  - create
+  - add
+  - update
   关键字段:
-    - categoryIds        # 菜单/商品必须绑定分类，缺了数据归属会丢
-    - onlineTimes        # 菜单营业时间，缺了菜单可能永不可售
-    - menuIds            # 分类归属菜单
-    - taxIds             # 商品税率
-    - roleId             # 员工角色
-    - feeId              # 额外费用
-
-  # 单个工具最多生成几条「缺失字段」用例（防止用例数膨胀）
+  - categoryIds
+  - onlineTimes
+  - menuIds
+  - taxIds
+  - roleId
+  - feeId
   最大单缺数: 3
-
-# =====================================================================
-# 数据生命周期：真执行写操作时的「快照 / 恢复 / 不可恢复保护」
-# =====================================================================
-# 通用能力，规则由各系统自行声明；未声明此段的系统完全不受影响。
-# 目的：真跑写用例前后自动记录并还原原值，避免「跑一次数据集就改一次数据」。
-#
-# 字段说明：
-#   可还原.工具        写工具名
-#   快照工具           用什么只读工具查原值
-#   主键参数           写工具里标识目标实体的参数名（支持数组）
-#   主键字段           快照返回里对应的字段名
-#   快照字段           需要记录/还原的字段名
-#   恢复工具           可选，默认同「工具」
-#   恢复参数键         可选，{快照字段: 恢复参数名} 映射，默认同名
-#   不可恢复           删了就无法还原的工具，默认跳过（需 ALLOW_DESTRUCTIVE=1）
+写入对账:
+  启用: true
+  配对:
+  - write_tool: set_pickup_enabled
+    read_tool: list_pickup_time_slots
+    compare: state_changed
+    verify_weak: true
+  - write_tool: set_delivery_enabled
+    read_tool: list_delivery_areas
+    compare: state_changed
+    verify_weak: true
+  - write_tool: set_pickup_parking_available
+    read_tool: list_pickup_time_slots
+    compare: state_changed
+    verify_weak: true
+  - write_tool: set_instant_pickup_only
+    read_tool: list_pickup_time_slots
+    compare: state_changed
+    verify_weak: true
+  - write_tool: set_tax_rate
+    read_tool: tax_list
+    compare: state_changed
+    verify_weak: true
+  - write_tool: set_payment_method_enabled
+    read_tool: get_payment_methods
+    compare: field_changed
+    id_field: type
+    compare_fields:
+    - isEnabled
+  - write_tool: set_delivery_provider_type
+    read_tool: list_delivery_areas
+    compare: state_changed
+    verify_weak: true
+  - write_tool: update_store_name
+    read_tool: get_store_info
+    compare: field_changed
+    id_field: merchId
+    compare_fields:
+    - name
+  - write_tool: update_store_phone
+    read_tool: get_store_info
+    compare: field_changed
+    id_field: merchId
+    compare_fields:
+    - phone
+  - write_tool: update_store_email
+    read_tool: get_store_info
+    compare: field_changed
+    id_field: merchId
+    compare_fields:
+    - email
+  - write_tool: update_store_address
+    read_tool: get_store_info
+    compare: field_changed
+    id_field: merchId
+    compare_fields:
+    - address
+  - write_tool: update_store_logo
+    read_tool: get_store_info
+    compare: field_changed
+    id_field: merchId
+    compare_fields:
+    - logo
+  - write_tool: update_extra_fee
+    read_tool: get_extra_fee
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - name
+    - value
+    - isTaxable
+  - write_tool: item_update
+    read_tool: item_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - price
+    - stock
+    - name
+  - write_tool: item_update_stock
+    read_tool: item_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - stock
+  - write_tool: category_update
+    read_tool: category_list
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - name
+    - description
+  - write_tool: menu_update
+    read_tool: menu_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - name
+  - write_tool: tax_update
+    read_tool: tax_list
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - name
+    - tax
+  - write_tool: spec_update
+    read_tool: spec_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - name
+    verify_weak: true
+  - write_tool: update_pickup_time_slot
+    read_tool: list_pickup_time_slots
+    compare: state_changed
+  - write_tool: update_delivery_time_slot
+    read_tool: list_delivery_areas
+    compare: state_changed
+  - write_tool: update_delivery_area
+    read_tool: list_delivery_areas
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - name
+    - minimumAmountForDelivery
+    - deliveryFee
+  - write_tool: update_user_info
+    read_tool: get_user_detail
+    compare: field_changed
+    id_field: merchManagerId
+    compare_fields:
+    - email
+    - phone
+  - write_tool: update_user_role
+    read_tool: get_user_detail
+    compare: field_changed
+    id_field: merchManagerId
+    compare_fields:
+    - roleNames
+  - write_tool: update_user_status
+    read_tool: list_store_users
+    compare: state_changed
+    verify_weak: true
+  - write_tool: batch_item_price
+    read_tool: item_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - price
+    batch_key: merchFoodIds
+  - write_tool: batch_item_stock
+    read_tool: item_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - stock
+    batch_key: merchFoodIds
+  - write_tool: batch_item_status
+    read_tool: item_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - status
+    batch_key: merchFoodIds
+  - write_tool: batch_item_category
+    read_tool: item_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - categoryIds
+    batch_key: merchFoodIds
+  - write_tool: batch_item_tax
+    read_tool: item_detail
+    compare: state_changed
+    batch_key: merchFoodIds
+    verify_weak: true
+  - write_tool: tax_bind_item
+    read_tool: item_detail
+    compare: state_changed
+    batch_key: merchFoodIds
+    verify_weak: true
+  - write_tool: item_bind_category
+    read_tool: item_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - categoryIds
+  - write_tool: menu_bind_categories
+    read_tool: menu_detail
+    compare: field_changed
+    id_field: id
+    compare_fields:
+    - categoryIds
+  - write_tool: add_extra_fee
+    read_tool: get_extra_fee
+    compare: contains_id
+    id_field: id
+  - write_tool: add_order_notification_email
+    read_tool: list_order_notification_emails
+    compare: contains_id
+    id_field: id
+  - write_tool: add_report_subscription
+    read_tool: list_report_subscriptions
+    compare: contains_id
+    id_field: id
+  - write_tool: category_create
+    read_tool: category_list
+    compare: contains_id
+    id_field: id
+  - write_tool: menu_create
+    read_tool: menu_list
+    compare: contains_id
+    id_field: id
+  - write_tool: item_create
+    read_tool: item_list
+    compare: contains_id
+    id_field: id
+  - write_tool: tax_create
+    read_tool: tax_list
+    compare: contains_id
+    id_field: id
+  - write_tool: spec_create
+    read_tool: spec_detail
+    compare: contains_id
+    id_field: id
+    verify_weak: true
+  - write_tool: add_delivery_area
+    read_tool: list_delivery_areas
+    compare: contains_id
+    id_field: id
+  - write_tool: add_store_user
+    read_tool: list_store_users
+    compare: contains_id
+    id_field: merchManagerId
+  - write_tool: create_reward_campaign
+    read_tool: list_reward_campaigns
+    compare: contains_id
+    id_field: id
+  - write_tool: create_discount_campaign
+    read_tool: list_discount_campaigns
+    compare: contains_id
+    id_field: id
+  - write_tool: delete_extra_fee
+    read_tool: get_extra_fee
+    compare: not_contains_id
+    id_field: id
+    id_from: feeId
+  - write_tool: remove_order_notification_email
+    read_tool: list_order_notification_emails
+    compare: not_contains_id
+    id_field: id
+    id_from: subscriberId
+  - write_tool: category_delete
+    read_tool: category_list
+    compare: not_contains_id
+    id_field: id
+    id_from: categoryId
+  - write_tool: menu_delete
+    read_tool: menu_list
+    compare: not_contains_id
+    id_field: id
+    id_from: menuId
+  - write_tool: item_delete
+    read_tool: item_list
+    compare: not_contains_id
+    id_field: id
+    id_from: itemId
+  - write_tool: tax_delete
+    read_tool: tax_list
+    compare: not_contains_id
+    id_field: id
+    id_from: taxId
+  - write_tool: delete_delivery_area
+    read_tool: list_delivery_areas
+    compare: not_contains_id
+    id_field: id
+    id_from: areaId
+  - write_tool: delete_store_user
+    read_tool: list_store_users
+    compare: not_contains_id
+    id_field: merchManagerId
+    id_from: merchManagerId
 数据生命周期:
   快照目录: results/snapshots
-
   可还原:
-    # ---- 商品：item_update 与 item_detail 字段名完全对齐，最可靠 ----
-    # ⚠ item_detail 返回里实体主键字段名是 id（不是 itemId）；
-    #   主键参数(itemId) 与 主键字段(id) 必须分开配，否则定位不到实体。
-    - 工具: item_update
-      快照工具: item_detail
-      主键参数: itemId
-      主键字段: id
-      快照字段: [price, stock, status, name]
-      恢复参数键: {price: price, stock: stock, status: status, name: newName}
-
-    # ---- 批量改价/改库存/改状态：按 merchFoodIds 批量，逐条快照 ----
-    # 恢复走 item_update（逐条写回），不能用 batch_*（会再批量覆盖）
-    - 工具: batch_item_price
-      快照工具: item_detail
-      主键参数: merchFoodIds
-      主键字段: id
-      快照字段: [price]
-      恢复工具: item_update
-    - 工具: batch_item_stock
-      快照工具: item_detail
-      主键参数: merchFoodIds
-      主键字段: id
-      快照字段: [stock]
-      恢复工具: item_update
-    - 工具: batch_item_status
-      快照工具: item_detail
-      主键参数: merchFoodIds
-      主键字段: id
-      快照字段: [status]
-      恢复工具: item_update
-
-    # ---- 店铺级设置：get_store_info 查原值 ----
-    # 注意：get_store_info 返回字段与 update_* 参数名不同，需显式映射
-    - 工具: update_store_name
-      快照工具: get_store_info
-      主键参数: merchId
-      主键字段: merchId
-      快照字段: [name]
-      恢复参数键: {name: newName}
-    - 工具: update_store_phone
-      快照工具: get_store_info
-      主键参数: merchId
-      主键字段: merchId
-      快照字段: [phone]
-      恢复参数键: {phone: newPhone}
-    # ⚠ set_store_open_status 无法快照：实测 get_store_info 只返回
-    #   address/email/isPreview/logo/merchId/name/phone/store，没有营业状态字段，
-    #   改了既无法验证也无法还原 → 已移入「能力缺口」（见该段）。
-
-    # ---- 额外费用：get_extra_fee 列表里按 feeId 定位 ----
-    - 工具: update_extra_fee
-      快照工具: get_extra_fee
-      主键参数: feeId
-      主键字段: id
-      快照字段: [name, value, isTaxable, description]
-
-    # ---- 支付方式开关：get_payment_methods 的 items[].isEnabled 能查原值 ----
-    # 主键是 paymentType（非 UUID），快照工具按 type 定位
-    - 工具: set_payment_method_enabled
-      快照工具: get_payment_methods
-      主键参数: paymentType
-      主键字段: type
-      快照字段: [isEnabled]
-      恢复参数键: {isEnabled: enabled}
-
-    # ---- 员工信息 ----
-    - 工具: update_user_info
-      快照工具: get_user_detail
-      主键参数: merchManagerId
-      主键字段: merchManagerId
-      快照字段: [email, phone]
-    - 工具: update_user_status
-      快照工具: get_user_detail
-      主键参数: merchManagerId
-      主键字段: merchManagerId
-      快照字段: [isActive]
-
-  # ---- 新建后清理：跑了要能删掉，否则越跑越多 ----
-  # 删除参数用占位符声明，支持：
-  #   {新实体ID}      新建返回里捞到的 ID
-  #   {merchId}       系统默认店铺
-  #   {建时参数.xxx}  新建时用过的参数（如 day / days）
+  - 工具: item_update
+    快照工具: item_detail
+    主键参数: itemId
+    主键字段: id
+    快照字段:
+    - price
+    - stock
+    - status
+    - name
+    恢复参数键:
+      price: price
+      stock: stock
+      status: status
+      name: newName
+  - 工具: batch_item_price
+    快照工具: item_detail
+    主键参数: merchId
+    主键字段: id
+    快照字段:
+    - price
+    恢复工具: item_update
+  - 工具: batch_item_stock
+    快照工具: item_detail
+    主键参数: merchId
+    主键字段: id
+    快照字段:
+    - stock
+    恢复工具: item_update
+  - 工具: batch_item_status
+    快照工具: item_detail
+    主键参数: merchId
+    主键字段: id
+    快照字段:
+    - status
+    恢复工具: item_update
+  - 工具: update_store_name
+    快照工具: get_store_info
+    主键参数: merchId
+    主键字段: merchId
+    快照字段:
+    - name
+    恢复参数键:
+      name: newName
+  - 工具: update_store_phone
+    快照工具: get_store_info
+    主键参数: merchId
+    主键字段: merchId
+    快照字段:
+    - phone
+    恢复参数键:
+      phone: newPhone
+  - 工具: update_extra_fee
+    快照工具: get_extra_fee
+    主键参数: merchId
+    主键字段: id
+    快照字段:
+    - name
+    - value
+    - isTaxable
+    - description
+  - 工具: set_payment_method_enabled
+    快照工具: get_payment_methods
+    主键参数: merchId
+    主键字段: type
+    快照字段:
+    - isEnabled
+    恢复参数键:
+      isEnabled: enabled
+  - 工具: update_user_info
+    快照工具: get_user_detail
+    主键参数: merchManagerId
+    主键字段: merchManagerId
+    快照字段:
+    - email
+    - phone
+  - 工具: update_user_status
+    快照工具: get_user_detail
+    主键参数: merchManagerId
+    主键字段: merchManagerId
+    快照字段:
+    - isActive
+  - 工具: set_pickup_parking_available
+    快照工具: list_pickup_time_slots
+    恢复工具: set_pickup_parking_available
+    快照字段:
+    - day
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: day
+  - 工具: set_instant_pickup_only
+    快照工具: list_pickup_time_slots
+    恢复工具: set_instant_pickup_only
+    快照字段:
+    - day
+    恢复参数键:
+      enabled: isAsapOnly
+    主键参数: merchId
+    主键字段: day
+  - 工具: set_auto_print_before_prep
+    快照工具: get_store_info
+    恢复工具: set_auto_print_before_prep
+    快照字段:
+    - merchId
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_takeout_number_mode
+    快照工具: get_store_info
+    恢复工具: set_takeout_number_mode
+    快照字段:
+    - merchId
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_allow_customer_notes
+    快照工具: get_store_info
+    恢复工具: set_allow_customer_notes
+    快照字段:
+    - merchId
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_allow_add_items_to_active_order
+    快照工具: get_store_info
+    恢复工具: set_allow_add_items_to_active_order
+    快照字段:
+    - merchId
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_auto_switch_ready_status
+    快照工具: get_store_info
+    恢复工具: set_auto_switch_ready_status
+    快照字段:
+    - merchId
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_utensil_option_enabled
+    快照工具: get_store_info
+    恢复工具: set_utensil_option_enabled
+    快照字段:
+    - merchId
+    主键参数: merchId
+    主键字段: merchId
+    恢复参数键:
+      enabled: isEnabled
+  - 工具: set_utensil_default_required
+    快照工具: get_store_info
+    恢复工具: set_utensil_default_required
+    快照字段:
+    - merchId
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_sales_mode
+    快照工具: get_store_info
+    恢复工具: set_sales_mode
+    快照字段:
+    - merchId
+    恢复参数键:
+      mode: salesMode
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_push_to_pos
+    快照工具: get_store_info
+    恢复工具: set_push_to_pos
+    快照字段:
+    - merchId
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_allow_customer_cancel_before_prep
+    快照工具: get_store_info
+    恢复工具: set_allow_customer_cancel_before_prep
+    快照字段:
+    - merchId
+    恢复参数键:
+      enabled: isEnabled
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_free_cancel_before_prep_time
+    快照工具: get_store_info
+    恢复工具: set_free_cancel_before_prep_time
+    快照字段:
+    - merchId
+    恢复参数键:
+      minutes: freeCancelMinutes
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_preorder_lead_days
+    快照工具: get_store_info
+    恢复工具: set_preorder_lead_days
+    快照字段:
+    - merchId
+    恢复参数键:
+      leastDays: leastDays
+      maxDays: maxDays
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_auto_remind_after_pickup_expiry
+    快照工具: get_store_info
+    恢复工具: set_auto_remind_after_pickup_expiry
+    快照字段:
+    - merchId
+    恢复参数键:
+      minutes: remindMinutes
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_pickup_order_threshold
+    快照工具: get_store_info
+    恢复工具: set_pickup_order_threshold
+    快照字段:
+    - merchId
+    恢复参数键:
+      amount: pickupOrderThreshold
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_store_open_status
+    快照工具: get_store_info
+    恢复工具: set_store_open_status
+    快照字段:
+    - merchId
+    恢复参数键:
+      status: status
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: set_delivery_provider_type
+    快照工具: list_delivery_areas
+    恢复工具: set_delivery_provider_type
+    快照字段:
+    - id
+    恢复参数键:
+      providerType: deliveryProviderType
+    主键参数: merchId
+    主键字段: id
+  - 工具: update_store_email
+    快照工具: get_store_info
+    恢复工具: update_store_email
+    快照字段:
+    - email
+    恢复参数键:
+      newEmail: email
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: update_store_address
+    快照工具: get_store_info
+    恢复工具: update_store_address
+    快照字段:
+    - address
+    恢复参数键:
+      newAddress: address
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: update_store_logo
+    快照工具: get_store_info
+    恢复工具: update_store_logo
+    快照字段:
+    - logo
+    恢复参数键:
+      logoUrl: logo
+    主键参数: merchId
+    主键字段: merchId
+  - 工具: item_update_stock
+    快照工具: item_detail
+    恢复工具: item_update_stock
+    快照字段:
+    - stock
+    主键参数: itemId
+    主键字段: id
+    恢复参数键:
+      stock: stock
+  - 工具: category_update
+    快照工具: category_list
+    恢复工具: category_update
+    快照字段:
+    - name
+    - description
+    主键参数: categoryId
+    主键字段: id
+    恢复参数键:
+      name: name
+  - 工具: menu_update
+    快照工具: menu_list
+    恢复工具: menu_update
+    快照字段:
+    - name
+    主键参数: menuId
+    主键字段: id
+    恢复参数键:
+      name: name
+  - 工具: tax_update
+    快照工具: tax_list
+    恢复工具: tax_update
+    快照字段:
+    - id
+    主键参数: merchId
+    主键字段: id
+    恢复参数键:
+      tax: tax
+  - 工具: spec_update
+    快照工具: spec_list
+    恢复工具: spec_update
+    快照字段:
+    - name
+    - minimumSelection
+    - maximumSelection
+    主键参数: specId
+    主键字段: id
+  - 工具: update_pickup_time_slot
+    快照工具: list_pickup_time_slots
+    恢复工具: update_pickup_time_slot
+    快照字段:
+    - day
+    主键参数: merchId
+    主键字段: day
+    恢复参数键:
+      openTime: openTime
+      closeTime: closeTime
+  - 工具: update_delivery_time_slot
+    快照工具: list_delivery_areas
+    恢复工具: update_delivery_time_slot
+    快照字段:
+    - id
+    主键参数: merchId
+    主键字段: id
+    恢复参数键:
+      openTime: openTime
+      closeTime: closeTime
+  - 工具: update_delivery_area
+    快照工具: list_delivery_areas
+    恢复工具: update_delivery_area
+    快照字段:
+    - id
+    主键参数: merchId
+    主键字段: id
+    恢复参数键:
+      name: name
+      deliveryFee: deliveryFee
+  - 工具: update_user_role
+    快照工具: list_store_users
+    恢复工具: update_user_role
+    快照字段:
+    - roleNames
+    主键参数: merchId
+    主键字段: merchManagerId
+  - 工具: batch_item_category
+    快照工具: item_detail
+    恢复工具: batch_item_category
+    快照字段:
+    - id
+    主键参数: merchId
+    主键字段: id
+    恢复参数键:
+      categoryIds: categoryIds
+  - 工具: batch_item_tax
+    快照工具: item_detail
+    恢复工具: batch_item_tax
+    快照字段:
+    - id
+    主键参数: merchId
+    主键字段: id
+    恢复参数键:
+      taxIds: taxIds
+  - 工具: item_bind_category
+    快照工具: item_detail
+    恢复工具: item_bind_category
+    快照字段:
+    - categoryIds
+    主键参数: itemId
+    主键字段: id
+    恢复参数键:
+      categoryIds: categoryIds
+  - 工具: menu_bind_categories
+    快照工具: menu_list
+    恢复工具: menu_bind_categories
+    快照字段:
+    - categoryCount
+    主键参数: menuId
+    主键字段: id
+    恢复参数键:
+      categoryIds: categoryIds
+  - 工具: add_report_subscription
+    快照工具: list_report_subscriptions
+    恢复工具: add_report_subscription
+    快照字段:
+    - email
+    - sendDay
+    主键参数: email
+    主键字段: email
+    恢复参数键:
+      email: email
+  - 工具: create_reward_campaign
+    快照工具: list_all_campaigns
+    恢复工具: create_reward_campaign
+    快照字段:
+    - name
+    主键参数: id
+    主键字段: id
+  - 工具: create_discount_campaign
+    快照工具: list_all_campaigns
+    恢复工具: create_discount_campaign
+    快照字段:
+    - name
+    主键参数: merchId
+    主键字段: id
+  - 工具: update_reward_campaign
+    快照工具: list_all_campaigns
+    主键参数: campaignId
+    主键字段: id
+    快照字段:
+    - name
+    - isPublished
+    恢复参数键:
+      budget: budget
+      name: name
+      status: status
+    备注: 修改前从 list_reward_campaigns 取原活动配置，跑完写回
   新建后清理:
-    - 工具: add_extra_fee
-      删除工具: delete_extra_fee
-      删除参数: {merchId: "{merchId}", feeId: "{新实体ID}"}
-      返回ID字段: createdFeeId
-
-    # ⚠ 删除参数是 subscriberId（不是 id）：实测 remove 传 id 会报
-    #   "Parameter validation failed / field SubscriberId"。
-    - 工具: add_order_notification_email
-      删除工具: remove_order_notification_email
-      删除参数: {merchId: "{merchId}", subscriberId: "{新实体ID}"}
-      按标识回查:
-        查询工具: list_order_notification_emails
-        标识参数: email
-        标识字段: email
-        ID字段: id
-
-    # 报表订阅：新建后重查列表按 email 找回 id（返回体不含新建 id）
-    # ⚠ remove_report_subscription 只接受 id/email/isSalesReport/isPayoutReport，
-    #   不接受 merchId（实测非 strict 但会被校验拒绝），故只传 id。
-    - 工具: add_report_subscription
-      删除工具: remove_report_subscription
-      删除参数: {id: "{新实体ID}"}
-      按标识回查:
-        查询工具: list_report_subscriptions
-        标识参数: email
-        标识字段: email
-        ID字段: id
-
-    # ⚠ 自提时段比较特殊：删除要 day + slotIndex（数组索引），不是 UUID。
-    #   新建返回里拿不到索引，只能从「建时参数」推：days 给出是哪几天，
-    #   建完该天最后一个时段就是新建的那个（列表按 index 递增追加）。
-    #   删除参数用 {建时参数.days.0} 取首个 day；多天场景需逐条清理，
-    #   这里保守只处理单 day，多 day 的用例跑完仍可能残留（见下方说明）。
-    - 工具: add_pickup_time_slot
-      删除工具: delete_pickup_time_slot
-      删除参数: {merchId: "{merchId}", day: "{建时参数.days.0}",
-                 slotIndex: "{新建后末尾索引}"}
-      # 新建返回里没有索引，建完后重查列表取该 day 的最后一个 slot
-      索引查询工具: list_pickup_time_slots
-      索引查询天字段: days
-      索引查询时段字段: slots
-      索引查询索引字段: index
-
-    - 工具: category_create
-      删除工具: category_delete
-      删除参数: {categoryId: "{新实体ID}"}
-      # schema 支持客户端自带主键，比解析返回体可靠（实测返回里无 createdCategoryId）
-      预生成ID参数: categoryId
-
-    - 工具: menu_create
-      删除工具: menu_delete
-      删除参数: {menuId: "{新实体ID}"}
-      # 同上：实测返回里无 createdMenuId，改为客户端预生成
-      预生成ID参数: menuId
-
-    # ⚠ item_delete 必填 merchId，必须显式带上
-    - 工具: item_create
-      删除工具: item_delete
-      删除参数: {merchId: "{merchId}", itemId: "{新实体ID}"}
-      # 同上：预生成 itemId，不依赖返回体
-      预生成ID参数: itemId
-
-    # ⚠ 满减活动没有删除接口，只能用 update_discount_campaign 下架
-    #   （传 isPublished: false）。它不接受 merchId，故删除参数只传
-    #   campaignId + isPublished。
-    #   注意：下架≠删除，活动记录仍会留在系统里，只是不再生效。
-    - 工具: create_discount_campaign
-      删除工具: update_discount_campaign
-      删除参数: {campaignId: "{新实体ID}", isPublished: false}
-      返回ID字段: createdCampaignId
-
-    # 员工：实测可创建可删除。roleId 用店铺预置的「店员」角色
-    # （不用 all —— 权限过高，即便只是测试账号也不该给全权限）
-    - 工具: add_store_user
-      删除工具: delete_store_user
-      删除参数: {merchId: "{merchId}", merchManagerId: "{新实体ID}"}
-      返回ID字段: merchManagerId
-
-    # ---- 规格组 / 税率：2026-11-01 补 ----
-    # 此前这两类写用例既不在「可还原」也不在「新建后清理」→ 属无保护，
-    # 真跑会往店铺里留下规格组和税率且不清理（写维度体检脚本扫出来的）。
-    # 删除用「新建后返回ID」，拿不到时靠名字回查列表兜底。
-    - 工具: spec_create
-      删除工具: spec_delete
-      删除参数: {merchId: "{merchId}", specId: "{新实体ID}"}
-      返回ID字段: createdSpecId
-      按标识回查:
-        查询工具: spec_list
-        标识参数: name
-        标识字段: name
-        ID字段: id
-
-    # ⚠ 税率更可靠：tax_create 的 taxId 允许客户端自带 GUID
-    #   （schema: "Client should generate a new GUID. If empty, a new GUID
-    #    will be generated."）→ 直接用建时传入的 ID 删，不依赖返回体。
-    - 工具: tax_create
-      删除工具: tax_delete
-      删除参数: {taxId: "{建时参数.taxId}"}
-
-  # ---- 自建自删：删除类用例不碰真实数据 ----
-  # 先按「建工具」造一个临时实体，再把删除目标换成它，跑完即干净。
-  # 删除主键：删除工具里标识目标实体的参数名（列表型会自动包成数组）
+  - 工具: add_extra_fee
+    删除工具: delete_extra_fee
+    删除参数:
+      merchId: '{merchId}'
+      feeId: '{新实体ID}'
+    返回ID字段: createdFeeId
+  - 工具: add_order_notification_email
+    删除工具: remove_order_notification_email
+    删除参数:
+      merchId: '{merchId}'
+      subscriberId: '{新实体ID}'
+    按标识回查:
+      查询工具: list_order_notification_emails
+      标识参数: email
+      标识字段: email
+      ID字段: id
+  - 工具: add_report_subscription
+    删除工具: remove_report_subscription
+    删除参数:
+      id: '{新实体ID}'
+    按标识回查:
+      查询工具: list_report_subscriptions
+      标识参数: email
+      标识字段: email
+      ID字段: id
+  - 工具: add_pickup_time_slot
+    删除工具: delete_pickup_time_slot
+    删除参数:
+      merchId: '{merchId}'
+      day: '{建时参数.days.0}'
+      slotIndex: '{新建后末尾索引}'
+    索引查询工具: list_pickup_time_slots
+    索引查询天字段: days
+    索引查询时段字段: slots
+    索引查询索引字段: index
+  - 工具: category_create
+    删除工具: category_delete
+    删除参数:
+      categoryId: '{新实体ID}'
+    预生成ID参数: categoryId
+  - 工具: menu_create
+    删除工具: menu_delete
+    删除参数:
+      menuId: '{新实体ID}'
+    预生成ID参数: menuId
+  - 工具: item_create
+    删除工具: item_delete
+    删除参数:
+      merchId: '{merchId}'
+      itemId: '{新实体ID}'
+    预生成ID参数: itemId
+  - 工具: create_discount_campaign
+    删除工具: update_discount_campaign
+    删除参数:
+      campaignId: '{新实体ID}'
+      isPublished: false
+    返回ID字段: createdCampaignId
+  - 工具: add_store_user
+    删除工具: delete_store_user
+    删除参数:
+      merchId: '{merchId}'
+      merchManagerId: '{新实体ID}'
+    返回ID字段: merchManagerId
+  - 工具: spec_create
+    删除工具: spec_delete
+    删除参数:
+      merchId: '{merchId}'
+      specId: '{新实体ID}'
+    返回ID字段: createdSpecId
+    按标识回查:
+      查询工具: spec_list
+      标识参数: name
+      标识字段: name
+      ID字段: id
+  - 工具: tax_create
+    删除工具: tax_delete
+    删除参数:
+      taxId: '{建时参数.taxId}'
   自建自删:
-    - 删除工具: delete_extra_fee
-      建工具: add_extra_fee
-      建参数: {merchId: "{merchId}", name: "_AUTOTEST_FEE_DEL",
-               target: Delivery, feeType: fixed, value: 1.0, isTaxable: false}
-      删除主键: feeId
-      返回ID字段: createdFeeId
-
-    - 删除工具: remove_order_notification_email
-      建工具: add_order_notification_email
-      建参数: {merchId: "{merchId}", email: "autotest_del@example.com"}
-      删除主键: subscriberId
-      返回ID字段: id
-
-    # ⚠ 三个建工具都支持客户端自带主键（schema: Client should generate a new GUID），
-    #   靠「预生成ID参数」拿 ID，不再解析返回体（实测返回里没有 createdXxxId）。
-    - 删除工具: category_delete
-      建工具: category_create
-      建参数: {merchId: "{merchId}", name: "_AUTOTEST_CAT_DEL"}
-      删除主键: categoryId
-      预生成ID参数: categoryId
-
-    - 删除工具: menu_delete
-      建工具: menu_create
-      建参数: {merchId: "{merchId}", name: "_AUTOTEST_MENU_DEL"}
-      删除主键: menuId
-      预生成ID参数: menuId
-
-    # ⚠ status 必须传整数（0=OffSale / 1=OnSale）。
-    #   原先写 status: OnSale（字符串）→ 服务端报
-    #   "The JSON value could not be converted to System.Int32. Path: $.status"，
-    #   导致建临时商品失败、item_delete 整条被跳过。
-    - 删除工具: item_delete
-      建工具: item_create
-      建参数: {merchId: "{merchId}", name: "_AUTOTEST_ITEM_DEL",
-               price: 1.0, stock: 0, status: 0}
-      删除主键: itemId
-      预生成ID参数: itemId
-
-    # 员工：实测 add_store_user 可正常创建（角色表有预置「店员」角色），
-    # 故删除类用例可走自建自删，不碰真实员工。
-    # roleId 用真实存在的角色，缺失时该用例会安全跳过（不会误删真实员工）。
-    - 删除工具: delete_store_user
-      建工具: add_store_user
-      建参数: {merchId: "{merchId}", phone: "9023999001",
-               roleId: "1e6b1564-a5eb-4e4e-9019-8b87de5513b1"}
-      删除主键: merchManagerId
-      返回ID字段: merchManagerId
-
-  # ---- 受测系统能力缺口（作为缺陷上报，不硬跑）----
-  # 这些写接口存在，但被测系统没有对应的「读取当前值」接口：
-  #   get_store_info 只返回 merchId/name/logo/phone/email/address，
-  #   不返回 enabled / thresholdAmount / mode / tipValues 等开关字段。
-  # 后果：改了既无法验证对错，也无法自动还原 → 真跑会污染环境且测不出东西。
-  # 这不属于测试框架问题，属被测系统缺陷（缺读接口），单独列出。
+  - 删除工具: delete_extra_fee
+    建工具: add_extra_fee
+    建参数:
+      merchId: '{merchId}'
+      name: _AUTOTEST_FEE_DEL
+      target: Delivery
+      feeType: fixed
+      value: 1.0
+      isTaxable: false
+    删除主键: feeId
+    返回ID字段: createdFeeId
+  - 删除工具: remove_order_notification_email
+    建工具: add_order_notification_email
+    建参数:
+      merchId: '{merchId}'
+      email: autotest_del@example.com
+    删除主键: subscriberId
+    返回ID字段: id
+  - 删除工具: category_delete
+    建工具: category_create
+    建参数:
+      merchId: '{merchId}'
+      name: _AUTOTEST_CAT_DEL
+    删除主键: categoryId
+    预生成ID参数: categoryId
+  - 删除工具: menu_delete
+    建工具: menu_create
+    建参数:
+      merchId: '{merchId}'
+      name: _AUTOTEST_MENU_DEL
+    删除主键: menuId
+    预生成ID参数: menuId
+  - 删除工具: item_delete
+    建工具: item_create
+    建参数:
+      merchId: '{merchId}'
+      name: _AUTOTEST_ITEM_DEL
+      price: 1.0
+      stock: 0
+      status: 0
+    删除主键: itemId
+    预生成ID参数: itemId
+  - 删除工具: delete_store_user
+    建工具: add_store_user
+    建参数:
+      merchId: '{merchId}'
+      phone: '9023999001'
+      roleId: 1e6b1564-a5eb-4e4e-9019-8b87de5513b1
+    删除主键: merchManagerId
+    返回ID字段: merchManagerId
+  - 建工具: tax_create
+    删除工具: tax_delete
+    删除主键: taxId
+    建参数:
+      merchId: '{merchId}'
+      tax: 1.0
+      name: _AUTOTEST_TAX
+    删除参数:
+      taxIds:
+      - '{新实体ID}'
+  - 建工具: spec_create
+    删除工具: spec_delete
+    删除主键: specId
+    建参数:
+      merchId: '{merchId}'
+      name: _AUTOTEST_SPEC
+    删除参数:
+      merchId: '{merchId}'
+      specId: '{新实体ID}'
+  - 建工具: add_delivery_area
+    删除工具: delete_delivery_area
+    删除主键: areaId
+    建参数:
+      merchId: '{merchId}'
+      name: _AUTOTEST_AREA
+      areaType: circle
+      latitude: 22.5175
+      longitude: 113.3926
+      deliveryRadiusMiles: 1
+      allowAsap: true
+      minimumAmountForDelivery: 0
+      deliveryFee: 0
+      deliveryFeeTaxable: false
+    删除参数:
+      merchId: '{merchId}'
+      areaId: '{新实体ID}'
   能力缺口:
-    - 工具: set_store_open_status
-      原因: get_store_info 不返回营业状态字段（只有 name/phone/email/address），
-            开/关店后无法验证也无法还原
-    - 工具: set_auto_accept_orders
-      原因: 无读取「自动接单」当前状态的接口，改后无法验证与还原
-    - 工具: set_delivery_enabled
-      原因: 无读取「配送开关」当前状态的接口，改后无法验证与还原
-    - 工具: set_pickup_enabled
-      原因: 无读取「自提开关」当前状态的接口，改后无法验证与还原
-    - 工具: set_pickup_order_threshold
-      原因: 无读取「自提订单门槛」当前值的接口，改后无法验证与还原
-    - 工具: set_utensil_option_enabled
-      原因: 无读取「餐具选项开关」当前状态的接口，改后无法验证与还原
-    - 工具: set_sales_mode
-      原因: 无读取「销售模式」当前值的接口，改后无法验证与还原
-    - 工具: set_tip_options
-      原因: 无读取「小费选项」当前值的接口，改后无法验证与还原
-    - 工具: set_tip_type
-      原因: 无读取「小费类型」当前值的接口，改后无法验证与还原
-    - 工具: create_reward_campaign
-      原因: 无删除优惠券活动的接口（无 delete_reward_campaign），
-            创建后无法清理，会永久留下测试活动
-
-  # ---- 不可恢复：删除类，删了没得救，默认跳过 ----
-  # 配了「自建自删」的会走自建自删；没配的才会真正跳过。
+  - 工具: set_store_open_status
+    原因: get_store_info 不返回营业状态字段（只有 name/phone/email/address）， 开/关店后无法验证也无法还原
+  - 工具: set_auto_accept_orders
+    原因: 无读取「自动接单」当前状态的接口，改后无法验证与还原
+  - 工具: set_delivery_enabled
+    原因: 无读取「配送开关」当前状态的接口，改后无法验证与还原
+  - 工具: set_pickup_enabled
+    原因: 无读取「自提开关」当前状态的接口，改后无法验证与还原
+  - 工具: set_pickup_order_threshold
+    原因: 无读取「自提订单门槛」当前值的接口，改后无法验证与还原
+  - 工具: set_utensil_option_enabled
+    原因: 无读取「餐具选项开关」当前状态的接口，改后无法验证与还原
+  - 工具: set_sales_mode
+    原因: 无读取「销售模式」当前值的接口，改后无法验证与还原
+  - 工具: set_tip_options
+    原因: 无读取「小费选项」当前值的接口，改后无法验证与还原
+  - 工具: set_tip_type
+    原因: 无读取「小费类型」当前值的接口，改后无法验证与还原
+  - 工具: create_reward_campaign
+    原因: 无删除优惠券活动的接口（无 delete_reward_campaign）， 创建后无法清理，会永久留下测试活动
+  - 工具: set_order_phone_notification
+    原因: 无读取该开关状态的接口
+  - 工具: set_support_realtime_messaging
+    原因: 无读取该开关状态的接口
+  - 工具: set_tax_rate
+    原因: tax_list 有缺陷（后台 6 条只返回 1 条），商户默认税率不可读
+  - 工具: set_stripe_invoice_note
+    原因: 无读取 Stripe 备注的接口
+  - 工具: update_brand_story
+    原因: get_store_info 不返回品牌故事；且 es 语言写入本身失效
+  - 工具: update_social_account
+    原因: get_store_info 不返回社交账号
+  - 工具: update_cover_image
+    原因: get_store_info 不返回封面字段
+  - 工具: update_store_video
+    原因: get_store_info 不返回视频字段
+  - 工具: set_auto_print_before_prep
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_takeout_number_mode
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_allow_customer_notes
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_allow_add_items_to_active_order
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_auto_switch_ready_status
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_utensil_default_required
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_push_to_pos
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_allow_customer_cancel_before_prep
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_free_cancel_before_prep_time
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_preorder_lead_days
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: set_auto_remind_after_pickup_expiry
+    原因: 无读取该开关当前状态的接口（get_store_info 只返回 merchId/name/logo/phone/email/address），改后无法回读验证
+  - 工具: generate_store_qr
+    原因: 幂等生成类：已有二维码则直接返回不重新生成，无可变更字段可快照/还原；首次生成后才产生新资源，且无删除二维码接口，故按能力缺口跳过写对账
+  - 工具: tax_bind_item
+    原因: item_detail / item_list 返回里没有税率绑定字段（taxIds），绑定后无法读取当前绑定关系，既无法验证也无法还原
   不可恢复:
-    - delete_store_user
-    - delete_extra_fee
-    - delete_delivery_area
-    - delete_pickup_time_slot
-    - category_delete
-    - menu_delete
-    - spec_delete
-    - tax_delete
-    - item_delete
-    - remove_order_notification_email
-    - remove_report_subscription
-
+  - delete_store_user
+  - delete_extra_fee
+  - delete_delivery_area
+  - delete_pickup_time_slot
+  - category_delete
+  - menu_delete
+  - spec_delete
+  - tax_delete
+  - item_delete
+  - remove_order_notification_email
+  - remove_report_subscription
 mcp_tools:
 - name: set_allow_add_items_to_active_order
-  description: 允許增加商品到進行中訂單、關閉加點。Enable or disable adding items to active/in-progress
-    orders. Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 允許增加商品到進行中訂單、關閉加點。Enable or disable adding items to active/in-progress orders. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -443,12 +1057,9 @@ mcp_tools:
   - merchId
   - enabled
 - name: update_delivery_time_slot
-  description: '更新配送時間、增加12:00時段、配送時間為11:00-21:00、更改開放時間、準備時間改為15分鐘、預計備餐時長、配送時間改為20分鐘、預計送達時長。Update
-    a delivery time slot within a specific delivery area. Locate the slot by AreaId
-    + Day (e.g., "Monday") + SlotIndex (0-based). Only provided fields are modified:
-    open time, close time, preparation minutes, estimated delivery minutes, scheduled
-    delivery time range. Set confirm=false (default) for a change preview; set confirm=true
-    to execute. Requires explicit merchant confirmation.'
+  description: '更新配送時間、增加12:00時段、配送時間為11:00-21:00、更改開放時間、準備時間改為15分鐘、預計備餐時長、配送時間改為20分鐘、預計送達時長。Update a delivery time slot within a specific delivery area. Locate the slot by AreaId + Day (e.g., "Monday")
+    + SlotIndex (0-based). Only provided fields are modified: open time, close time, preparation minutes, estimated delivery minutes, scheduled delivery time range. Set confirm=false (default) for a change
+    preview; set confirm=true to execute. Requires explicit merchant confirmation.'
   params:
   - merchId
   - areaId
@@ -466,9 +1077,8 @@ mcp_tools:
   - day
   - slotIndex
 - name: spec_create
-  description: 新建規格組、這個菜有大中小、新增一個規格。Create a new modifier/spec group (FoodParameterGroup).
-    Provide Name (required), optional Options and LocalizedNames. Set confirm=false
-    (default) for a preview; set confirm=true to execute.
+  description: 新建規格組、這個菜有大中小、新增一個規格。Create a new modifier/spec group (FoodParameterGroup). Provide Name (required), optional Options and LocalizedNames. Set confirm=false (default) for a preview; set confirm=true
+    to execute.
   params:
   - merchId
   - specId
@@ -484,19 +1094,15 @@ mcp_tools:
   - merchId
   - name
 - name: list_pickup_time_slots
-  description: 查看自提時間列表、有哪些取餐時段。List all pickup time slots for a merchant, organized
-    by day of week. Returns open/close times, preparation minutes, and scheduled pickup
-    time range for each slot. Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 查看自提時間列表、有哪些取餐時段。List all pickup time slots for a merchant, organized by day of week. Returns open/close times, preparation minutes, and scheduled pickup time range for each slot. Set confirm=false
+    (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: update_user_status
-  description: 啟用/停用員工、將帳號設為無效。Enable or disable a store user account by updating
-    IsActive status. Set confirm=false (default) for a preview; set confirm=true to
-    execute.
+  description: 啟用/停用員工、將帳號設為無效。Enable or disable a store user account by updating IsActive status. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - merchManagerId
@@ -507,11 +1113,8 @@ mcp_tools:
   - merchManagerId
   - isActive
 - name: update_store_logo
-  description: 上傳Logo、更換店鋪標誌。Update the store/shop logo image for a merchant. Supports
-    Base64-encoded image strings or image URLs. Only the Logo field is modified; all
-    other store configuration remains unchanged. Set confirm=false (default) for a
-    change preview; set confirm=true to execute the change. Requires explicit merchant
-    confirmation.
+  description: 上傳Logo、更換店鋪標誌。Update the store/shop logo image for a merchant. Supports Base64-encoded image strings or image URLs. Only the Logo field is modified; all other store configuration remains
+    unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - newLogo
@@ -520,19 +1123,16 @@ mcp_tools:
   - merchId
   - newLogo
 - name: get_store_info
-  description: '查看店鋪資料、顯示基本信息。Returns basic store/shop information: name, logo URL,
-    phone number, email, and address. This data is non-sensitive and can be freely
-    queried. Set confirm=false (default) for a preview; set confirm=true to execute.'
+  description: '查看店鋪資料、顯示基本信息。Returns basic store/shop information: name, logo URL, phone number, email, and address. This data is non-sensitive and can be freely queried. Set confirm=false (default) for
+    a preview; set confirm=true to execute.'
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: category_create
-  description: 新建分類、新增一個分類。Create a new category for the merchant. Provide Name (required),
-    optional Description, Sort, MenuIds, BannerUrl, and LocalizedNames. Client should
-    generate a CategoryId GUID. Set confirm=false (default) for a preview; set confirm=true
-    to execute. Requires explicit merchant confirmation.
+  description: 新建分類、新增一個分類。Create a new category for the merchant. Provide Name (required), optional Description, Sort, MenuIds, BannerUrl, and LocalizedNames. Client should generate a CategoryId GUID.
+    Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - merchId
   - categoryId
@@ -547,9 +1147,8 @@ mcp_tools:
   - merchId
   - name
 - name: set_delivery_provider_type
-  description: '自行安排配送、改用第三方配送。Set the delivery provider type: ''self'' for self-delivery
-    or ''deli_connect'' for DeliConnect third-party. Set confirm=false (default) for
-    a preview; set confirm=true to execute.'
+  description: '自行安排配送、改用第三方配送。Set the delivery provider type: ''self'' for self-delivery or ''deli_connect'' for DeliConnect third-party. Set confirm=false (default) for a preview; set confirm=true to
+    execute.'
   params:
   - merchId
   - providerType
@@ -558,9 +1157,8 @@ mcp_tools:
   - merchId
   - providerType
 - name: get_user_detail
-  description: 查看用戶XXX的資料、員工資訊。Get detailed information for a specific store user/staff
-    by ID, including roles, email, phone, name, and status. Set confirm=false (default)
-    for a preview; set confirm=true to execute.
+  description: 查看用戶XXX的資料、員工資訊。Get detailed information for a specific store user/staff by ID, including roles, email, phone, name, and status. Set confirm=false (default) for a preview; set confirm=true
+    to execute.
   params:
   - merchId
   - merchManagerId
@@ -569,9 +1167,8 @@ mcp_tools:
   - merchId
   - merchManagerId
 - name: set_auto_accept_orders
-  description: 開啟自動接單、關閉自動接單。Enable or disable auto-accept orders for the store. When
-    enabled, incoming orders are automatically accepted. Set confirm=false (default)
-    for a preview; set confirm=true to execute.
+  description: 開啟自動接單、關閉自動接單。Enable or disable auto-accept orders for the store. When enabled, incoming orders are automatically accepted. Set confirm=false (default) for a preview; set confirm=true to
+    execute.
   params:
   - merchId
   - enabled
@@ -580,10 +1177,8 @@ mcp_tools:
   - merchId
   - enabled
 - name: update_reward_campaign
-  description: 更新優惠券/獎勵活動，支持積分換商品（ProductExchangeFoods：foodId + points）。Update a coupon
-    campaign. Fetches from GET all then POST api/MerchCouponPromotion/update. For
-    points-to-product exchange, provide ProductExchangeFoods with foodId and points.
-    Set confirm=false (default) for preview; confirm=true to execute.
+  description: 更新優惠券/獎勵活動，支持積分換商品（ProductExchangeFoods：foodId + points）。Update a coupon campaign. Fetches from GET all then POST api/MerchCouponPromotion/update. For points-to-product exchange, provide
+    ProductExchangeFoods with foodId and points. Set confirm=false (default) for preview; confirm=true to execute.
   params:
   - merchId
   - campaignId
@@ -602,11 +1197,8 @@ mcp_tools:
   - merchId
   - campaignId
 - name: set_instant_pickup_only
-  description: 僅支持即時自提、關閉預約自提。Enable or disable instant pickup only mode. When enabled
-    (true), only instant pickup is supported (scheduled pickup is disabled). When
-    disabled (false), both instant and scheduled pickup are supported. Only the IsAsapOnly
-    field is modified. Set confirm=false (default) for a preview; set confirm=true
-    to execute. Requires explicit merchant confirmation.
+  description: 僅支持即時自提、關閉預約自提。Enable or disable instant pickup only mode. When enabled (true), only instant pickup is supported (scheduled pickup is disabled). When disabled (false), both instant and scheduled
+    pickup are supported. Only the IsAsapOnly field is modified. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - merchId
   - enabled
@@ -615,11 +1207,8 @@ mcp_tools:
   - merchId
   - enabled
 - name: update_social_account
-  description: '關聯Instagram、綁定社交賬號。Link or update a social media account for the merchant.
-    Supports: instagram, twitter, facebook, linkedin. If the platform already has
-    a link, it will be updated; otherwise a new link is added. Other platforms'' existing
-    links remain unchanged. Set confirm=false (default) for a change preview; set
-    confirm=true to execute the change. Requires explicit merchant confirmation.'
+  description: '關聯Instagram、綁定社交賬號。Link or update a social media account for the merchant. Supports: instagram, twitter, facebook, linkedin. If the platform already has a link, it will be updated; otherwise
+    a new link is added. Other platforms'' existing links remain unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.'
   params:
   - merchId
   - platform
@@ -630,9 +1219,8 @@ mcp_tools:
   - platform
   - linkUrl
 - name: update_extra_fee
-  description: 修改服務費、更改包裝費。Update an existing extra fee for a merchant. Only provided
-    fields are modified. Set confirm=false (default) for a change preview; set confirm=true
-    to execute. Requires explicit merchant confirmation.
+  description: 修改服務費、更改包裝費。Update an existing extra fee for a merchant. Only provided fields are modified. Set confirm=false (default) for a change preview; set confirm=true to execute. Requires explicit
+    merchant confirmation.
   params:
   - merchId
   - feeId
@@ -647,11 +1235,8 @@ mcp_tools:
   - merchId
   - feeId
 - name: update_store_video
-  description: 上傳視頻、添加店鋪視頻。Upload or update the store/shop display video (BannerVideoUrl)
-    for a merchant. Supports Base64-encoded video strings or video URLs. Only the
-    BannerVideoUrl field is modified; all other store configuration remains unchanged.
-    Set confirm=false (default) for a change preview; set confirm=true to execute
-    the change. Requires explicit merchant confirmation.
+  description: 上傳視頻、添加店鋪視頻。Upload or update the store/shop display video (BannerVideoUrl) for a merchant. Supports Base64-encoded video strings or video URLs. Only the BannerVideoUrl field is modified;
+    all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - newVideo
@@ -660,8 +1245,7 @@ mcp_tools:
   - merchId
   - newVideo
 - name: item_list
-  description: 查看所有商品、店裡有哪些商品。Query paginated item/food list for a merchant. Returns
-    name, price, stock, sales status, and category IDs.
+  description: 查看所有商品、店裡有哪些商品。Query paginated item/food list for a merchant. Returns name, price, stock, sales status, and category IDs.
   params:
   - merchId
   - keyword
@@ -673,10 +1257,8 @@ mcp_tools:
   required:
   - merchId
 - name: menu_create
-  description: 新建菜單、新增一個菜單。Create a new menu for the merchant. Provide Name (required),
-    optional CategoryIds, OnlineTimes (days + time slots), and LocalizedNames. Client
-    should generate a MenuId GUID. Set confirm=false (default) for a preview; set
-    confirm=true to execute. Requires explicit merchant confirmation.
+  description: 新建菜單、新增一個菜單。Create a new menu for the merchant. Provide Name (required), optional CategoryIds, OnlineTimes (days + time slots), and LocalizedNames. Client should generate a MenuId GUID. Set
+    confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - merchId
   - menuId
@@ -691,9 +1273,8 @@ mcp_tools:
   - merchId
   - name
 - name: add_store_user
-  description: 新增員工、添加後台帳號。Add a new store user/staff account with a phone number
-    and role assignment. Use list_merchant_roles to find available role IDs first.
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 新增員工、添加後台帳號。Add a new store user/staff account with a phone number and role assignment. Use list_merchant_roles to find available role IDs first. Set confirm=false (default) for a preview;
+    set confirm=true to execute.
   params:
   - merchId
   - phone
@@ -704,8 +1285,7 @@ mcp_tools:
   - phone
   - roleId
 - name: set_auto_switch_ready_status
-  description: 自動切換訂單狀態、關閉自動切換。Enable or disable automatic order status switching
-    to ready. Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 自動切換訂單狀態、關閉自動切換。Enable or disable automatic order status switching to ready. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -714,19 +1294,15 @@ mcp_tools:
   - merchId
   - enabled
 - name: menu_delete
-  description: 刪除這個菜單。Delete a menu by ID. This operation is irreversible. Set confirm=false
-    (default) for a preview; set confirm=true to execute. Requires explicit merchant
-    confirmation.
+  description: 刪除這個菜單。Delete a menu by ID. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - menuId
   - confirm
   required:
   - menuId
 - name: update_store_name
-  description: 修改店名、店鋪名稱改為。Update the store/shop name for a merchant. Only the Name
-    field is modified; all other store configuration remains unchanged. Set confirm=false
-    (default) for a change preview; set confirm=true to execute the change. Requires
-    explicit merchant confirmation.
+  description: 修改店名、店鋪名稱改為。Update the store/shop name for a merchant. Only the Name field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview;
+    set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - newName
@@ -735,10 +1311,8 @@ mcp_tools:
   - merchId
   - newName
 - name: remove_report_subscription
-  description: 移除報表郵件訂閱。Remove a business report email subscription by Id or Email.
-    When using Email, set IsSalesReport and/or IsPayoutReport to avoid deleting the
-    wrong subscription. Set confirm=false (default) for a preview; set confirm=true
-    to execute. Requires explicit merchant confirmation.
+  description: 移除報表郵件訂閱。Remove a business report email subscription by Id or Email. When using Email, set IsSalesReport and/or IsPayoutReport to avoid deleting the wrong subscription. Set confirm=false
+    (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - id
   - email
@@ -756,8 +1330,7 @@ mcp_tools:
   required:
   - merchId
 - name: item_update_stock
-  description: 修改商品庫存。庫存沒了、補貨。Update item stock quantity. Set confirm=false (default)
-    for a preview; set confirm=true to execute.
+  description: 修改商品庫存。庫存沒了、補貨。Update item stock quantity. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - itemId
   - stock
@@ -765,30 +1338,22 @@ mcp_tools:
   required:
   - itemId
 - name: get_third_party_integrations
-  description: 查看第三方接入狀況、會員系統綁定了嗎。Query third-party integration status (e.g., EasyCrm
-    membership system binding). Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 查看第三方接入狀況、會員系統綁定了嗎。Query third-party integration status (e.g., EasyCrm membership system binding). Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: list_my_merchants
-  description: '查看我擁有的所有商家店鋪。List all merchants associated with the current account,
-    including merchant ID, name, address, logo, phone, email, timezone, and type.
-    Important Note: Please call this tool first when you need a MerchId but do not
-    have one.You can use this tool to discover available merchants before calling
-    any tools that require a MerchId.Set confirm=false (default) for a preview; set
-    confirm=true to execute.'
+  description: '查看我擁有的所有商家店鋪。List all merchants associated with the current account, including merchant ID, name, address, logo, phone, email, timezone, and type. Important Note: Please call this tool first
+    when you need a MerchId but do not have one.You can use this tool to discover available merchants before calling any tools that require a MerchId.Set confirm=false (default) for a preview; set confirm=true
+    to execute.'
   params:
   - confirm
   required: []
 - name: add_delivery_area
-  description: '增加配送區域、新增DeliveryArea。Add a new delivery area (DeliveryPolygon) to
-    the merchant. Supports two area types: ''circle'' (center point + radius in miles)
-    or ''polygon'' (default square centered at the given lat/lng with side length
-    2× radius). The new area is appended to existing DeliveryPolygons without affecting
-    them. Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: '增加配送區域、新增DeliveryArea。Add a new delivery area (DeliveryPolygon) to the merchant. Supports two area types: ''circle'' (center point + radius in miles) or ''polygon'' (default square centered
+    at the given lat/lng with side length 2× radius). The new area is appended to existing DeliveryPolygons without affecting them. Set confirm=false (default) for a preview; set confirm=true to execute.
     Requires explicit merchant confirmation.'
   params:
   - merchId
@@ -815,8 +1380,7 @@ mcp_tools:
   - deliveryFee
   - deliveryFeeTaxable
 - name: batch_item_category
-  description: 批量改商品分類。Batch update item category assignments. Set confirm=false (default)
-    for a preview; set confirm=true to execute.
+  description: 批量改商品分類。Batch update item category assignments. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - categoryIds
   - merchId
@@ -826,11 +1390,8 @@ mcp_tools:
   required:
   - categoryIds
 - name: set_store_open_status
-  description: 營業中、暫不營業、切換營業狀態。Set the store/shop business status (open or closed).
-    Use "open" to set the store to Opening (business hours), or "closed" to set it
-    to Closed (temporarily closed). Only the Status field is modified; all other store
-    configuration remains unchanged. Set confirm=false (default) for a change preview;
-    set confirm=true to execute the change. Requires explicit merchant confirmation.
+  description: 營業中、暫不營業、切換營業狀態。Set the store/shop business status (open or closed). Use "open" to set the store to Opening (business hours), or "closed" to set it to Closed (temporarily closed). Only the
+    Status field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - status
@@ -839,9 +1400,8 @@ mcp_tools:
   - merchId
   - status
 - name: menu_unbind_category
-  description: 從菜單移除這個分類。Remove a single category from a menu. The specified CategoryId
-    will be removed from the menu's bound categories. Set confirm=false (default)
-    for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
+  description: 從菜單移除這個分類。Remove a single category from a menu. The specified CategoryId will be removed from the menu's bound categories. Set confirm=false (default) for a preview; set confirm=true to execute.
+    Requires explicit merchant confirmation.
   params:
   - menuId
   - categoryId
@@ -850,17 +1410,15 @@ mcp_tools:
   - menuId
   - categoryId
 - name: menu_publish
-  description: 發布菜單、上線這個菜單、讓顧客看到這個菜單。Publish a menu by setting IsActive=true. Requires
-    at least one category to be bound. Set confirm=false (default) for a preview;
-    set confirm=true to execute. Requires explicit merchant confirmation.
+  description: 發布菜單、上線這個菜單、讓顧客看到這個菜單。Publish a menu by setting IsActive=true. Requires at least one category to be bound. Set confirm=false (default) for a preview; set confirm=true to execute. Requires
+    explicit merchant confirmation.
   params:
   - menuId
   - confirm
   required:
   - menuId
 - name: spec_bind_item
-  description: 給這個商品加規格、把商品加到規格組。Associate items/foods with a spec group. Set confirm=false
-    (default) for a preview; set confirm=true to execute.
+  description: 給這個商品加規格、把商品加到規格組。Associate items/foods with a spec group. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - specId
@@ -872,10 +1430,8 @@ mcp_tools:
   - specId
   - itemIds
 - name: list_merchant_roles
-  description: 查看可分配的角色、角色列表。List all available roles for a merchant with their IDs
-    and permission counts. Use this to find role IDs before calling add_store_user.
-    Supports optional keyword filtering. Set confirm=false (default) for a preview;
-    set confirm=true to execute.
+  description: 查看可分配的角色、角色列表。List all available roles for a merchant with their IDs and permission counts. Use this to find role IDs before calling add_store_user. Supports optional keyword filtering. Set
+    confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - keyword
@@ -883,10 +1439,8 @@ mcp_tools:
   required:
   - merchId
 - name: add_extra_fee
-  description: 添加服務費、新增包裝費。Add an extra fee (e.g., service fee, packaging fee) to
-    a merchant. The new fee is appended to existing ChargeItems without affecting
-    them. Set confirm=false (default) for a preview; set confirm=true to execute.
-    Requires explicit merchant confirmation.
+  description: 添加服務費、新增包裝費。Add an extra fee (e.g., service fee, packaging fee) to a merchant. The new fee is appended to existing ChargeItems without affecting them. Set confirm=false (default) for a preview;
+    set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - merchId
   - name
@@ -904,8 +1458,7 @@ mcp_tools:
   - value
   - isTaxable
 - name: category_list
-  description: 查看所有分類、店裡有哪些分類。Query paginated category list for a merchant. Returns
-    category name, description, banner URL, and associated menu names.
+  description: 查看所有分類、店裡有哪些分類。Query paginated category list for a merchant. Returns category name, description, banner URL, and associated menu names.
   params:
   - merchId
   - categoryName
@@ -915,9 +1468,7 @@ mcp_tools:
   required:
   - merchId
 - name: set_support_realtime_messaging
-  description: 開啟即時消息、關閉即時消息。Enable or disable realtime instant messaging (IM) support
-    for the store. Set confirm=false (default) for a preview; set confirm=true to
-    execute.
+  description: 開啟即時消息、關閉即時消息。Enable or disable realtime instant messaging (IM) support for the store. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -926,8 +1477,7 @@ mcp_tools:
   - merchId
   - enabled
 - name: batch_item_tax
-  description: 批量把稅率綁到商品。Batch bind tax rates to items. Set confirm=false (default)
-    for a preview; set confirm=true to execute.
+  description: 批量把稅率綁到商品。Batch bind tax rates to items. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - taxIds
   - merchId
@@ -937,9 +1487,7 @@ mcp_tools:
   required:
   - taxIds
 - name: item_delete
-  description: 刪除這個商品（永久刪除，非下架）。Permanently delete an item/food by ID. For off-sale
-    use item_update or batch_item_status. Set confirm=false (default) for a preview;
-    set confirm=true to execute.
+  description: 刪除這個商品（永久刪除，非下架）。Permanently delete an item/food by ID. For off-sale use item_update or batch_item_status. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - itemId
@@ -948,20 +1496,16 @@ mcp_tools:
   - merchId
   - itemId
 - name: list_delivery_areas
-  description: 查看配送區域列表、有哪些配送區。List all delivery areas (DeliveryPolygons) for a merchant.
-    Returns complete configuration for each area including daily delivery time slots
-    with their indices. Use this as a prerequisite query before update_delivery_area
-    (to get AreaId) or update_delivery_time_slot (to get AreaId + Day + SlotIndex).
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 查看配送區域列表、有哪些配送區。List all delivery areas (DeliveryPolygons) for a merchant. Returns complete configuration for each area including daily delivery time slots with their indices. Use this as
+    a prerequisite query before update_delivery_area (to get AreaId) or update_delivery_time_slot (to get AreaId + Day + SlotIndex). Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: list_store_users
-  description: 查看所有員工、用戶列表、後台帳號。List all store users/staff accounts with roles, email,
-    phone, and status. Supports keyword search and pagination. Set confirm=false (default)
-    for a preview; set confirm=true to execute.
+  description: 查看所有員工、用戶列表、後台帳號。List all store users/staff accounts with roles, email, phone, and status. Supports keyword search and pagination. Set confirm=false (default) for a preview; set confirm=true
+    to execute.
   params:
   - merchId
   - keyword
@@ -971,20 +1515,15 @@ mcp_tools:
   required:
   - merchId
 - name: get_store_link
-  description: 獲取店鋪連結、我的店鋪網址。Returns the store/shop public link (StoreLink) and QR
-    code link (StoreLinkQrCode). Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 獲取店鋪連結、我的店鋪網址。Returns the store/shop public link (StoreLink) and QR code link (StoreLinkQrCode). Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: set_delivery_enabled
-  description: '開啟配送、關閉外送、提供配送服務。Enable or disable the delivery service for a merchant.
-    Modifies the DeliveryType: enabling delivery adds Delivery capability, disabling
-    removes it. Pickup capability is preserved when toggling delivery. Set confirm=false
-    (default) for a change preview; set confirm=true to execute the change. Requires
-    explicit merchant confirmation.'
+  description: '開啟配送、關閉外送、提供配送服務。Enable or disable the delivery service for a merchant. Modifies the DeliveryType: enabling delivery adds Delivery capability, disabling removes it. Pickup capability is
+    preserved when toggling delivery. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.'
   params:
   - merchId
   - enabled
@@ -993,11 +1532,8 @@ mcp_tools:
   - merchId
   - enabled
 - name: set_tax_rate
-  description: 稅率設為10%、修改稅率。Set the tax rate for a merchant. TaxRate is a percentage
-    value (e.g., 10 for 10%, 8.875 for 8.875%). Must be between 0 and 100. Only the
-    Tax field is modified; all other store configuration remains unchanged. Set confirm=false
-    (default) for a change preview; set confirm=true to execute the change. Requires
-    explicit merchant confirmation.
+  description: 稅率設為10%、修改稅率。Set the tax rate for a merchant. TaxRate is a percentage value (e.g., 10 for 10%, 8.875 for 8.875%). Must be between 0 and 100. Only the Tax field is modified; all other store
+    configuration remains unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - taxRate
@@ -1006,10 +1542,8 @@ mcp_tools:
   - merchId
   - taxRate
 - name: update_store_address
-  description: 修改地址、店鋪地址變更為。Update the store/shop address for a merchant. Only the
-    Address field is modified; all other store configuration remains unchanged. Set
-    confirm=false (default) for a change preview; set confirm=true to execute the
-    change. Requires explicit merchant confirmation.
+  description: 修改地址、店鋪地址變更為。Update the store/shop address for a merchant. Only the Address field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change preview;
+    set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - newAddress
@@ -1018,9 +1552,7 @@ mcp_tools:
   - merchId
   - newAddress
 - name: update_discount_campaign
-  description: 修改滿減活動預算、更新新人折扣活動。Update a newbie discount campaign. Fetches existing
-    campaign then POST update. Set confirm=false (default) for preview; confirm=true
-    to execute.
+  description: 修改滿減活動預算、更新新人折扣活動。Update a newbie discount campaign. Fetches existing campaign then POST update. Set confirm=false (default) for preview; confirm=true to execute.
   params:
   - campaignId
   - name
@@ -1033,10 +1565,8 @@ mcp_tools:
   required:
   - campaignId
 - name: update_store_phone
-  description: 更改電話、電話號碼改成。Update the store/shop phone number for a merchant. Only
-    the Phone field is modified; all other store configuration remains unchanged.
-    Set confirm=false (default) for a change preview; set confirm=true to execute
-    the change. Requires explicit merchant confirmation.
+  description: 更改電話、電話號碼改成。Update the store/shop phone number for a merchant. Only the Phone field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change
+    preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - newPhone
@@ -1045,23 +1575,19 @@ mcp_tools:
   - merchId
   - newPhone
 - name: list_report_subscriptions
-  description: 查看報表郵件訂閱、誰會收到銷售或結算報表。Query paginated business report email subscriptions
-    for the merchant. Returns email, send day, and report types (sales/payout).
+  description: 查看報表郵件訂閱、誰會收到銷售或結算報表。Query paginated business report email subscriptions for the merchant. Returns email, send day, and report types (sales/payout).
   params:
   - pageIndex
   - pageSize
   required: []
 - name: item_detail
-  description: 看這個商品的詳細信息、查看商品。Query item/food detail by ID. Returns name, price,
-    stock, categories, modifier groups, and localized names.
+  description: 看這個商品的詳細信息、查看商品。Query item/food detail by ID. Returns name, price, stock, categories, modifier groups, and localized names.
   params:
   - itemId
   required:
   - itemId
 - name: set_pickup_order_threshold
-  description: 自提門檻設為0美元、最低自提金額。Set the minimum order amount threshold for pickup
-    orders. Set to 0 to disable. Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 自提門檻設為0美元、最低自提金額。Set the minimum order amount threshold for pickup orders. Set to 0 to disable. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - thresholdAmount
@@ -1070,9 +1596,8 @@ mcp_tools:
   - merchId
   - thresholdAmount
 - name: item_create
-  description: 新建商品、新增一個商品。Create a new item/food for the merchant. Provide Name and
-    Price (required), optional CategoryIds and LocalizedNames. Set confirm=false (default)
-    for a preview; set confirm=true to execute.
+  description: 新建商品、新增一個商品。Create a new item/food for the merchant. Provide Name and Price (required), optional CategoryIds and LocalizedNames. Set confirm=false (default) for a preview; set confirm=true
+    to execute.
   params:
   - merchId
   - itemId
@@ -1090,9 +1615,8 @@ mcp_tools:
   - merchId
   - name
 - name: set_free_cancel_before_prep_time
-  description: 設置免費取消時間、接單前多少分鐘可免費取消。Set the free cancellation window before order
-    acceptance. When enabled, customers can cancel for free during the delay period.
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 設置免費取消時間、接單前多少分鐘可免費取消。Set the free cancellation window before order acceptance. When enabled, customers can cancel for free during the delay period. Set confirm=false (default) for a preview;
+    set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -1102,10 +1626,8 @@ mcp_tools:
   - merchId
   - enabled
 - name: create_discount_campaign
-  description: 建立滿減活動、做一個滿100減20、新建新人折扣活動。Create a newbie discount / spend-threshold
-    campaign via POST api/MerchNewbieDiscountCampaign/add. Provide Items or flat params
-    foodId + discountType + discountValue + thresholdAmount. Set confirm=false (default)
-    for preview; confirm=true to execute.
+  description: 建立滿減活動、做一個滿100減20、新建新人折扣活動。Create a newbie discount / spend-threshold campaign via POST api/MerchNewbieDiscountCampaign/add. Provide Items or flat params foodId + discountType + discountValue
+    + thresholdAmount. Set confirm=false (default) for preview; confirm=true to execute.
   params:
   - merchId
   - id
@@ -1127,8 +1649,7 @@ mcp_tools:
   - startDate
   - endDate
 - name: set_order_phone_notification
-  description: 開啟訂單電話通知、關閉電話通知。Enable or disable order phone call notifications for
-    new orders. Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 開啟訂單電話通知、關閉電話通知。Enable or disable order phone call notifications for new orders. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -1137,8 +1658,7 @@ mcp_tools:
   - merchId
   - enabled
 - name: set_utensil_default_required
-  description: 默認需要餐具、餐具默認勾選。Set whether utensils are required by default for orders.
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 默認需要餐具、餐具默認勾選。Set whether utensils are required by default for orders. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -1147,8 +1667,7 @@ mcp_tools:
   - merchId
   - enabled
 - name: tax_create
-  description: 新建稅率、新增一個稅率。Create a new tax rate for the merchant. Set confirm=false
-    (default) for a preview; set confirm=true to execute.
+  description: 新建稅率、新增一個稅率。Create a new tax rate for the merchant. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - taxId
@@ -1162,10 +1681,8 @@ mcp_tools:
   - name
   - tax
 - name: set_auto_remind_after_pickup_expiry
-  description: 超過取餐時間幾分鐘後自動提醒、延遲提醒時間。Set the auto-remind delay in minutes after pickup
-    expiry. Set to 0 to disable auto-reminders. Only the PickupTimeoutSystemTimeoutMinutes
-    field is modified. Set confirm=false (default) for a preview; set confirm=true
-    to execute. Requires explicit merchant confirmation.
+  description: 超過取餐時間幾分鐘後自動提醒、延遲提醒時間。Set the auto-remind delay in minutes after pickup expiry. Set to 0 to disable auto-reminders. Only the PickupTimeoutSystemTimeoutMinutes field is modified. Set confirm=false
+    (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - merchId
   - delayMinutes
@@ -1174,17 +1691,14 @@ mcp_tools:
   - merchId
   - delayMinutes
 - name: menu_detail
-  description: 看這個菜單的詳細信息、查看菜單。Query menu detail by menu ID. Returns name, online
-    times, active status, sort, bound category IDs, and localized names.
+  description: 看這個菜單的詳細信息、查看菜單。Query menu detail by menu ID. Returns name, online times, active status, sort, bound category IDs, and localized names.
   params:
   - menuId
   required:
   - menuId
 - name: set_pickup_parking_available
-  description: 開啟停車場自提、關閉停車場自提。Enable or disable parking lot pickup service for a
-    merchant. When enabled, sets MerchParkingLotPickupSupportType to OptionalParkingLot
-    and initializes curbside pickup settings. Set confirm=false (default) for a preview;
-    set confirm=true to execute. Requires explicit merchant confirmation.
+  description: 開啟停車場自提、關閉停車場自提。Enable or disable parking lot pickup service for a merchant. When enabled, sets MerchParkingLotPickupSupportType to OptionalParkingLot and initializes curbside pickup settings.
+    Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - merchId
   - enabled
@@ -1193,20 +1707,16 @@ mcp_tools:
   - merchId
   - enabled
 - name: generate_store_qr
-  description: 生成QR Code、生成店鋪QR Code。Generate or retrieve the store/shop QR code image.
-    If a QR code already exists, it is returned directly without regeneration. Otherwise,
-    the system generates a PNG QR code from the store link and uploads it to cloud
-    storage. Requires the store to have a StoreLink configured. Set confirm=false
-    (default) for a preview; set confirm=true to execute. Requires explicit merchant
-    confirmation.
+  description: 生成QR Code、生成店鋪QR Code。Generate or retrieve the store/shop QR code image. If a QR code already exists, it is returned directly without regeneration. Otherwise, the system generates a PNG QR
+    code from the store link and uploads it to cloud storage. Requires the store to have a StoreLink configured. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit
+    merchant confirmation.
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: tax_list
-  description: 查看所有稅率、店裡有哪些稅率。Query paginated tax rate list for a merchant. Returns
-    tax name, type, rate, default-for-new-food flag, and related food count.
+  description: 查看所有稅率、店裡有哪些稅率。Query paginated tax rate list for a merchant. Returns tax name, type, rate, default-for-new-food flag, and related food count.
   params:
   - merchId
   - search
@@ -1215,10 +1725,8 @@ mcp_tools:
   required:
   - merchId
 - name: delete_delivery_area
-  description: 刪除配送區域、移除DeliveryArea。Delete a delivery area (DeliveryPolygon) from
-    the merchant by its AreaId. This operation is irreversible. Set confirm=false
-    (default) for a preview; set confirm=true to execute. Requires explicit merchant
-    confirmation.
+  description: 刪除配送區域、移除DeliveryArea。Delete a delivery area (DeliveryPolygon) from the merchant by its AreaId. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true
+    to execute. Requires explicit merchant confirmation.
   params:
   - merchId
   - areaId
@@ -1227,9 +1735,7 @@ mcp_tools:
   - merchId
   - areaId
 - name: set_takeout_number_mode
-  description: '取餐號使用訂單號後四位、取餐號模式。Set the takeout number mode: use last 4 digits of
-    order number (true) or sequential numbers (false). Set confirm=false (default)
-    for a preview; set confirm=true to execute.'
+  description: '取餐號使用訂單號後四位、取餐號模式。Set the takeout number mode: use last 4 digits of order number (true) or sequential numbers (false). Set confirm=false (default) for a preview; set confirm=true to execute.'
   params:
   - merchId
   - enabled
@@ -1238,8 +1744,7 @@ mcp_tools:
   - merchId
   - enabled
 - name: set_allow_customer_notes
-  description: 允許客戶備註需求、關閉客戶備註。Enable or disable customer special instructions/notes
-    on orders. Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 允許客戶備註需求、關閉客戶備註。Enable or disable customer special instructions/notes on orders. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -1248,17 +1753,15 @@ mcp_tools:
   - merchId
   - enabled
 - name: tax_delete
-  description: 刪除稅率。Delete tax rates by ID list. Blocked when items are still bound.
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 刪除稅率。Delete tax rates by ID list. Blocked when items are still bound. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - taxId
   - taxIds
   - confirm
   required: []
 - name: set_preorder_lead_days
-  description: 最少提前0天、最多提前10天、預訂天數設定。Set the minimum and/or maximum number of days
-    in advance for preorders. Leave a field empty to keep its current value. Set confirm=false
-    (default) for a preview; set confirm=true to execute.
+  description: 最少提前0天、最多提前10天、預訂天數設定。Set the minimum and/or maximum number of days in advance for preorders. Leave a field empty to keep its current value. Set confirm=false (default) for a preview; set
+    confirm=true to execute.
   params:
   - merchId
   - leastDays
@@ -1267,19 +1770,16 @@ mcp_tools:
   required:
   - merchId
 - name: get_payment_methods
-  description: 目前支援哪些付款、支付方式設定。Returns all payment methods (Proton Pay, Offline Pay,
-    Gift Card) with their names, enabled/disabled status, and descriptions (fee rates,
-    settlement cycles). Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 目前支援哪些付款、支付方式設定。Returns all payment methods (Proton Pay, Offline Pay, Gift Card) with their names, enabled/disabled status, and descriptions (fee rates, settlement cycles). Set confirm=false
+    (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: set_sales_mode
-  description: '常規銷售模式、指定日期模式、切換銷售模式。Set the store sales mode: ''regular'' for RegularSalesModel
-    or ''fixed_date'' for FixedDateSalesModel. Set confirm=false (default) for a preview;
-    set confirm=true to execute.'
+  description: '常規銷售模式、指定日期模式、切換銷售模式。Set the store sales mode: ''regular'' for RegularSalesModel or ''fixed_date'' for FixedDateSalesModel. Set confirm=false (default) for a preview; set confirm=true to
+    execute.'
   params:
   - merchId
   - mode
@@ -1288,12 +1788,9 @@ mcp_tools:
   - merchId
   - mode
 - name: set_payment_method_enabled
-  description: '開啟Proton Pay、關閉自定義支付。Enable or disable a payment method for the merchant.
-    Supports: proton_pay (Proton Pay online payment), offline_pay (custom/offline
-    payment), gift_card (gift card payment). This operation does NOT involve sensitive
-    credentials — it only toggles the payment method switch. Set confirm=false (default)
-    for a change preview; set confirm=true to execute the change. Requires explicit
-    merchant confirmation.'
+  description: '開啟Proton Pay、關閉自定義支付。Enable or disable a payment method for the merchant. Supports: proton_pay (Proton Pay online payment), offline_pay (custom/offline payment), gift_card (gift card payment).
+    This operation does NOT involve sensitive credentials — it only toggles the payment method switch. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires
+    explicit merchant confirmation.'
   params:
   - merchId
   - paymentType
@@ -1304,11 +1801,8 @@ mcp_tools:
   - paymentType
   - enabled
 - name: set_tip_type
-  description: 小費改為固定值、小費百分比模式。Set the tip calculation type for a merchant. Use "fixed"
-    for fixed-amount tips (IsPercentage=false) or "percentage" for percentage-based
-    tips (IsPercentage=true). Only the SerializeOrderTipsSetting.IsPercentage field
-    is modified. Set confirm=false (default) for a change preview; set confirm=true
-    to execute the change. Requires explicit merchant confirmation.
+  description: 小費改為固定值、小費百分比模式。Set the tip calculation type for a merchant. Use "fixed" for fixed-amount tips (IsPercentage=false) or "percentage" for percentage-based tips (IsPercentage=true). Only the
+    SerializeOrderTipsSetting.IsPercentage field is modified. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - tipType
@@ -1317,8 +1811,7 @@ mcp_tools:
   - merchId
   - tipType
 - name: set_utensil_option_enabled
-  description: 開啟餐具選項、關閉餐具選項。Enable or disable the utensil option for customers. Set
-    confirm=false (default) for a preview; set confirm=true to execute.
+  description: 開啟餐具選項、關閉餐具選項。Enable or disable the utensil option for customers. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -1327,8 +1820,7 @@ mcp_tools:
   - merchId
   - enabled
 - name: spec_delete
-  description: 刪除這個規格組。Delete a spec/modifier group by ID. This operation is irreversible.
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 刪除這個規格組。Delete a spec/modifier group by ID. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - specId
@@ -1337,17 +1829,15 @@ mcp_tools:
   - merchId
   - specId
 - name: get_extra_fee
-  description: '获取商家的全部额外费用项。Returns all extra fees (ChargeItems) for a merchant:
-    name, target, fee type, value, taxable status, and description. Set confirm=false
-    (default) for a preview; set confirm=true to execute.'
+  description: '获取商家的全部额外费用项。Returns all extra fees (ChargeItems) for a merchant: name, target, fee type, value, taxable status, and description. Set confirm=false (default) for a preview; set confirm=true
+    to execute.'
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: remove_order_notification_email
-  description: 刪除訂單通知郵箱、移除收單郵箱。Remove an order notification email subscriber by ID.
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 刪除訂單通知郵箱、移除收單郵箱。Remove an order notification email subscriber by ID. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - subscriberId
@@ -1356,10 +1846,8 @@ mcp_tools:
   - merchId
   - subscriberId
 - name: menu_update
-  description: 改菜單名稱、調整上線時間。Update menu properties (name, online times, sort, active
-    status). Only provided fields are modified; category bindings are NOT changed.
-    Set confirm=false (default) for a preview; set confirm=true to execute. Requires
-    explicit merchant confirmation.
+  description: 改菜單名稱、調整上線時間。Update menu properties (name, online times, sort, active status). Only provided fields are modified; category bindings are NOT changed. Set confirm=false (default) for a preview;
+    set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - menuId
   - newName
@@ -1372,9 +1860,7 @@ mcp_tools:
   required:
   - menuId
 - name: tax_update
-  description: 改稅率名稱、調整稅率值。Update tax rate properties. Fetches existing detail and
-    merges provided fields. Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 改稅率名稱、調整稅率值。Update tax rate properties. Fetches existing detail and merges provided fields. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - taxId
@@ -1387,8 +1873,7 @@ mcp_tools:
   - merchId
   - taxId
 - name: list_discount_campaigns
-  description: '查看進行中的滿減活動、新人折扣活動列表。Query newbie discount campaigns. FilterType Published
-    = in-progress. Supports FilterType: All, Published, Unpublished, Deleted.'
+  description: '查看進行中的滿減活動、新人折扣活動列表。Query newbie discount campaigns. FilterType Published = in-progress. Supports FilterType: All, Published, Unpublished, Deleted.'
   params:
   - merchId
   - filterType
@@ -1397,9 +1882,7 @@ mcp_tools:
   required:
   - merchId
 - name: set_allow_customer_cancel_before_prep
-  description: 允許顧客在備餐前取消、關閉顧客免費取消。Allow or disallow customers to cancel orders for
-    free before meal preparation starts. Set confirm=false (default) for a preview;
-    set confirm=true to execute.
+  description: 允許顧客在備餐前取消、關閉顧客免費取消。Allow or disallow customers to cancel orders for free before meal preparation starts. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -1408,9 +1891,7 @@ mcp_tools:
   - merchId
   - enabled
 - name: set_auto_print_before_prep
-  description: 備餐前自動打印小票、關閉備餐打印。Enable or disable auto-printing of order tickets before
-    food preparation. Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 備餐前自動打印小票、關閉備餐打印。Enable or disable auto-printing of order tickets before food preparation. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -1419,9 +1900,8 @@ mcp_tools:
   - merchId
   - enabled
 - name: update_pickup_time_slot
-  description: 修改週一自提時間、更改備餐時間。Update a pickup time slot for a specific day and slot
-    index. Only provided fields are modified. Set confirm=false (default) for a change
-    preview; set confirm=true to execute. Requires explicit merchant confirmation.
+  description: 修改週一自提時間、更改備餐時間。Update a pickup time slot for a specific day and slot index. Only provided fields are modified. Set confirm=false (default) for a change preview; set confirm=true to execute.
+    Requires explicit merchant confirmation.
   params:
   - merchId
   - day
@@ -1436,11 +1916,8 @@ mcp_tools:
   - day
   - slotIndex
 - name: update_brand_story
-  description: '修改品牌故事、編輯品牌介紹。Update the store/shop brand story / About Us content
-    for a merchant. Supports multi-language: specify LanguageCode (e.g., "en-US",
-    "zh-CN") for a language variant, or omit it to update the default AboutUs field.
-    Only the AboutUs field (and related multi-language entries) is modified; all other
-    configuration remains unchanged. Set confirm=false (default) for a change preview;
+  description: '修改品牌故事、編輯品牌介紹。Update the store/shop brand story / About Us content for a merchant. Supports multi-language: specify LanguageCode (e.g., "en-US", "zh-CN") for a language variant, or omit
+    it to update the default AboutUs field. Only the AboutUs field (and related multi-language entries) is modified; all other configuration remains unchanged. Set confirm=false (default) for a change preview;
     set confirm=true to execute the change. Requires explicit merchant confirmation.'
   params:
   - merchId
@@ -1451,10 +1928,8 @@ mcp_tools:
   - merchId
   - content
 - name: batch_item_price
-  description: 批量改商品價格。支持全店漲價、按分類打折。Batch update item prices. Supports Regular, Percentage,
-    and FixedValue adjustment types. Provide MerchFoodIds, or MerchId + CategoryId
-    to target all items in a category. Set confirm=false (default) for a preview;
-    set confirm=true to execute.
+  description: 批量改商品價格。支持全店漲價、按分類打折。Batch update item prices. Supports Regular, Percentage, and FixedValue adjustment types. Provide MerchFoodIds, or MerchId + CategoryId to target all items in a category.
+    Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - price
   - priceAdjustmentType
@@ -1465,8 +1940,7 @@ mcp_tools:
   required:
   - price
 - name: add_order_notification_email
-  description: 添加訂單通知郵箱、新增收單郵箱。Add an email address to receive order notifications.
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 添加訂單通知郵箱、新增收單郵箱。Add an email address to receive order notifications. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - email
@@ -1475,9 +1949,8 @@ mcp_tools:
   - merchId
   - email
 - name: delete_extra_fee
-  description: 刪除服務費、移除包裝費。Delete an extra fee from a merchant by its FeeId. This
-    operation is irreversible. Set confirm=false (default) for a preview; set confirm=true
-    to execute. Requires explicit merchant confirmation.
+  description: 刪除服務費、移除包裝費。Delete an extra fee from a merchant by its FeeId. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant
+    confirmation.
   params:
   - merchId
   - feeId
@@ -1486,9 +1959,7 @@ mcp_tools:
   - merchId
   - feeId
 - name: spec_update
-  description: 改規格名稱、選項、選擇限制。Update spec group properties. Fetches current data via
-    list-with-items then saves merged result. Set confirm=false (default) for a preview;
-    set confirm=true to execute.
+  description: 改規格名稱、選項、選擇限制。Update spec group properties. Fetches current data via list-with-items then saves merged result. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - specId
@@ -1504,8 +1975,7 @@ mcp_tools:
   - merchId
   - specId
 - name: tax_bind_item
-  description: 這個商品要收稅、把稅率綁到商品上。Bind tax rates to food items via merchFoodIds + taxIds
-    batch-update. Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 這個商品要收稅、把稅率綁到商品上。Bind tax rates to food items via merchFoodIds + taxIds batch-update. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchFoodIds
   - taxIds
@@ -1514,9 +1984,7 @@ mcp_tools:
   - merchFoodIds
   - taxIds
 - name: item_bind_category
-  description: 把分類加到商品、這個商品屬於哪些分類。Bind categories to an item by setting the complete
-    list of category IDs. Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 把分類加到商品、這個商品屬於哪些分類。Bind categories to an item by setting the complete list of category IDs. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - itemId
   - categoryIds
@@ -1525,10 +1993,8 @@ mcp_tools:
   - itemId
   - categoryIds
 - name: create_reward_campaign
-  description: 新建優惠券/獎勵活動，支持積分換商品（ProductExchangeFoods：foodId + points）。Create a coupon/reward
-    campaign via POST api/MerchCouponPromotion/create. For points-to-product exchange,
-    provide ProductExchangeFoods with foodId and points. Set confirm=false (default)
-    for preview; confirm=true to execute.
+  description: 新建優惠券/獎勵活動，支持積分換商品（ProductExchangeFoods：foodId + points）。Create a coupon/reward campaign via POST api/MerchCouponPromotion/create. For points-to-product exchange, provide ProductExchangeFoods
+    with foodId and points. Set confirm=false (default) for preview; confirm=true to execute.
   params:
   - id
   - name
@@ -1547,11 +2013,8 @@ mcp_tools:
   - startDate
   - endDate
 - name: set_pickup_enabled
-  description: '開啟自提、關閉外帶、提供自提服務。Enable or disable the pickup service for a merchant.
-    Modifies the DeliveryType: enabling pickup adds Pickup capability, disabling removes
-    it. Delivery capability is preserved when toggling pickup. Set confirm=false (default)
-    for a change preview; set confirm=true to execute the change. Requires explicit
-    merchant confirmation.'
+  description: '開啟自提、關閉外帶、提供自提服務。Enable or disable the pickup service for a merchant. Modifies the DeliveryType: enabling pickup adds Pickup capability, disabling removes it. Delivery capability is preserved
+    when toggling pickup. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.'
   params:
   - merchId
   - enabled
@@ -1560,9 +2023,8 @@ mcp_tools:
   - merchId
   - enabled
 - name: menu_list
-  description: '查看所有菜單、店裡有哪些菜單。Query paginated menu list for a merchant. Returns menu
-    name, online time summary, category count, and item count. Note: IsActive (published
-    status) is not in the list response — use menu_detail for that.'
+  description: '查看所有菜單、店裡有哪些菜單。Query paginated menu list for a merchant. Returns menu name, online time summary, category count, and item count. Note: IsActive (published status) is not in the list response
+    — use menu_detail for that.'
   params:
   - merchId
   - keyword
@@ -1571,10 +2033,8 @@ mcp_tools:
   required:
   - merchId
 - name: menu_bind_categories
-  description: 把分類加到菜單、這個菜單要顯示哪些分類。Bind categories to a menu by setting the complete
-    list of category IDs. Include both existing and newly added category IDs. Set
-    confirm=false (default) for a preview; set confirm=true to execute. Requires explicit
-    merchant confirmation.
+  description: 把分類加到菜單、這個菜單要顯示哪些分類。Bind categories to a menu by setting the complete list of category IDs. Include both existing and newly added category IDs. Set confirm=false (default) for a preview;
+    set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - menuId
   - categoryIds
@@ -1583,9 +2043,8 @@ mcp_tools:
   - menuId
   - categoryIds
 - name: add_report_subscription
-  description: 添加報表郵件訂閱、讓某人收到銷售或結算報表。Add a business report email subscription. Provide
-    Email, SendDay (1-28), IsSalesReport, and IsPayoutReport. Set confirm=false (default)
-    for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
+  description: 添加報表郵件訂閱、讓某人收到銷售或結算報表。Add a business report email subscription. Provide Email, SendDay (1-28), IsSalesReport, and IsPayoutReport. Set confirm=false (default) for a preview; set confirm=true
+    to execute. Requires explicit merchant confirmation.
   params:
   - email
   - sendDay
@@ -1595,12 +2054,9 @@ mcp_tools:
   required:
   - email
 - name: set_tip_options
-  description: 設小費選項1,2,3美元、修改小費額度。Set the tip amount options and default tip for
-    a merchant. TipValues is a list of tip amounts (e.g., [1.00, 2.00, 3.00] for fixed,
-    or [10, 15, 20] for percentages). DefaultTip is optional; if omitted, the first
-    value in TipValues is used as default. Only the SerializeOrderTipsSetting.Values
-    and DefaultValue fields are modified. Set confirm=false (default) for a change
-    preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
+  description: 設小費選項1,2,3美元、修改小費額度。Set the tip amount options and default tip for a merchant. TipValues is a list of tip amounts (e.g., [1.00, 2.00, 3.00] for fixed, or [10, 15, 20] for percentages). DefaultTip
+    is optional; if omitted, the first value in TipValues is used as default. Only the SerializeOrderTipsSetting.Values and DefaultValue fields are modified. Set confirm=false (default) for a change preview;
+    set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - tipValues
@@ -1610,9 +2066,7 @@ mcp_tools:
   - merchId
   - tipValues
 - name: batch_item_stock
-  description: 批量改商品庫存。支持全部補貨、按分類售罄。Batch update item stock quantities. Provide MerchFoodIds
-    or MerchId + CategoryId. Set confirm=false (default) for a preview; set confirm=true
-    to execute.
+  description: 批量改商品庫存。支持全部補貨、按分類售罄。Batch update item stock quantities. Provide MerchFoodIds or MerchId + CategoryId. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - stock
   - merchId
@@ -1622,10 +2076,8 @@ mcp_tools:
   required:
   - stock
 - name: update_store_email
-  description: 修改郵箱、聯絡信箱改為。Update the store/shop contact email for a merchant. Only
-    the Mail field is modified; all other store configuration remains unchanged. Set
-    confirm=false (default) for a change preview; set confirm=true to execute the
-    change. Requires explicit merchant confirmation.
+  description: 修改郵箱、聯絡信箱改為。Update the store/shop contact email for a merchant. Only the Mail field is modified; all other store configuration remains unchanged. Set confirm=false (default) for a change
+    preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - newEmail
@@ -1634,9 +2086,7 @@ mcp_tools:
   - merchId
   - newEmail
 - name: update_user_role
-  description: 修改XXX的角色、將設定為管理員。Update a store user's role assignment. Use list_merchant_roles
-    to find available role IDs first. Set confirm=false (default) for a preview; set
-    confirm=true to execute.
+  description: 修改XXX的角色、將設定為管理員。Update a store user's role assignment. Use list_merchant_roles to find available role IDs first. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - merchManagerId
@@ -1647,9 +2097,8 @@ mcp_tools:
   - merchManagerId
   - roleId
 - name: delete_pickup_time_slot
-  description: 刪除自提時段、移除取餐時間。Delete a pickup time slot for a specific day and slot
-    index. This operation is irreversible. Set confirm=false (default) for a preview;
-    set confirm=true to execute. Requires explicit merchant confirmation.
+  description: 刪除自提時段、移除取餐時間。Delete a pickup time slot for a specific day and slot index. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires
+    explicit merchant confirmation.
   params:
   - merchId
   - day
@@ -1660,8 +2109,7 @@ mcp_tools:
   - day
   - slotIndex
 - name: delete_store_user
-  description: 刪除員工、移除後台帳號。Delete a store user/staff account. This is irreversible.
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 刪除員工、移除後台帳號。Delete a store user/staff account. This is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - merchManagerId
@@ -1670,17 +2118,14 @@ mcp_tools:
   - merchId
   - merchManagerId
 - name: list_order_notification_emails
-  description: 查看訂單通知郵箱、收單郵箱列表。List all subscribed order notification emails with
-    their IDs. Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 查看訂單通知郵箱、收單郵箱列表。List all subscribed order notification emails with their IDs. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: batch_item_status
-  description: 批量上架或下架商品。支持全部上架/下架。Batch change item on-sale/off-sale status. Provide
-    MerchFoodIds or MerchId + CategoryId. Set confirm=false (default) for a preview;
-    set confirm=true to execute.
+  description: 批量上架或下架商品。支持全部上架/下架。Batch change item on-sale/off-sale status. Provide MerchFoodIds or MerchId + CategoryId. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - status
   - merchId
@@ -1690,11 +2135,8 @@ mcp_tools:
   required:
   - status
 - name: update_cover_image
-  description: 上傳封面圖、更換封面。Update the store/shop cover/banner image for a merchant.
-    Supports Base64-encoded image strings or image URLs. Only the Banner field is
-    modified; all other store configuration remains unchanged. Set confirm=false (default)
-    for a change preview; set confirm=true to execute the change. Requires explicit
-    merchant confirmation.
+  description: 上傳封面圖、更換封面。Update the store/shop cover/banner image for a merchant. Supports Base64-encoded image strings or image URLs. Only the Banner field is modified; all other store configuration remains
+    unchanged. Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - newCoverImage
@@ -1703,9 +2145,8 @@ mcp_tools:
   - merchId
   - newCoverImage
 - name: category_update
-  description: 改分類名稱、調整排序。Update category properties (name, description, sort, menu
-    bindings, banner). Only provided fields are modified. Set confirm=false (default)
-    for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
+  description: 改分類名稱、調整排序。Update category properties (name, description, sort, menu bindings, banner). Only provided fields are modified. Set confirm=false (default) for a preview; set confirm=true to execute.
+    Requires explicit merchant confirmation.
   params:
   - categoryId
   - newName
@@ -1719,9 +2160,7 @@ mcp_tools:
   required:
   - categoryId
 - name: update_user_info
-  description: 修改員工郵箱、更新電話號碼。Update a store user's email and/or phone number. Leave
-    fields empty to keep them unchanged. Set confirm=false (default) for a preview;
-    set confirm=true to execute.
+  description: 修改員工郵箱、更新電話號碼。Update a store user's email and/or phone number. Leave fields empty to keep them unchanged. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - merchId
   - merchManagerId
@@ -1732,9 +2171,8 @@ mcp_tools:
   - merchId
   - merchManagerId
 - name: set_push_to_pos
-  description: 馬上推送訂單到POS、關閉POS推送。Enable or disable immediate push of orders to the
-    POS system. Requires the store to be bound to a POS system first (IsPushToPosBound).
-    Set confirm=false (default) for a preview; set confirm=true to execute.
+  description: 馬上推送訂單到POS、關閉POS推送。Enable or disable immediate push of orders to the POS system. Requires the store to be bound to a POS system first (IsPushToPosBound). Set confirm=false (default) for a
+    preview; set confirm=true to execute.
   params:
   - merchId
   - enabled
@@ -1743,18 +2181,15 @@ mcp_tools:
   - merchId
   - enabled
 - name: category_delete
-  description: 刪除這個分類。Delete a category by ID. This operation is irreversible. Set
-    confirm=false (default) for a preview; set confirm=true to execute. Requires explicit
-    merchant confirmation.
+  description: 刪除這個分類。Delete a category by ID. This operation is irreversible. Set confirm=false (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - categoryId
   - confirm
   required:
   - categoryId
 - name: list_all_campaigns
-  description: 查看全部類型活動（滿減、新人折扣、優惠券、限時搶購）。Aggregate campaigns from MerchPromotion,
-    NewbieDiscount, CouponPromotion, and FlashSale APIs. Returns a unified list with
-    CampaignType field. Optional Type and Status filters.
+  description: 查看全部類型活動（滿減、新人折扣、優惠券、限時搶購）。Aggregate campaigns from MerchPromotion, NewbieDiscount, CouponPromotion, and FlashSale APIs. Returns a unified list with CampaignType field. Optional Type and
+    Status filters.
   params:
   - merchId
   - type
@@ -1762,11 +2197,8 @@ mcp_tools:
   required:
   - merchId
 - name: update_delivery_area
-  description: '修改區域名稱、調整起送價、配送費等。Update an existing delivery area (DeliveryPolygon)
-    by its AreaId. Only provided fields are modified; all other configuration remains
-    unchanged. Supports updating: name, area type (circle/polygon), lat/lng, radius,
-    delivery fee, minimum amounts, taxable flag, enabled state, and ASAP setting.
-    Set confirm=false (default) for a change preview; set confirm=true to execute.
+  description: '修改區域名稱、調整起送價、配送費等。Update an existing delivery area (DeliveryPolygon) by its AreaId. Only provided fields are modified; all other configuration remains unchanged. Supports updating: name,
+    area type (circle/polygon), lat/lng, radius, delivery fee, minimum amounts, taxable flag, enabled state, and ASAP setting. Set confirm=false (default) for a change preview; set confirm=true to execute.
     Requires explicit merchant confirmation.'
   params:
   - merchId
@@ -1787,20 +2219,16 @@ mcp_tools:
   - merchId
   - areaId
 - name: get_bank_account_info
-  description: '查看我的收款帳戶、銀行帳號末四碼。Returns desensitized bank account information: bank
-    name, masked routing number, last 4 digits of account number, account name, and
-    description. Full sensitive data (complete account/routing numbers) is never returned.
-    Set confirm=false (default) for a preview; set confirm=true to execute.'
+  description: '查看我的收款帳戶、銀行帳號末四碼。Returns desensitized bank account information: bank name, masked routing number, last 4 digits of account number, account name, and description. Full sensitive data (complete
+    account/routing numbers) is never returned. Set confirm=false (default) for a preview; set confirm=true to execute.'
   params:
   - merchId
   - confirm
   required:
   - merchId
 - name: add_pickup_time_slot
-  description: 添加自提時間、新增取餐時段。Add a pickup time slot for specified days of the week.
-    Set OpenTime/CloseTime in "HH:mm" format, PreparationMinutes, and optional ScheduledPickupTimeRange.
-    Set confirm=false (default) for a preview; set confirm=true to execute. Requires
-    explicit merchant confirmation.
+  description: 添加自提時間、新增取餐時段。Add a pickup time slot for specified days of the week. Set OpenTime/CloseTime in "HH:mm" format, PreparationMinutes, and optional ScheduledPickupTimeRange. Set confirm=false
+    (default) for a preview; set confirm=true to execute. Requires explicit merchant confirmation.
   params:
   - merchId
   - days
@@ -1816,11 +2244,8 @@ mcp_tools:
   - closeTime
   - preparationMinutes
 - name: set_stripe_invoice_note
-  description: 修改Stripe帳單備註、設定備註內容。Set or update the custom Stripe invoice/transaction
-    descriptor for a merchant. This field is non-sensitive and can be freely modified.
-    Provide TransactionDescriptor (the note text) and IsEnabled (whether to enable
-    it). Set confirm=false (default) for a change preview; set confirm=true to execute
-    the change. Requires explicit merchant confirmation.
+  description: 修改Stripe帳單備註、設定備註內容。Set or update the custom Stripe invoice/transaction descriptor for a merchant. This field is non-sensitive and can be freely modified. Provide TransactionDescriptor (the
+    note text) and IsEnabled (whether to enable it). Set confirm=false (default) for a change preview; set confirm=true to execute the change. Requires explicit merchant confirmation.
   params:
   - merchId
   - transactionDescriptor
@@ -1829,9 +2254,7 @@ mcp_tools:
   required:
   - merchId
 - name: item_update
-  description: 改商品名稱、價格、庫存、描述。Update item properties (name, price, stock, status,
-    description). Category bindings are NOT changed. Set confirm=false (default) for
-    a preview; set confirm=true to execute.
+  description: 改商品名稱、價格、庫存、描述。Update item properties (name, price, stock, status, description). Category bindings are NOT changed. Set confirm=false (default) for a preview; set confirm=true to execute.
   params:
   - itemId
   - newName
@@ -1843,3 +2266,9 @@ mcp_tools:
   - confirm
   required:
   - itemId
+- name: spec_list
+  description: spec_list（自动补充）
+  params:
+  - merchId
+  required:
+  - merchId

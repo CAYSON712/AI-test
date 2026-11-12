@@ -35,6 +35,17 @@ def _allow_destructive():
     return str(os.environ.get("ALLOW_DESTRUCTIVE", "")).strip().lower() in ("1", "true", "yes")
 
 
+def _allow_reconcile():
+    """是否允许执行「写入对账」用例。由环境变量 ALLOW_RECONCILE=1 显式开启。
+
+    为什么单独设开关（而不是复用 ALLOW_DESTRUCTIVE）：
+      对账用例本身是真实写操作 + 需要额外调读接口，一旦被测系统状态异常
+      （如某个 set_* 不生效、读接口返回脏数据），可能连环改坏配置且难还原。
+      默认跳过，只有在确认「数据生命周期」覆盖完整后才显式开启。
+    """
+    return str(os.environ.get("ALLOW_RECONCILE", "")).strip().lower() in ("1", "true", "yes")
+
+
 def _dryrun_mode():
     """是否开启「干跑」：把所有写操作的确认位强制为 false（服务端只预览不执行）。
 
@@ -127,6 +138,21 @@ class DirectMcpExecutor(GenericMcpExecutor):
                     "biz_error": None, "impact": None, "verify": None,
                     "skipped": True, "skip_reason": "no_recovery_rule"}
 
+        # 「写入对账」用例保护：默认不执行（见 _allow_reconcile 注释）。
+        # 必须在真正调用工具之前拦截，否则跳过了还是要改数据。
+        _rc_meta = (case or {}).get("对账") or (case or {}).get("reconcile")
+        if isinstance(_rc_meta, dict) and _rc_meta.get("read_tool") \
+                and not _allow_reconcile() and not _allow_destructive():
+            return {
+                "steps": [], "tool": tool_name,
+                "output": ("写入对账用例已跳过（默认不执行写后回读，"
+                           "需设置 ALLOW_RECONCILE=1 在隔离环境开启）"),
+                "tool_correct": None, "level": "INFO", "block": None,
+                "biz_error": None, "impact": None, "reconcile": None,
+                "verify": None,
+                "skipped": True, "skip_reason": "reconcile_disabled",
+            }
+
         # 影响范围对账配置（「写入安全边界」维度）：执行前后各取一次快照总数
         audit = None
         for _src in (inp if isinstance(inp, dict) else {},
@@ -141,6 +167,8 @@ class DirectMcpExecutor(GenericMcpExecutor):
 
         mcp_input = json.dumps({self.sys.param_wrapper: tool_params}, ensure_ascii=False)
         before = after = exists_before = exists_after = None
+        # 对账结果：异常分支可能没赋值，先置 None 保证返回值结构稳定
+        reconcile = None
         # 用例级运行时上下文（按实体覆盖 CompanyId 等请求头）：
         # 先看用例显式声明，再退回「按本次参数里的店铺 ID 查实体清单」。
         # 两者都没有时 → 全局默认头（既有行为不变）。
@@ -151,7 +179,15 @@ class DirectMcpExecutor(GenericMcpExecutor):
             async with stack:
                 before = await self._snapshot_count(session, audit)
                 exists_before = await self._presence(session, audit)
+                # 写入对账的 before 快照必须在写操作【之前】取（2026-11-10 踩坑修正）。
+                # 曾经把整个 _reconcile 放在写操作之后调用，它内部的 before 快照
+                # 拿到的是「写后」状态 → before == after → 真生效也被判成假成功。
+                # 正确顺序：取 before 快照 → 写 → 取 after 快照 → 比对。
+                rc_before = await self._reconcile_snapshot(session, case, tool_params)
                 is_error, text, latency = await self._call_tool(session, tool_name, tool_params)
+                reconcile = await self._reconcile(
+                    session, case, tool_params, text, rc_before
+                )
                 after = await self._snapshot_count(session, audit)
                 exists_after = await self._presence(session, audit)
         except Exception as e:
@@ -294,8 +330,122 @@ class DirectMcpExecutor(GenericMcpExecutor):
             "block": True if level == "WARNING" else None,
             "biz_error": biz_error,
             "impact": impact,
+            "reconcile": reconcile,
             "verify": None,
         }
+
+    # ------------------------------------------------------------------
+    # 写入对账
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _rc_meta_of(case):
+        """取出用例的「对账」段（兼容中英文键）。"""
+        if not isinstance(case, dict):
+            return None
+        meta = case.get("对账") or case.get("reconcile")
+        if isinstance(meta, dict) and meta.get("read_tool"):
+            return meta
+        return None
+
+    @staticmethod
+    def _rc_read_params(meta, tool_params):
+        """构造读工具入参：沿用写工具入参里的店铺上下文，避免跨店铺读。"""
+        params = {}
+        if isinstance(tool_params, dict):
+            for k in ("merchId", "companyId"):
+                if k in tool_params:
+                    params[k] = tool_params[k]
+        params.setdefault("confirm", True)
+        return params
+
+    async def _reconcile_snapshot(self, session, case, tool_params):
+        """在写操作【之前】取对账快照。无需对账或未开启时返回 None。"""
+        meta = self._rc_meta_of(case)
+        if not meta or not _allow_reconcile():
+            return None
+        try:
+            read_tool = meta["read_tool"]
+            params = self._rc_read_params(meta, tool_params)
+            _, text, _ = await self._call_tool(session, read_tool, params)
+            return self._safe_json(text)
+        except Exception:
+            # before 取不到不阻断主流程：后续 judge 会因为没有 before 而判「证据不足」
+            return None
+
+    async def _reconcile(self, session, case, tool_params, write_text, before_snapshot=None):
+        """写后回读对账（通用实现，零业务硬编码）。
+
+        原理：用例的「对账」段（由 configs/<系统>.yaml 的「写入对账」生成）
+        声明了 read_tool / compare / id_field 等，这里照它执行：
+          ① before 快照（若 audit 已取到则复用）
+          ② 写操作（已在调用方完成，结果在 write_text）
+          ③ after 快照
+          ④ 交给 reconcile.judge_reconcile 打分
+
+        返回 None 表示本用例不需要对账；返回 dict 供评分器消费。
+        任何异常都降级为 skipped，绝不让对账把主流程带崩。
+        """
+        try:
+            meta = self._rc_meta_of(case)
+            if not meta:
+                return None
+
+            # 默认跳过对账：需 ALLOW_RECONCILE=1 显式开启（见 _allow_reconcile 注释）
+            if not _allow_reconcile():
+                return {"skipped": True,
+                        "reason": "对账用例默认跳过；设 ALLOW_RECONCILE=1 后执行"}
+
+            from reconcile import judge_reconcile
+
+            read_tool = meta["read_tool"]
+            read_params = self._rc_read_params(meta, tool_params)
+
+            # ① before 快照：优先用调用方在「写操作之前」取好的
+            before_payload = before_snapshot
+            if before_payload is None:
+                # 兜底：此刻写操作已完成，这里取到的其实是「写后」状态。
+                # 若走到这个分支，比对结果不可信 —— 明确标记出来，不静默产生假阳性。
+                _, b_text, _ = await self._call_tool(session, read_tool, read_params)
+                before_payload = self._safe_json(b_text)
+                return {
+                    "skipped": True,
+                    "reason": ("before 快照缺失（应在写操作之前取），"
+                               "当前对账结论不可信，已跳过"),
+                }
+
+            # ③ after 快照
+            _, a_text, _ = await self._call_tool(session, read_tool, read_params)
+            after_payload = self._safe_json(a_text)
+
+            write_result = self._safe_json(write_text) or {}
+
+            score, reason, detail = judge_reconcile(
+                write_result, meta, before_payload, after_payload
+            )
+            diffs = detail.get("field_diffs") or []
+            changed = bool(diffs) or (
+                detail.get("exists_before") is False
+                and detail.get("exists_after") is True
+            )
+            return {
+                "score": score,
+                "reason": reason,
+                "changed": changed,
+                "read_tool": read_tool,
+                "detail": detail,
+                "before": before_payload,
+                "after": after_payload,
+            }
+        except Exception as e:
+            return {"skipped": True, "reason": f"对账执行异常：{e}"}
+
+    @staticmethod
+    def _safe_json(text):
+        """把返回文本解析成 dict/list；失败返回 None。"""
+        try:
+            return json.loads(text)
+        except Exception:
+            return None
 
     @staticmethod
     def _count_items(text):

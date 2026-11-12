@@ -77,6 +77,28 @@ def _tool_field(t, *keys):
     return None
 
 
+def _tool_to_dict(t):
+    """把 MCP SDK 的 Tool 对象（或已有 dict）转成可 json 序列化的纯 dict。
+
+    背景：list_tools() 返回的是 pydantic BaseModel，json.dump 会抛
+    `TypeError: Object of type Tool is not JSON serializable`，
+    曾导致 <系统>.raw.json 长期写不出来（生成器取不到 description 里的
+    候选枚举值，只能靠盲猜默认值）。这里统一拍平，并兼容新旧字段名。
+    """
+    if isinstance(t, dict):
+        return t
+    schema = _tool_field(t, "inputSchema", "input_schema") or {}
+    # schema 本身也可能是 pydantic 模型，统一走 model_dump
+    if not isinstance(schema, dict):
+        dump = getattr(schema, "model_dump", None) or getattr(schema, "dict", None)
+        schema = dump(exclude_none=True) if dump else {}
+    return {
+        "name": _tool_field(t, "name") or "",
+        "description": _tool_field(t, "description") or "",
+        "inputSchema": schema,
+    }
+
+
 # 已知的参数外壳名（properties 里只有一个壳，壳内才是真参数）
 #   toolParams —— POS / AutoMart / RetailPOS 系列
 #   parameters —— PocketStore 系列
@@ -818,10 +840,15 @@ def run(args):
     #     生成器从描述里提取「候选枚举值」（很多 MCP 把合法值写在描述而非 enum），
     #     用于给必填参数生成真实可用的默认值。平铺版丢失了 description，故必须单独存。
     raw_path = os.path.join(SCHEMA_DIR, f"{args.name}.raw.json")
+    # ⚠ raw_tools 是 MCP SDK 的 Tool 对象（pydantic BaseModel），不是 dict，
+    #   直接 json.dump 会抛 TypeError: Object of type Tool is not JSON serializable，
+    #   导致 raw.json 永远写不出来、生成器取不到 description 里的候选枚举值。
+    #   落盘前统一转成纯 dict（兼容新旧版字段名 inputSchema / input_schema）。
+    raw_for_json = [_tool_to_dict(t) for t in (raw_tools or [])]
     with open(raw_path, "w", encoding="utf-8") as f:
         json.dump({"name": args.name, "wrapper": wrapper,
-                   "tool_count": len(raw_tools),
-                   "tools": raw_tools}, f, ensure_ascii=False, indent=1)
+                   "tool_count": len(raw_for_json),
+                   "tools": raw_for_json}, f, ensure_ascii=False, indent=1)
     print(f"[OK] 原始 schema 落盘 -> {os.path.relpath(raw_path, _ROOT)}")
 
     # 2.5 业务域概览（人眼速览，免去每次写分类脚本）

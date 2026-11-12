@@ -30,6 +30,7 @@ confirm 二段式: 默认 confirm=false（预览，不写数据）；加 --go �
 """
 import argparse
 import asyncio
+import base64
 import json
 import os
 import random
@@ -395,8 +396,10 @@ async def main():
 
     p_c = sub.add_parser("call", help="调用工具")
     p_c.add_argument("tool")
-    p_c.add_argument("--json", default="{}", help="内层参数 JSON（不含外壳）")
-    p_c.add_argument("--json-file", help="从文件读取内层参数 JSON")
+    p_c.add_argument("--json", default="{}", help="内层参数 JSON（不含外壳）；含中文请改用 --json64")
+    p_c.add_argument("--json-file", help="从文件读取内层参数 JSON（UTF-8，自动剥 BOM）")
+    p_c.add_argument("--json64",
+                     help="内层参数 JSON 的 base64(UTF-8) 编码。传中文/emoji 时用它，无需临时文件")
     p_c.add_argument("--store", help="店铺别名或 uuid（覆盖 merchId）")
     p_c.add_argument("--go", action="store_true", help="confirm=true 真正执行（默认预览）")
     p_c.add_argument("--raw", action="store_true", help="原样打印返回 JSON")
@@ -433,14 +436,25 @@ async def main():
         return 0
 
     if a.cmd == "call":
-        if a.json_file:
+        if a.json64:
+            # base64 传入：纯 ASCII 安全通过 PowerShell 转码，脚本内解码 UTF-8
+            # 适合含中文/emoji 的参数，且不需要事先落盘临时文件
+            try:
+                raw = base64.b64decode(a.json64).decode("utf-8")
+            except Exception as e:
+                print(f"--json64 解码失败: {e}")
+                return 1
+        elif a.json_file:
             # utf-8-sig 会自动剥除 BOM（Windows PowerShell 的 Set-Content -Encoding UTF8
             # 默认写 BOM，会让 json.loads 直接崩）
             raw = open(a.json_file, encoding="utf-8-sig").read()
         else:
             raw = a.json
         try:
-            params = parse_json_lenient(raw, from_file=bool(a.json_file))
+            # json64 来源可信（已 base64 保护），不再拦截非 ASCII
+            params = parse_json_lenient(
+                raw, from_file=bool(a.json_file) or bool(a.json64)
+            )
         except Exception as e:
             print(f"--json 解析失败: {e}")
             return 1

@@ -18,6 +18,42 @@ from collections import defaultdict
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
+
+def _resolve_dataset_arg(value):
+    """把 --dataset 解析成真实文件路径。
+
+    背景：Windows 下命令行传中文路径时，字节在 Python 启动「之前」就已损坏
+    （实测收到 'A_POS Local璺\\ue21c敱.yaml'，原始 UTF-8 字节 e8b7af 变成 e792ba），
+    argv 层面无法还原。绕过办法是不在命令行写中文：
+      - 传纯 ASCII 子串  → 在 datasets/ 下按文件名子串匹配（唯一命中才采用）
+      - 传相对/绝对路径  → 原样使用（存在即通过）
+    """
+    if os.path.exists(value):
+        return value
+    # 路径不存在：尝试当作「文件名子串」在 datasets/ 下查找（仅 ASCII 键可靠）
+    try:
+        value.encode("ascii")
+    except UnicodeEncodeError:
+        # 非 ASCII 且不存在 → 大概率是命令行编码损坏，给出可操作提示
+        raise SystemExit(
+            "数据集路径不存在且含非 ASCII 字符（疑似 Windows 命令行中文编码损坏）:\n"
+            f"  {value!r}\n"
+            "请改用不含中文的筛选键，例如 --dataset Local（在 datasets/ 下按子串匹配）")
+    ds_dir = os.path.join(_ROOT, "datasets")
+    hits = []
+    if os.path.isdir(ds_dir):
+        for fn in os.listdir(ds_dir):
+            if fn.lower().endswith((".yaml", ".yml")) and value.lower() in fn.lower():
+                hits.append(os.path.join(ds_dir, fn))
+    if len(hits) == 1:
+        print(f"数据集定位: {value!r} → {os.path.basename(hits[0])}")
+        return hits[0]
+    if not hits:
+        raise SystemExit(f"dataset 既不是有效路径，也无法在 datasets/ 下匹配到: {value!r}")
+    raise SystemExit(
+        f"dataset 子串 {value!r} 命中多个数据集，请指定更具体的关键词:\n  "
+        + "\n  ".join(os.path.basename(h) for h in hits))
+
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, os.path.join(_ROOT, "executors"))
@@ -91,13 +127,17 @@ def _build_out_path(out_dir, req_type):
 
 def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=None,
                 report_trace=False, use_llm_judge=False, llm_detail=False,
-                auto_report=False, only_dims=None):
+                auto_report=False, only_dims=None, exclude_cases=None):
     """执行数据集 + Rubric 评分
 
     only_dims: 可选，只跑指定维度（list[str]，支持子串匹配）。
       用途：多次采样（runs>1）成本随数据量线性增长，全量跑易触发限流且耗时长；
       先用小样本维度验证口径/观察波动，再决定是否全量，可显著降低试错成本。
-      例：only_dims=["性能"] → 只跑「性能」/「性能与资源」等含该子串的维度。
+
+    exclude_cases: 可选，排除指定用例（list[str]，支持用例ID精确匹配或子串）。
+      用途：带「人工前置条件」的场景（如断网/停服）在环境未就绪时照常执行会
+      「返回正常数据」而被误判通过，污染通过率；应显式排除，待环境就绪单独跑。
+      例：exclude_cases=["A-L2-060", "A-L2-061"] 或 exclude_cases=["-06"]。
     """
     # 加载维度表 + Rubric
     tables = load_dimension_tables()
@@ -114,7 +154,9 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
         data = yaml.safe_load(f)
     if isinstance(data, dict) and "用例列表" in data:
         cases = data["用例列表"]
-        system = system or data.get("系统", "")
+        # 数据集里的「系统」优先：--system 经 Windows 命令行传中文会损坏，
+        # 与其信任可能乱码的入参，不如用数据集内的权威值（两者本就应一致）。
+        system = data.get("系统") or system
         # 数据集的「需求类型」是权威值：显式传的不符时以数据集为准（否则会用错
         # 维度表评分、执行器加载错类型、结果/报告命名撞车）
         ds_type = _load_dataset_type(dataset_path, req_type)
@@ -139,6 +181,26 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
 
     # 执行器（按需求类型 + 系统名加载配置驱动的执行器）
     registry = get_registry(executor_mode, system=system, req_type=req_type)
+
+    # 用例排除（可选）：环境不满足「人工前置条件」的用例必须显式排除，
+    # 否则其"顺利返回数据"会被规则判为通过，虚高通过率。
+    # 排除的用例不计入分母，但在结果里留痕，避免报告"用例变少"却无解释。
+    excluded_uids = []
+    if exclude_cases:
+        keys = [str(x).strip() for x in exclude_cases if str(x).strip()]
+        before = len(cases)
+        _kept = []
+        for c in cases:
+            uid = str(c.get("用例ID") or "")
+            if any(k == uid or k in uid for k in keys):
+                excluded_uids.append(uid)
+            else:
+                _kept.append(c)
+        cases = _kept
+        print("用例排除 {}: {} → {} 条（排除 {}）".format(
+            keys, before, len(cases), ", ".join(excluded_uids) or "无命中"))
+        if before and not cases:
+            raise ValueError("排除后无用例，请检查 --exclude-cases: {}".format(keys))
 
     # 批次信息（一次 run_test = 一个批次）：用于 trace_platform 按批次分组浏览
     import time
@@ -424,6 +486,7 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
         "dim_case_counts": dict(dim_case_counts),
         "case_traces": list(case_traces.values()),   # 按用例挂 trace_id（含 trace_ids 列表）
         "case_results": case_results,                # 失分用例明细（错误类型分布 + 失分归因）
+        "excluded_cases": excluded_uids,             # 按 --exclude-cases 主动排除的用例（不计入分母）
     }
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
@@ -471,7 +534,16 @@ def main():
     parser.add_argument("--dims", default=None,
                         help="只跑指定维度，逗号分隔的子串（如 --dims 性能,调用正确性）。"
                              "多次采样(runs>1)成本高，可先小样本验证再用此参数。")
+    parser.add_argument("--exclude-cases", dest="exclude_cases", default=None,
+                        help="排除用例（逗号分隔，支持用例ID或用例ID子串）。"
+                             "用于环境不满足「人工前置条件」的用例（如断网/停服），"
+                             "避免其正常返回被误判通过。")
     args = parser.parse_args()
+    # 允许 --dataset 传「不含中文的筛选键」（见 _resolve_dataset_arg）：
+    # Windows 命令行传中文路径会在 Python 启动前损坏字节，argv 无法修复。
+    args.dataset = _resolve_dataset_arg(args.dataset)
+    if args.system:
+        pass  # 系统名含中文同样受命令行编码影响，由 --system 的默认推导兜底
 
     # 默认输出名带时间戳：result_<类型>_<YYYYMMDD>.yaml
     # ⚠ 类型以「数据集里的需求类型」为准 —— 与 run_dataset 内部校正保持一致，
@@ -479,10 +551,12 @@ def main():
     _eff_type = _load_dataset_type(args.dataset, args.req_type)
     out = args.out or _build_out_path(os.path.join(_ROOT, "results"), _eff_type)
     only_dims = [s.strip() for s in args.dims.split(",") if s.strip()] if args.dims else None
+    exclude = ([s.strip() for s in args.exclude_cases.split(",") if s.strip()]
+               if args.exclude_cases else None)
     run_dataset(args.req_type, args.dataset, args.executor, args.runs, out,
                 args.system, report_trace=args.trace, use_llm_judge=args.llm_judge,
                 llm_detail=args.llm_detail, auto_report=args.report,
-                only_dims=only_dims)
+                only_dims=only_dims, exclude_cases=exclude)
 
 
 if __name__ == "__main__":

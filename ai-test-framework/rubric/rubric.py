@@ -418,6 +418,51 @@ class RubricJudger:
         return "ai_system"
 
     @staticmethod
+    def _env_error_kind(output):
+        """识别「环境/基础设施故障」类错误，返回问题类型；非环境问题返回 None。
+
+        为什么需要单独识别（2026-11-10 实测教训）：
+          被测环境的账号-店铺绑定被临时切走时，`query_merchants` 返回
+          「当前用户有0间店铺」，所有报表工具稳定报 40100 未授权。此时：
+            · block=true 的用例（期望拒绝）拿到 40100 → 被旧逻辑判「5 分正确拦截」
+            · 结果类用例同样被拒 → 但报告写成"通过"
+          于是 1332 次调用中仅 88 次真正成功，报告却显示 62.3% 通过率、0 失败。
+          环境故障会让「拒绝」变得毫无信息量——它不证明系统能区分合法/非法请求。
+
+        判据：错误码 + 文案双条件，避免把业务规则拒绝误伤成环境问题。
+          · 40100 未授权 —— 仅当文案指向「merchant/company 未授权」时算环境；
+            若文案明确是业务越权（如访问他人店铺），属真实拦截，不算环境。
+          · 50001 下游 EasyPos 请求失败 —— 依赖服务不可用，属环境。
+          · 429 限流 —— 环境压力，非系统行为。
+          · 连接层异常（Connection/Timeout）—— 环境。
+        """
+        if not isinstance(output, dict):
+            return None
+        raw = " ".join(str(output.get(k) or "") for k in
+                       ("error", "biz_error", "output", "msg", "message")).lower()
+        if not raw:
+            return None
+        # 连接/传输层
+        for k in ("connection reset", "connection aborted", "connection refused",
+                  "server disconnected", "bad gateway", "service unavailable",
+                  "gateway timeout", "econnreset", "timed out", "timeout",
+                  "unhandled errors in a taskgroup"):
+            if k in raw:
+                return f"连接/传输层异常({k})"
+        # 限流
+        if "429" in raw or "too many requests" in raw or "rate limit" in raw:
+            return "限流(429)"
+        # 50001：下游 EasyPos 请求失败（依赖服务不可用）
+        if "50001" in raw or "easypos merchant request failed" in raw:
+            return "下游服务不可用(50001)"
+        # 40100 未授权：只有指向「店铺/公司未授权」才是环境问题
+        if "40100" in raw or "not authorized" in raw:
+            if "merchant" in raw or "company" in raw or "店铺" in raw:
+                return "账号/店铺未授权(40100)"
+            return None
+        return None
+
+    @staticmethod
     def _block_expectation_invalid(output, detail="", result_error=""):
         """判断「期望拦截但未拦截」是否因为期望本身不成立（→ 数据集问题）。
 
@@ -635,6 +680,32 @@ class RubricJudger:
         """
         output = getattr(result, "output_data", None)
         dim = rubric.dimension
+        # ------------------------------------------------------------------
+        # 写入对账（2026-11-10 新增，通用）
+        # ------------------------------------------------------------------
+        # 解决「只断言 code=0 抓不到假成功」的判定缺口。
+        # 执行器（direct_mcp_executor / generic_mcp_executor）在用例带「对账」段时，
+        # 会把结果放进 result.reconcile：
+        #   {"changed": bool, "before": {...}, "after": {...}, "detail": {...}}
+        # 判据（按证据强度降级）：
+        #   写失败                        → 1
+        #   写成功 + 状态确实改变 + 强校验  → 5
+        #   写成功 + 状态确实改变 + 弱校验  → 3（读接口与写目标不同源，不能完全确认）
+        #   写成功 + 状态完全未变（假成功）→ 1  ← 本次改造的核心目标
+        if dim == "写入对账":
+            rec = getattr(result, "reconcile", None)
+            if not isinstance(rec, dict):
+                _od = getattr(result, "output_data", None)
+                rec = _od.get("reconcile") if isinstance(_od, dict) else None
+            if not isinstance(rec, dict):
+                return None, False, "执行器未提供对账数据（reconcile）"
+            if rec.get("skipped"):
+                return None, False, rec.get("reason") or "对账被跳过"
+            return (
+                rec.get("score", 1),
+                True,
+                rec.get("reason") or "",
+            )
         # 0. 写入安全边界：影响范围对账（执行器在 impact 里给出执行前后条目数）。
         #    这类缺陷的特征是「系统并未拒绝，而是成功返回但作用范围爆炸」（如传 1 个
         #    不存在的 ID 却删除 983 条且 code=0），block 类断言抓不到，只能靠对账判定。
@@ -762,6 +833,18 @@ class RubricJudger:
                 elif output.get("block") is False:
                     blocked = False     # 执行器显式声明未拦截
             if blocked:
+                # ⚠ 环境性错误必须排除在「正确拦截」之外（2026-11-10 实测教训）：
+                #   当被测环境/账号权限异常时，40100 未授权、50001 下游失败、
+                #   429 限流会让**所有**请求都被拒。若照旧判 5 分，则环境一挂
+                #   反而「通过率虚高」——上一轮 62.3% 全是这样来的（1332 次调用
+                #   仅 88 次成功，报告却写 0 失败）。这类拒绝不证明系统能正确
+                #   识别并拦截非法请求，只是「根本没能执行」，应判不可判定（None）
+                #   ，由报告归因为环境问题，而非算通过或算缺陷。
+                _env = self._env_error_kind(output)
+                if _env:
+                    return None, False, (
+                        f"环境性错误（{_env}），非系统主动拒绝非法请求，"
+                        f"本次结果不可判定（需修复环境后重测）")
                 if dim in security_dims or dim in result_dims:
                     # 结果/安全维度：非法请求被拒绝且未执行 → 符合预期（文案不完美
                     # 属可观测性备注，不由本维度判低分）
@@ -790,6 +873,13 @@ class RubricJudger:
             _st = getattr(result, "status", "")
             if _o_err is not None:
                 return 1, True, f"工具崩溃/内部异常: {str(_o_err)[:100]}"
+            # 环境性错误不算「友好容错」：40100 未授权/50001 下游失败/限流 说明
+            # 请求根本没走到业务逻辑，无法证明系统对畸形输入的处理能力
+            # （2026-11-10：环境切分支时容错维度被判 5 分，虚高通过率）。
+            _env = RubricJudger._env_error_kind(output)
+            if _env:
+                return None, False, (f"环境性错误（{_env}），无法判定容错行为"
+                                     f"（需修复环境后重测）")
             if _st == "success" or _o_biz or output is not None:
                 return 5, True, "非法/畸形输入得到结构化处理，系统未崩溃（容错符合预期）"
             return 1, True, "执行异常，无法确认容错行为"

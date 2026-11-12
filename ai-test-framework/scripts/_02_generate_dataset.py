@@ -3388,6 +3388,18 @@ def build_a(products, abilities, req_type):
                 for _v in _vals[:_qmax_v]:
                     _qtp = dict(tp)
                     _qtp[_pname] = _v
+                    # 互斥清理：relativePeriod（相对周期）与 startAt/endAt（绝对区间）
+                    # 语义冲突，服务端稳定报 40000 "relativePeriod cannot be
+                    # combined with startAt or endAt"。
+                    # 本循环是「单参数枚举覆盖」，只应改变目标参数，不能把基础参数
+                    # 里的另一组时间表达留着 —— 否则生成出的用例参数自相矛盾，
+                    # 期望写"正常返回"却必然被拒，把系统的正确校验误记成失分
+                    # （2026-11-10 实测：10/16 失分源于此）。
+                    if _pname == "relativePeriod":
+                        _qtp.pop("startAt", None)
+                        _qtp.pop("endAt", None)
+                    elif _pname in ("startAt", "endAt"):
+                        _qtp.pop("relativePeriod", None)
                     # 值已由 config 保证合法 → 期望正常返回（不是拒绝）
                     cases.append({
                         "维度": "调用正确性", "能力": name, "层": "L2",
@@ -3736,8 +3748,122 @@ def build_a(products, abilities, req_type):
                         "影响范围对账": audit,
                         "高危": True,
                         "标签": ["异常"]})
+    # -----------------------------------------------------------------
+    # 写入对账用例（2026-11-10 新增，通用化）
+    # -----------------------------------------------------------------
+    # 解决「只断言 code=0 抓不到假成功」的判定缺口。配对表来自系统 config
+    # 的「写入对账」段（换系统只改配置，本函数零业务硬编码）。
+    #
+    # 背景（PocketStore 实测）：set_pickup_enabled / update_user_status /
+    # create_reward_campaign 等一批工具「返回成功但数据没变」，仅看 code=0
+    # 的旧断言全部漏测。
+    _append_reconcile_cases(cases)
+
     _inject_runtime_context(cases, P, abilities)
     return cases
+
+
+def _append_reconcile_cases(cases):
+    """从系统 config 的「写入对账」段生成写后回读用例。
+
+    通用化：本函数不出现任何具体工具名/字段名，全部读配置。
+    配置缺失或非法时静默跳过并打印提示，不阻断主流程。
+    """
+    try:
+        from reconcile import load_reconcile_specs, build_reconcile_cases
+    except Exception as e:
+        print(f"  [对账] reconcile 模块不可用，跳过：{e}")
+        return
+
+    config = _load_system_config()
+    if not config:
+        print("  [对账] 未找到系统 config，跳过写入对账用例")
+        return
+
+    specs, errors = load_reconcile_specs(config)
+    for err in errors:
+        print(f"  [对账] 配置告警：{err}")
+    if not specs:
+        print("  [对账] 配置中无「写入对账.配对」，跳过")
+        return
+
+    # 用已有用例作参数模板，复用合法入参（提高可执行率）
+    base_cases = []
+    for c in cases:
+        inp = c.get("输入")
+        if isinstance(inp, dict) and inp.get("tool_name"):
+            base_cases.append({
+                "tool_name": inp["tool_name"],
+                "入参": inp.get("tool_params"),
+            })
+
+    rc_cases = build_reconcile_cases(specs, base_cases=base_cases)
+
+    # 转换为 build_a 的统一用例格式（输入.tool_name / tool_params）
+    #
+    # ⚠ 三个坑（校验器报错后修正）：
+    #   1. 「能力」必须是能力目录里的中文能力名，不能直接写工具名
+    #      → 用 tool→能力名 映射反查，查不到才退回工具名
+    #   2. 期望必须含标准四件套 intent/params/output/block，否则校验器判错
+    #   3. 对账结果是执行期才产生的，期望里只写判定语义，不写具体值
+    tool2cap = {}
+    for c in cases:
+        inp = c.get("输入")
+        if isinstance(inp, dict) and inp.get("tool_name") and c.get("能力"):
+            tool2cap.setdefault(inp["tool_name"], c["能力"])
+
+    added = 0
+    for rc in rc_cases:
+        params = rc.pop("入参", None)
+        if params is None:
+            # 没有参数模板的不生成（无法执行）
+            continue
+        tool = rc["tool_name"]
+        cap_name = tool2cap.get(tool, tool)
+        # 关键：对账用例必须真执行写操作。
+        # 踩过的坑（2026-11-10 实测）：
+        #   ① 参数模板常来自「参数校验」类用例，那里 confirm 多为 false
+        #   ② 更多时候模板里压根没有 confirm 字段（必填项只有业务参数）
+        #      → 只判 "confirm" in params 会漏掉，执行时缺省 false → 只预览不执行
+        #      → 对账必然判「状态未变」，等于被自己的参数坑成假阳性
+        # 故：一律无条件写入 confirm=true（被测系统不认该参数时也无害）。
+        if isinstance(params, dict):
+            params = dict(params)
+            params["confirm"] = True
+        cases.append({
+            "维度": "写入对账",
+            "能力": cap_name,
+            "层": "L2",
+            "输入": {"tool_name": tool, "tool_params": params},
+            "对账": rc["reconcile"],
+            "期望": {
+                "intent": cap_name,
+                "params": params,
+                "output": "写操作成功后，回读状态已按预期改变（非假成功）",
+                "block": False,
+                "reconcile_result": "changed",
+                "说明": "执行前后快照必须不同；完全一致判定为假成功",
+            },
+            "描述": rc["描述"],
+            "标签": ["对账"],
+        })
+        added += 1
+
+    weak = sum(1 for s in specs if s.verify_weak)
+    print(f"  [对账] 生成 {added} 条写入对账用例"
+          f"（配对 {len(specs)} 个，其中弱校验 {weak} 个）")
+
+
+def _load_system_config():
+    """读取当前系统的 configs/<系统>.yaml。
+
+    main() 会把解析结果挂到全局 _SYSTEM_CONFIG，供生成器各函数复用；
+    没有全局时尝试按 --system 参数名推断路径。
+    """
+    cfg = globals().get("_SYSTEM_CONFIG")
+    if isinstance(cfg, dict) and cfg:
+        return cfg
+    return None
 
 
 def build_d(products, abilities, req_type):
@@ -4407,10 +4533,17 @@ def main():
     #   别名匹配；匹配不到再按需求类型兜底。
     _cfg_path = _find_config_for(ability_system or args.system, args.req_type)
     _enums, _bools = load_param_schema(_cfg_path)
-    global _PARAM_ENUMS, _PARAM_BOOL, _TOOL_SCHEMA
+    global _PARAM_ENUMS, _PARAM_BOOL, _TOOL_SCHEMA, _SYSTEM_CONFIG
     _PARAM_ENUMS = _enums
     _PARAM_BOOL = _bools
     _TOOL_SCHEMA = load_tool_schema(_cfg_path)
+    # 完整系统配置：供「写入对账」等依赖系统声明的通用能力读取。
+    # 只读一次，避免各生成器重复 IO。
+    try:
+        _SYSTEM_CONFIG = yaml.safe_load(open(_cfg_path, encoding="utf-8")) or {}
+    except Exception as _e:
+        print(f"  [config] 读取失败，写入对账等能力将跳过：{_e}")
+        _SYSTEM_CONFIG = {}
     # config 文件名 stem：后续定位原始 schema 用（必须先定义）
     _stem = os.path.splitext(os.path.basename(_cfg_path))[0]
     # 跨字段/条件约束（schema 表达不了，由 config「参数约束」声明）

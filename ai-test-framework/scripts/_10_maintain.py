@@ -911,9 +911,97 @@ def _t_output_path_timestamped():
             f"A 类型命名受影响: {p3}"
 
 
+def _t_reconcile_judge():
+    """对账判定 6 场景（原 tests/test_reconcile.py，2026-11-11 并入主回归）。
+
+    为什么并入：这段逻辑专门识别「写接口返回成功但数据实际没变」的假成功，
+    是写入安全边界维度的核心判据。此前它是 tests/ 下的孤儿脚本，
+    改坏了对账逻辑没有任何自动检查会发现。
+    """
+    sys.path.insert(0, ROOT)
+    from reconcile import judge_reconcile
+
+    meta_switch = {"compare": "state_changed", "verify_weak": True,
+                   "read_tool": "get_store_info"}
+    w_ok = {"code": 0, "data": {"isNoOp": False}}
+    base = {"code": 0, "data": {"items": [{"id": "a", "name": "store"}]}}
+    same = {"code": 0, "data": {"items": [{"id": "a", "name": "store"}]}}
+    changed = {"code": 0,
+               "data": {"items": [{"id": "a", "name": "store",
+                                   "isOpen": False}]}}
+    meta_create = {"compare": "contains_id", "id_field": "id"}
+    b3 = {"code": 0, "data": {"items": [{"id": "a"}]}}
+    a3 = {"code": 0, "data": {"items": [{"id": "a"}, {"id": "x1"}]}}
+    meta_del = {"compare": "not_contains_id", "id_field": "id"}
+
+    cases = [
+        ("状态未变(假成功)", judge_reconcile(w_ok, meta_switch, base, same), 1),
+        ("状态已变(弱校验)", judge_reconcile(w_ok, meta_switch, base, changed), 3),
+        ("创建后可查", judge_reconcile({"code": 0}, meta_create, b3, a3), 5),
+        ("创建后查不到", judge_reconcile({"code": 0}, meta_create, b3, b3), 1),
+        ("删除后消失", judge_reconcile({"code": 0}, meta_del, a3, b3), 5),
+        ("写操作失败", judge_reconcile({"code": 1001}, meta_switch, base,
+                                   changed), 1),
+    ]
+    for name, got, want in cases:
+        score = got[0] if isinstance(got, (tuple, list)) else got
+        assert score == want, f"{name}: 得分 {score}，期望 {want}"
+
+
+def _t_reconcile_safety():
+    """对账工具的数据保护覆盖率检查（原 tests/check_reconcile_safety.py）。
+
+    为什么并入：写用例会真实调用写工具，没有还原规则就会永久改数据。
+    此前漏配过 spec_create / tax_create，导致用例要么被跳过、要么污染环境。
+    这里只做「配置是否自洽」的离线检查，不连 MCP。
+    """
+    sys.path.insert(0, ROOT)
+    import io as _io
+
+    import yaml as _yaml
+
+    from reconcile import load_reconcile_specs
+
+    cfg_path = os.path.join(ROOT, "configs", "PocketStore.yaml")
+    if not os.path.exists(cfg_path):
+        return  # 没装该系统的配置就跳过，不算失败
+    cfg = _yaml.safe_load(_io.open(cfg_path, encoding="utf-8"))
+    specs, _ = load_reconcile_specs(cfg)
+
+    lc = cfg.get("数据生命周期") or {}
+    assert isinstance(lc, dict), "数据生命周期段格式异常"
+
+    protected = set()
+    for key in ("可还原", "新建清理", "新建后清理", "自建自删", "能力缺口",
+                "不可恢复", "restorable", "creatable", "self_delete",
+                "capability_gaps"):
+        sec = lc.get(key)
+        if isinstance(sec, dict):
+            protected |= {str(k) for k in sec}
+        elif isinstance(sec, list):
+            for item in sec:
+                if isinstance(item, str):
+                    protected.add(item)
+                elif isinstance(item, dict):
+                    for k in ("工具", "tool", "工具名", "name",
+                              "建工具", "删除工具"):
+                        if item.get(k):
+                            protected.add(str(item[k]))
+
+    uncovered = [s.write_tool for s in specs
+                 if s.write_tool not in protected]
+    assert not uncovered, (
+        f"{len(uncovered)} 个对账工具无还原/清理规则，"
+        f"执行会永久改数据: {sorted(uncovered)[:8]}")
+
+
 SELFTEST_CASES = [
     ("bug7 block_miss \u5f52\u56e0\uff08\u533a\u5206\u671f\u671b\u4e0d\u6210\u7acb\u4e0e\u771f\u672a\u62e6\u622a\uff09",
      _t_block_expectation),
+    ("bug11 \u5199\u5165\u5bf9\u8d26\u5224\u5b9a\uff08\u5047\u6210\u529f/\u5f31\u6821\u9a8c/\u589e\u5220\u5bf9\u8d26 6 \u573a\u666f\uff09",
+     _t_reconcile_judge),
+    ("bug12 \u5199\u5165\u5b89\u5168\u8986\u76d6\u7387\uff08\u5bf9\u8d26\u5de5\u5177\u5747\u9700\u8fd8\u539f\u89c4\u5219\uff09",
+     _t_reconcile_safety),
     ("exec1 \u6267\u884c\u5668\u7eaf\u51fd\u6570\uff08\u89e3\u6790/\u62bd\u5b9e\u4f53/\u5b57\u6bb5/\u8ba1\u6570\uff09",
      _t_executor_pure),
     ("bug6 \u610f\u56fe-\u53c2\u6570\u4e00\u81f4\u6027\uff08\u4e0d\u8bef\u4f24\u5f02\u5e38\u7528\u4f8b\uff09",

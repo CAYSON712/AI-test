@@ -31,10 +31,17 @@ import requests
 DEFAULT_BASE = os.getenv("TRACE_PLATFORM_URL", "http://127.0.0.1:8000")
 
 
-def _check_online(base_url, timeout=1.5):
-    """探测 trace_platform 服务是否在线"""
+def _check_online(base_url, timeout=5.0):
+    """探测 trace_platform 服务是否在线。
+
+    ⚠ 不要用未加 limit 的 /api/traces 探测：该接口会序列化全部 trace
+    （实测 ~1000 条时单次 965ms），而原先超时只有 1.5s —— 跑测试时机器繁忙
+    会稳定超时，导致「平台明明在线却整批跳过上报」。此处改用 limit=1 的轻量
+    查询（实测 ~147ms），并放宽超时，避免把慢响应当成离线。
+    """
     try:
-        r = requests.get(f"{base_url}/api/traces", timeout=timeout)
+        r = requests.get(f"{base_url}/api/traces", params={"limit": 1},
+                         timeout=timeout)
         return r.status_code == 200
     except Exception:
         return False
