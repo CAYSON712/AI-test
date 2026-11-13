@@ -10,6 +10,7 @@
   python _06_run_test.py --req-type C --dataset ../datasets/C_某系统.yaml --executor real --runs 5
 """
 import argparse
+import json
 import os
 import sys
 import yaml
@@ -261,10 +262,72 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
     case_fails = {}
     trace_offline = None                   # trace_platform 离线状态（仅提醒一次）
 
+    # ---- 断点续跑 ----
+    # 每完成一条用例追加一行 JSON 到 <out>.progress.jsonl，重启时读回：
+    # 已完成的用例不再重复调用（避免重复写生产数据 + 省时间）。
+    # 实测 2026-11-12：单进程跑 6.5 小时后 MCP 连接崩掉，结果未落盘，
+    # 回读 789 条数据全部丢失。有该文件后可原样续跑。
+    # 进度文件路径必须「跨运行稳定」，否则断点续跑永远失效：
+    # out_path 带时间戳（result_A_20261112_231115.yaml），每次启动都是新文件。
+    # 这里改为 <结果目录>/_progress_<需求类型>.jsonl，与运行实例无关。
+    # 需要重头跑时：删除该文件，或设 RESUME=0。
+    _out_dir_ = os.path.dirname(str(out_path)) or "."
+    _progress_path = os.path.join(_out_dir_, f"_progress_{req_type}.jsonl")
+    _done_cache = {}          # uid -> 该用例累计的分维度评分记录
+    _resume = os.environ.get("RESUME", "1") not in ("0", "false", "False")
+    if _resume and os.path.exists(_progress_path):
+        try:
+            with open(_progress_path, encoding="utf-8") as _pf:
+                for _line in _pf:
+                    _line = _line.strip()
+                    if not _line:
+                        continue
+                    _rec = json.loads(_line)
+                    _u = _rec.get("uid")
+                    if _u:
+                        _done_cache[_u] = _rec
+            print(f"   [断点续跑] 发现已跑完 {len(_done_cache)} 条用例，将跳过")
+        except Exception as _pe:
+            print(f"   [断点续跑] 进度文件读取失败，从头开始：{_pe}")
+            _done_cache = {}
+    else:
+        print(f"   [断点续跑] 进度文件：{_progress_path}")
+
+    def _append_progress(uid_, dim_, payload_):
+        """把已完成的用例追加进进度文件（尽力而为，失败不影响主流程）。"""
+        try:
+            with open(_progress_path, "a", encoding="utf-8") as _af:
+                _af.write(json.dumps({"uid": uid_, "dim": dim_, **payload_},
+                                     ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
     for case in cases:
         dim = case.get("维度", "")
         dim_case_counts[dim] += 1
         uid = case.get("用例ID", "") or f"case-{len(dim_case_all[dim])}"
+        # 断点续跑：该用例已完成则把记录回填，跳过真实调用
+        if uid in _done_cache:
+            _rec = _done_cache[uid]
+            for _d, _item in (_rec.get("scores") or {}).items():
+                dim_scores_all[_d].append(_item["score"])
+                dim_case_all[_d].setdefault(uid, []).append(
+                    (_item.get("judgeable", False), _item["score"] >= 3, _item["score"]))
+                if _item["score"] < 3:
+                    case_fails.setdefault(uid, {})[_d] = {
+                        "score": _item["score"],
+                        "error_type": _item.get("error_type", ""),
+                        "detail": _item.get("detail", ""),
+                        "input": _item.get("input"),
+                        "capability": _item.get("capability", ""),
+                        "raw_response": _item.get("raw_response", ""),
+                    }
+            if _rec.get("skipped"):
+                _skipped_uids.add(uid)
+                dim_skipped[dim] += 1
+            if report_trace and _rec.get("trace_ids") and uid in case_traces:
+                case_traces[uid]["trace_ids"].extend(_rec["trace_ids"])
+            continue
         if report_trace and uid:
             case_traces.setdefault(uid, {
                 "用例ID": uid,
@@ -347,6 +410,23 @@ def run_dataset(req_type, dataset_path, executor_mode, runs, out_path, system=No
                 elif trace_offline is None:
                     trace_offline = True
                     print("⚠️ 提示：trace_platform 未启动，已跳过 trace 上报（可启动后重跑）")
+            # 断点续跑：本条用例（该 run）完成后落盘，进程崩了也能续
+            if uid not in _done_cache:
+                _append_progress(uid, dim, {
+                    "scores": {k: {"score": v["score"],
+                                   "judgeable": v.get("judgeable", False),
+                                   "error_type": v.get("error_type", ""),
+                                   "detail": (v.get("detail") or "")[:200],
+                                   "input": str(case.get("输入", ""))[:200],
+                                   "capability": case.get("能力", ""),
+                                   "raw_response": str(
+                                       (getattr(result, "output_data", None) or {})
+                                       .get("output") or "")[:800]}
+                               for k, v in scores.items()},
+                    "skipped": bool(isinstance(getattr(result, "output_data", None), dict)
+                                    and (result.output_data or {}).get("skipped")),
+                    "trace_ids": list(case_traces.get(uid, {}).get("trace_ids") or []),
+                })
 
     # 聚合维度得分（混合评分）：
     #   - 可程序化判定（有 verify/block/error/工具匹配）→ 统计准确率 → 查 rubric 得全局分

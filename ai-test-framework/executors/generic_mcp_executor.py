@@ -572,10 +572,57 @@ class GenericMcpExecutor(BaseExecutor):
             os.environ.get("FLAKY_MAX_RETRY", "2") or 0)
         flaky_base_ms = float(os.environ.get("FLAKY_BASE_MS", "1500") or 1500)
         flaky_n = 0
+        # 连接层异常重试（独立于限流/瞬时故障）：SSE 长连接在密集重试后可能损坏，
+        # 表现为 asyncio.CancelledError / ClosedResourceError / "Error in post_writer"。
+        # 实测 2026-11-12：连续 6 次 429 重试后 post_writer 报错，连接彻底失效，
+        # 后续所有 call_tool 都拿不到响应，进程挂起数小时直到被 cancel，整轮结果全丢。
+        # 这里兜住连接异常并退避重试，避免单次连接故障把整个测试跑挂。
+        conn_retry = int(os.environ.get("CONN_MAX_RETRY", "3") or 0)
+        conn_base_ms = float(os.environ.get("CONN_BASE_MS", "3000") or 3000)
+        conn_n = 0
         while True:
             t0 = time.monotonic()
-            result = await session.call_tool(name,
-                                             {self.sys.param_wrapper: tool_params})
+            try:
+                result = await session.call_tool(name,
+                                                 {self.sys.param_wrapper: tool_params})
+            except asyncio.CancelledError as _ce:
+                # CancelledError 是 BaseException 子类，不会被下面的 except Exception 捕获。
+                # SSE 断连时 anyio cancel scope 抛出的 CancelledError 属于连接故障，
+                # Task.cancelling()==0 可安全重试；而外部 stop/超时导致的取消
+                # cancellling()>0，必须原样上抛，否则进程无法终止。
+                _task = asyncio.current_task()
+                if _task is not None and _task.cancelling() > 0:
+                    raise
+                _cname = "CancelledError"
+                _cmsg = str(_ce)[:120] or "connection cancelled by cancel scope"
+                if conn_n < conn_retry:
+                    conn_n += 1
+                    wait_s = (conn_base_ms * conn_n) / 1000.0
+                    total_wait += wait_s
+                    print(f"   [连接异常] {name} {_cname}: {_cmsg}，"
+                          f"{wait_s:.1f}s 后重试（第 {conn_n}/{conn_retry} 次）")
+                    await asyncio.sleep(wait_s)
+                    continue
+                print(f"   [连接异常] {name} 重试{conn_n}次仍失败，"
+                      f"标记为环境问题：{_cname}: {_cmsg}")
+                return True, (f"[连接异常未恢复/重试{conn_n}次] "
+                              f"{_cname}: {_cmsg}"), round(total_wait * 1000, 1)
+            except Exception as _ce:
+                _cname = type(_ce).__name__
+                _cmsg = str(_ce)[:120]
+                if conn_n < conn_retry:
+                    conn_n += 1
+                    wait_s = (conn_base_ms * conn_n) / 1000.0
+                    total_wait += wait_s
+                    print(f"   [连接异常] {name} {_cname}: {_cmsg}，"
+                          f"{wait_s:.1f}s 后重试（第 {conn_n}/{conn_retry} 次）")
+                    await asyncio.sleep(wait_s)
+                    continue
+                # 重试耗尽：返回可归因的文本，不让异常冒泡炸掉整轮
+                print(f"   [连接异常] {name} 重试{conn_n}次仍失败，"
+                      f"标记为环境问题：{_cname}: {_cmsg}")
+                return True, (f"[连接异常未恢复/重试{conn_n}次] "
+                              f"{_cname}: {_cmsg}"), round(total_wait * 1000, 1)
             latency_ms = (time.monotonic() - t0) * 1000
             texts = [c.text for c in result.content if c.type == "text"]
             text = "\n".join(texts)
