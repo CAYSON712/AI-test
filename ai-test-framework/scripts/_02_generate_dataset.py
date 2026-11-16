@@ -334,6 +334,41 @@ def _pick_cap(abilities, op=None, not_op=None, name_kw=None, exclude=()):
 # 通用参数填充工具（数据驱动：从能力目录「参数」字段 + 实体数据生成参数值）
 # 不绑定任何业务字段名（id/price/status 等仅是语义兜底别名）。
 # =====================================================================
+# =====================================================================
+# 实体 ID 占位符（运行时解析）
+# =====================================================================
+# 事故（2026-11-15）：数据集把 itemId/menuId/categoryId 等写死成生成时刻的
+# 真实ID，之后这些实体被前序「破坏性写入」用例真删掉，重跑就全部撞
+#   code=1006 "An unexpected error occurred"
+# 实测把 ID 换成当时的真实ID后 100% 返回 code=0 —— 说明不是系统缺陷，
+# 是数据集「快照型ID」随时间失效。
+#
+# 解法：生成器对这些 ID 参数写占位符，执行器跑前现场查真实ID替换
+# （executors/generic_mcp_executor.py::_resolve_placeholders）。
+# 好处：数据集中性、可长期复用、不会因实体被删而整批假失败。
+_ID_PLACEHOLDER = {
+    "itemid": "{ITEM_ID}", "itemids": "{ITEM_ID}",
+    "foodid": "{ITEM_ID}", "foodids": "{ITEM_ID}",
+    "merchfoodid": "{ITEM_ID}", "merchfoodids": "{ITEM_ID}",
+    "menuid": "{MENU_ID}", "menuids": "{MENU_ID}",
+    "categoryid": "{CATEGORY_ID}", "categoryids": "{CATEGORY_ID}",
+    "taxid": "{TAX_ID}", "taxids": "{TAX_ID}",
+    "specid": "{SPEC_ID}", "specids": "{SPEC_ID}",
+    "areaid": "{AREA_ID}", "areaids": "{AREA_ID}",
+    "userid": "{USER_ID}", "merchmanagerid": "{USER_ID}",
+}
+
+# 是否启用占位符（env: USE_ID_PLACEHOLDER=0 关闭，用于需要真实快照ID的场景）
+_USE_ID_PH = os.environ.get("USE_ID_PLACEHOLDER", "1") not in ("0", "false", "False")
+
+
+def _placeholder_for(param):
+    """参数名 → 占位符；非实体ID参数返回 None。"""
+    if not _USE_ID_PH:
+        return None
+    return _ID_PLACEHOLDER.get(str(param).lower())
+
+
 def _as_param_value(v, pl):
     """复数参数名（ids/names/prices...）→ 列表；单数 → 标量。
 
@@ -1119,6 +1154,12 @@ def _fill_params(cap, e, overrides=None, pool=None):
     if overrides:
         tp.update(overrides)
     tp = {p: _coerce_param(p, v, cap) for p, v in tp.items()}
+    # 实体ID改为占位符：避免写死「生成时刻的ID」在后续跑批中失效，
+    # 导致服务端 1006 被误判为系统缺陷（2026-11-15 事故）。
+    for _p in list(tp):
+        _ph = _placeholder_for(_p)
+        if _ph:
+            tp[_p] = [_ph] if str(_p).lower().endswith("ids") else _ph
 
     # 必填参数自动补全（对照 configs 的工具 schema）：
     #   ① 能力目录漏声明某必填参数 → 用实体数据补齐；
@@ -1139,7 +1180,9 @@ def _fill_params(cap, e, overrides=None, pool=None):
             if v is None or v == "":
                 v = _coerce_param(rp, _default_param_value(rp, cap), cap)
             if v is not None and v != "":
-                tp[rp] = v
+                _rph = _placeholder_for(rp)
+                tp[rp] = ([_rph] if str(rp).lower().endswith("ids") else _rph) \
+                    if _rph else v
             else:
                 _MISSING_REQUIRED.append((tool, rp, cap.get("能力")))
 

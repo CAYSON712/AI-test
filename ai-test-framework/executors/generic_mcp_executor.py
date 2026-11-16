@@ -506,16 +506,67 @@ class GenericMcpExecutor(BaseExecutor):
         return None
 
     async def _session_context(self, ctx=None):
-        stack = AsyncExitStack()
-        http = await stack.enter_async_context(
-            httpx.AsyncClient(headers=self._client_headers(ctx), timeout=120.0)
-        )
-        read, write = await stack.enter_async_context(
-            streamable_http_client(self.sys.base_url, http_client=http)
-        )
-        session = await stack.enter_async_context(ClientSession(read, write))
-        await session.initialize()
-        return stack, session
+        """建立 MCP 会话。建会话阶段的连接故障要能自愈，否则整轮崩掉。
+
+        ⚠ 为什么需要重试（2026-11-13 实测）：
+          跑 POS Local 数据集到第 123 条（A-L2-252 删除商品附近）时，
+          session.initialize() 抛 asyncio.CancelledError: Cancelled via
+          cancel scope → 异常一路冒泡，整个进程退出，而最终结果只在内存里，
+          汇总与报告都没落盘。
+          SSE 长连接在密集调用后容易损坏（前一次连接未完全释放时尤其明显），
+          这类故障是瞬时的，重建会话即可恢复。
+        ⚠ 必须区分「外部取消」与「连接故障」：
+          Task.cancelling()>0 说明是用户 Ctrl-C / 超时取消，必须原样上抛；
+          为 0 才是 anyio cancel scope 因连接断开抛出的，可安全重建。
+        """
+        _retry = int(os.environ.get("SESSION_MAX_RETRY", "3") or 0)
+        _base_ms = float(os.environ.get("SESSION_BASE_MS", "2000") or 2000)
+        _last = None
+        for _n in range(_retry + 1):
+            stack = AsyncExitStack()
+            try:
+                http = await stack.enter_async_context(
+                    httpx.AsyncClient(headers=self._client_headers(ctx),
+                                      timeout=120.0)
+                )
+                read, write = await stack.enter_async_context(
+                    streamable_http_client(self.sys.base_url, http_client=http)
+                )
+                session = await stack.enter_async_context(
+                    ClientSession(read, write))
+                await session.initialize()
+                return stack, session
+            except asyncio.CancelledError as _ce:
+                _task = asyncio.current_task()
+                if _task is not None and _task.cancelling() > 0:
+                    raise            # 外部取消，必须终止
+                _last = _ce
+                try:
+                    await stack.aclose()
+                except Exception:
+                    pass
+                if _n < _retry:
+                    _w = (_base_ms * (_n + 1)) / 1000.0
+                    print(f"   [会话重建] initialize 被取消：{str(_ce)[:80]}，"
+                          f"{_w:.1f}s 后重试（第 {_n+1}/{_retry} 次）")
+                    await asyncio.sleep(_w)
+                    continue
+                raise
+            except Exception as _e:
+                _last = _e
+                try:
+                    await stack.aclose()
+                except Exception:
+                    pass
+                if _n < _retry:
+                    _w = (_base_ms * (_n + 1)) / 1000.0
+                    print(f"   [会话重建] 建会话失败 {type(_e).__name__}: "
+                          f"{str(_e)[:80]}，{_w:.1f}s 后重试"
+                          f"（第 {_n+1}/{_retry} 次）")
+                    await asyncio.sleep(_w)
+                    continue
+                raise
+        raise _last
 
     async def _call_tool(self, session, name, tool_params):
         """调用 MCP 工具，返回 (is_error, 文本, latency_ms)
@@ -610,6 +661,18 @@ class GenericMcpExecutor(BaseExecutor):
             except Exception as _ce:
                 _cname = type(_ce).__name__
                 _cmsg = str(_ce)[:120]
+                # ⚠ 「工具不存在」是业务层正确结果，不是连接故障。
+                #   用例专门传 xxx_typo 验证服务端是否拒绝未知工具，SDK 会抛
+                #   MCPError: Unknown tool: 'xxx_typo'。此前该异常落入连接重试分支，
+                #   每条 typo 用例白跑 3 次（1.5s+3s+4.5s），一次全量能浪费数分钟，
+                #   且最终被标成「环境问题」，把系统的正确校验误判为环境故障
+                #   （2026-11-13 实测：日志刷满 Unknown tool 重试）。
+                #   直接返回，交给评分器按「期望拒绝」判定。
+                _low = _cmsg.lower()
+                if ("unknown tool" in _low or "tool not found" in _low
+                        or "unknown method" in _low):
+                    return False, (f'{{"code":40400,"msg":"Unknown tool: '
+                                   f'not registered on server","raw":"{_cmsg}"}}'), 0.0
                 if conn_n < conn_retry:
                     conn_n += 1
                     wait_s = (conn_base_ms * conn_n) / 1000.0
@@ -846,6 +909,19 @@ class GenericMcpExecutor(BaseExecutor):
 
         # 2. 补默认上下文参数 + ID 解析
         tool_params = self._ensure_merchant(tool_name, tool_params)
+        # 2.1 占位符 {ITEM_ID} 等 → 现场查真实ID（防止写死ID失效后撞 1006 假缺陷）
+        tool_params, _ph_failed = await self._resolve_placeholders(tool_params)
+        if _ph_failed:
+            steps.append({
+                "name": "实体ID解析失败", "type": "SPAN",
+                "input": "占位符: " + ",".join(sorted(_ph_failed)),
+                "output": "查不到对应实体",
+                "metadata": {"step": "placeholder_resolve_failed"},
+            })
+            return {"skipped": True,
+                    "reason": "实体ID无法解析: %s（目标实体可能已被删除）"
+                              % ",".join(sorted(_ph_failed)),
+                    "steps": steps}
         await self._resolve_entity_id(tool_name, tool_params, user_input, steps, capability)
 
         # 3. 调用真实 MCP
@@ -1393,6 +1469,123 @@ MCP 返回结果：
                 if _val is not None:
                     tool_params[self.sys.merchant_param] = _val
         return tool_params
+
+    # ---- 实体 ID 占位符运行时解析 ----
+    # 背景（2026-11-15）：数据集把 itemId/menuId/categoryId 等写死成生成时的实体ID，
+    # 之后这些实体被前序破坏性用例真删了，再跑就是 1006「An unexpected error」。
+    # 表现为「AI 系统缺陷」，实测换真实ID后全部 code=0 —— 是数据集问题。
+    # 解法：生成器写占位符 {ITEM_ID} / {MENU_ID} / {CATEGORY_ID} / {TAX_ID} /
+    # {SPEC_ID} / {AREA_ID} / {USER_ID}，执行前由本方法现场查真实ID替换。
+    # 查不到则该条用例标记 skipped（而不是拿失效ID去撞 1006 制造假缺陷）。
+    PLACEHOLDER_RE = re.compile(r"^\{([A-Z_]+)\}$")
+
+    # 占位符 -> (列表工具, 列表工具取参, 结果里取 ID 的优先级键)
+    _PH_SOURCES = {
+        "ITEM_ID": ("item_list", {"pageIndex": 1, "pageSize": 50},
+                    ("id", "itemId", "foodId")),
+        "MENU_ID": ("menu_list", {"pageIndex": 1, "pageSize": 50},
+                    ("id", "menuId")),
+        "CATEGORY_ID": ("category_list", {}, ("id", "categoryId")),
+        "TAX_ID": ("tax_list", {}, ("id", "taxId")),
+        "SPEC_ID": ("spec_list", {}, ("id", "specId")),
+        "AREA_ID": ("list_delivery_areas", {}, ("id", "areaId")),
+        "USER_ID": ("list_store_users", {}, ("merchManagerId", "id", "userId")),
+    }
+
+    async def _resolve_placeholders(self, tool_params):
+        """把参数里的 {XXX_ID} 占位符替换为现场查到的真实ID。
+
+        返回 (新参数, 无法解析的占位符集合)。无法解析时不抛异常：
+        调用方据此把用例判为 skipped，避免用失效ID制造假缺陷。
+        """
+        if not isinstance(tool_params, dict):
+            return tool_params, set()
+
+        # 1) 收集所有占位符
+        need = set()
+
+        def _scan(v):
+            if isinstance(v, str):
+                m = self.PLACEHOLDER_RE.match(v)
+                if m:
+                    need.add(m.group(1))
+            elif isinstance(v, list):
+                for x in v:
+                    _scan(x)
+            elif isinstance(v, dict):
+                for x in v.values():
+                    _scan(x)
+
+        for v in tool_params.values():
+            _scan(v)
+        if not need:
+            return tool_params, set()
+
+        # 2) 逐个解析（同一次调用内复用缓存，避免重复请求）
+        resolved, failed = {}, set()
+        stack, session = await self._session_context()
+        async with stack:
+            for ph in sorted(need):
+                src = self._PH_SOURCES.get(ph)
+                if not src:
+                    failed.add(ph)
+                    continue
+                tool, base_args, id_keys = src
+                args = dict(base_args)
+                _mv = self.sys.merchant_default_value()
+                if _mv is not None:
+                    args[self.sys.merchant_param] = _mv
+                try:
+                    is_err, text, _ = await self._call_tool(session, tool, args)
+                    if is_err:
+                        failed.add(ph)
+                        continue
+                    data = json.loads(text)
+                    if data.get("code") != 0:
+                        failed.add(ph)
+                        continue
+                    body = data.get("data")
+                    # 兼容 data 是 list / {items:[...]} / {xxx:[...]} 三种形态
+                    rows = []
+                    if isinstance(body, list):
+                        rows = body
+                    elif isinstance(body, dict):
+                        for vv in body.values():
+                            if isinstance(vv, list) and vv and isinstance(vv[0], dict):
+                                rows = vv
+                                break
+                    picked = None
+                    for r in rows:
+                        if not isinstance(r, dict):
+                            continue
+                        for k in id_keys:
+                            if r.get(k):
+                                picked = r[k]
+                                break
+                        if picked:
+                            break
+                    if picked:
+                        resolved[ph] = picked
+                    else:
+                        failed.add(ph)
+                except Exception:
+                    failed.add(ph)
+
+        # 3) 回填
+        def _fill(v):
+            if isinstance(v, str):
+                m = self.PLACEHOLDER_RE.match(v)
+                if m and m.group(1) in resolved:
+                    return resolved[m.group(1)]
+                return v
+            if isinstance(v, list):
+                return [_fill(x) for x in v]
+            if isinstance(v, dict):
+                return {k: _fill(x) for k, x in v.items()}
+            return v
+
+        out = {k: _fill(v) for k, v in tool_params.items()}
+        return out, failed
 
     async def _resolve_entity_id(self, tool_name, tool_params, user_input, steps, capability):
         """操作类工具缺实体 ID 时，先按实体名查出真实 ID 填入。"""
