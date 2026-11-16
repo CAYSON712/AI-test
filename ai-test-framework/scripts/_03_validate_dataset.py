@@ -15,6 +15,7 @@
 """
 import argparse
 import glob
+import json
 import os
 import re
 import sys
@@ -53,6 +54,61 @@ REQ_TYPES = {"A", "B", "C", "D", "E"}
 def load_yaml(path):
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+# 仓库根（module 级常量，在模块首次加载时确定）
+# ⚠ 不要写成类方法里读 __file__：类方法内 __file__ 解析到的是「调用方脚本」
+#   的路径，若调用方在 tests/ 下，会算成 tests/ 的父目录——路径看似合法但
+#   扫不到 results/mcp_schemas，导致校验静默跳过（曾白跑一轮才发现）。
+def _detect_repo_root():
+    """探测仓库根。多路兜底，任一成功即可。
+
+    坑（2026-11-15 实测）：被 importlib 以 spec_from_file_location 加载时，
+    模块内的 __file__ 会被写成**调用方脚本**的路径，于是
+      dirname(dirname(__file__)) -> tests/ 的父目录
+    看似合法却扫不到 results/mcp_schemas，校验静默返回 0 条。
+    因此这里优先用「本模块自己的 __spec__.origin」，再退回 __file__、cwd。
+    """
+    cands = []
+    try:
+        _o = (__spec__.origin if __spec__ else "") or ""
+        if _o and _o not in ("built-in", "frozen"):
+            cands.append(_o)
+    except Exception:
+        pass
+    try:
+        cands.append(os.path.abspath(__file__))
+    except Exception:
+        pass
+    _cwd = os.path.abspath(os.getcwd())
+    cands.extend([_cwd, os.path.dirname(_cwd),
+                  os.path.dirname(os.path.dirname(_cwd))])
+
+    for c in cands:
+        if not c:
+            continue
+        # c 可能是「文件」也可能是「目录」，两种都往上探两级
+        d = c if os.path.isdir(c) else os.path.dirname(c)
+        for root in (d, os.path.dirname(d), os.path.dirname(os.path.dirname(d))):
+            if os.path.isdir(os.path.join(root, "results", "mcp_schemas")) \
+                    or os.path.isdir(os.path.join(root, "datasets")):
+                return root
+    return ""
+
+
+_REPO_ROOT = _detect_repo_root()
+
+
+def _repo_root():
+    """返回仓库根；优先模块常量，兜底按 cwd 向上探测。"""
+    if os.path.isdir(os.path.join(_REPO_ROOT, "results", "mcp_schemas")):
+        return _REPO_ROOT
+    _cwd = os.path.abspath(os.getcwd())
+    for _up in (_cwd, os.path.dirname(_cwd),
+                os.path.dirname(os.path.dirname(_cwd))):
+        if os.path.isdir(os.path.join(_up, "results", "mcp_schemas")):
+            return _up
+    return ""
 
 
 def load_ability(ability_path):
@@ -892,6 +948,161 @@ class Checker:
             return "过短的数字 ID（疑占位）"
         return None
 
+    @staticmethod
+    def _is_num_str(s):
+        try:
+            float(s)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def _type_mismatch(decl, val):
+        """比对 schema 声明与实参类型；不一致返回描述，一致返回 None。"""
+        t = decl.get("type")
+        types = t if isinstance(t, list) else [t]
+        types = [x for x in types if x]
+
+        if "array" in types:
+            if not isinstance(val, list):
+                return "声明 array，实际 %s" % type(val).__name__
+            items = decl.get("items")
+            if isinstance(items, dict) and items.get("type") == "object" \
+                    and (items.get("properties") or {}):
+                for idx, el in enumerate(val[:3]):
+                    if not isinstance(el, dict):
+                        return ("声明 array<object>，第 %d 个元素是 %s"
+                                % (idx, type(el).__name__))
+                    for sk, sv in el.items():
+                        sd = (items["properties"] or {}).get(sk)
+                        if isinstance(sd, dict):
+                            sub = Checker._type_mismatch(sd, sv)
+                            if sub:
+                                return "元素字段 %s: %s" % (sk, sub)
+            return None
+
+        if "object" in types:
+            if not isinstance(val, dict):
+                return "声明 object，实际 %s" % type(val).__name__
+            return None
+
+        if "boolean" in types:
+            if isinstance(val, (dict, list)):
+                return "声明 boolean，实际 %s" % type(val).__name__
+            return None
+
+        if "integer" in types or "number" in types:
+            if isinstance(val, (dict, list)):
+                return "声明 %s，实际 %s" % (types[0], type(val).__name__)
+            if isinstance(val, str) and val.strip() and not Checker._is_num_str(val):
+                return "声明 %s，实际不可转数字的字符串 '%s'" % (types[0], val[:20])
+            return None
+
+        if "string" in types:
+            if isinstance(val, (dict, list)):
+                return "声明 string，实际 %s" % type(val).__name__
+            return None
+
+        return None
+
+    def _tool_param_props(self):
+        """{工具名: {参数名: schema 声明}}（含 wrapper 解包）。
+
+        ⚠ base 计算：本文件在 scripts/ 下，取 dirname(dirname(abspath(__file__)))
+        得到仓库根。用 importlib 动态加载时 __file__ 可能不是绝对路径，
+        会算错目录导致静默返回 {}（校验形同虚设），故多路兜底。
+        """
+        base = _repo_root()
+        if not base:
+            return {}
+        out = {}
+        for dd in (os.path.join(base, "schemas"),
+                   os.path.join(base, "results", "mcp_schemas")):
+            if not os.path.isdir(dd):
+                continue
+            for p in glob.glob(os.path.join(dd, "*.raw.json")):
+                try:
+                    with open(p, encoding="utf-8") as f:
+                        j = json.load(f)
+                except Exception:
+                    continue
+                for t in (j.get("tools") or []):
+                    nm = t.get("name")
+                    sch = t.get("inputSchema") or {}
+                    props = sch.get("properties") or {}
+                    if set(props) == {"parameters"}:
+                        props = (props.get("parameters") or {}).get("properties") or {}
+                    if nm and props:
+                        out[nm] = props
+        return out
+
+    def check_param_types(self):
+        """参数值与 schema 声明类型的一致性校验（含嵌套 array<object>）。
+
+        事故（2026-11-15 核实）：localizedNames 的 schema 是
+          {"type":["array","null"],"items":{"type":"object",
+            "properties":{"languageCode":{...},"name":{...}}}}
+        生成器却写成字符串数组 ['午餐菜单']，服务端直接拒绝：
+          code=1001 [{"field":"localizedNames","message":"Invalid parameter type or format."}]
+        波及 item/menu/category/spec 的 create/update 共 10 处用例，
+        报告里被误判成「AI 系统缺陷」，白提给开发。
+        """
+        props_by_tool = self._tool_param_props()
+        if os.environ.get("VDBG"):
+            print("[VDBG] props_by_tool=%d" % len(props_by_tool))
+        if not props_by_tool:
+            return
+        bad = []
+        for i, c in enumerate(self.cases, 1):
+            uid = c.get("用例ID", "#%d" % i)
+            expect = c.get("期望") or {}
+            if not isinstance(expect, dict):
+                continue
+            dim = c.get("维度") or ""
+            tags = c.get("标签") or []
+            # 只豁免「确实在测类型错配」的用例：
+            #   - 维度属于容错/异常族，且标签显式声明了「类型错配」
+            #   - 或标签里直接写着「类型错配」
+            # 注意：不能一见 block=true 就跳过。实测很多 block=true 的
+            # 「协议契约」用例其实是用**非法类型**充当负向用例，属于数据集
+            # 内部矛盾（既想验证协议又想验证类型），必须报出来人工确认。
+            # 豁免「刻意构造畸形/非法类型」的用例：
+            #   1) 标签显式声明类型错配/数值变异/畸形/边界
+            #   2) 维度属于容错/异常族，且 block 不为 False（期望被拒绝）
+            #   3) 参数里含 unknown_param_* 等标记（畸形容错专用）
+            if any(t in tags for t in ("类型错配", "数值变异", "畸形", "边界",
+                                       "参数缺失", "注入对抗", "越权")):
+                continue
+            if expect.get("block") is not False \
+                    and any(k in dim for k in ("容错", "异常", "鲁棒", "健壮")):
+                continue
+            if expect.get("block") is not False and "类型错配" in dim:
+                continue
+            inp = c.get("输入") or {}
+            if not isinstance(inp, dict):
+                continue
+            tool = inp.get("tool_name")
+            tp = inp.get("tool_params")
+            if not isinstance(tp, dict) or tool not in props_by_tool:
+                continue
+            # 畸形容错用例专用标记：含 unknown_param_* 的用例是刻意传垃圾参数，
+            # 不属于「生成器把类型写错」，跳过类型校验。
+            if any(str(k).startswith("unknown_param") for k in tp):
+                continue
+            props = props_by_tool[tool]
+            for k, v in tp.items():
+                decl = props.get(k)
+                if not isinstance(decl, dict):
+                    continue
+                msg = self._type_mismatch(decl, v)
+                if msg:
+                    bad.append("%s:%s.%s %s" % (uid, tool, k, msg))
+
+        for b in bad[:40]:
+            self.error("参数类型与 schema 不符 " + b)
+        if len(bad) > 40:
+            self.error("...另有 %d 处参数类型不符（已截断）" % (len(bad) - 40))
+
     def check_param_realism(self):
         """期望正常执行(block=false)的用例：必填齐全 + 枚举按工具合法 + ID 非占位。"""
         sch, cfg = self._tool_schema()
@@ -1027,7 +1238,10 @@ class Checker:
                 # ③ 实体清单要求换头但用例没声明 → 警告（该用例会用全局默认 CompanyId）
                 if not ent_idx:
                     continue
-                tp = ((c.get("输入") or {}).get("tool_params") or {})
+                # 输入可能是 dict 也可能是字符串（历史数据集用 str 存），
+                # 直接 .get 会 AttributeError: 'str' object has no attribute 'get'
+                _inp = c.get("输入")
+                tp = (_inp.get("tool_params") if isinstance(_inp, dict) else None) or {}
                 if not isinstance(tp, dict):
                     continue
                 for k in ("merchantId", "merchantIds", "entityId"):
@@ -1250,6 +1464,10 @@ class Checker:
         self.check_fields(names, tools, tool_of)
         self.check_config_consistency(names, tools, tool_of)
         self.check_param_realism()
+        # 类型一致性（含 array<object> 嵌套）：防止生成器把结构化参数拍平成字符串数组。
+        # 事故 2026-11-15：localizedNames 写成 ['午餐菜单'] → 服务端 1001 拒绝，
+        # 10 处用例被报告误判为「AI 系统缺陷」。
+        self.check_param_types()
         self.check_block_semantic()
         self.check_intent_param_consistency()
         self.check_sample_extra()

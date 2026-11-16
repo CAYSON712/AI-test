@@ -478,6 +478,45 @@ def _param_value(param, e, tool=None):
                or "New Product Name")
         return {_lang: str(_nm)}
 
+    # 0-0b) 「数组里装对象」(array of object)：必须按 schema 逐字段构造对象，
+    #       不能退化成字符串数组或裸对象。
+    #       事故（2026-11-15 核实）：localizedNames 的 schema 是
+    #         {"type":["array","null"],"items":{"type":"object",
+    #           "properties":{"languageCode":{...},"name":{...}}}}
+    #       生成器只处理了「object 型多语言参数」，没覆盖「array of object」，
+    #       于是把值写成 ['午餐菜单']（字符串数组），服务端校验失败：
+    #         code=1001 Parameter validation failed.
+    #         [{"field":"localizedNames","message":"Invalid parameter type or format."}]
+    #       波及 item/menu/category/spec 的 create/update 共 10 处用例被误判为系统缺陷。
+    #       这里统一按 items.properties 构造，any 嵌套层级都成立。
+    _pt = _param_type_of(tool, param) or {}
+    _ptype = _pt.get("type")
+    _is_arr = (_ptype == "array"
+               or (isinstance(_ptype, list) and "array" in _ptype))
+    if _is_arr and isinstance(_pt.get("items"), dict) \
+            and _pt["items"].get("type") == "object":
+        _item_props = _pt["items"].get("properties") or {}
+        _obj = {}
+        for _sk, _sv in _item_props.items():
+            _sk_l = str(_sk).lower()
+            _svt = (_sv or {}).get("type")
+            if "lang" in _sk_l or _sk_l in ("locale", "culture", "code"):
+                # 语言码：取 schema enum 首项，否则按常见默认值
+                _en = (_sv or {}).get("enum") or []
+                _obj[_sk] = str(_en[0]) if _en else "zh-TW"
+            elif _svt == "number" or _svt == "integer":
+                _obj[_sk] = 0
+            elif _svt == "boolean":
+                _obj[_sk] = True
+            elif _svt == "array":
+                _obj[_sk] = []
+            elif _svt == "object":
+                _obj[_sk] = {}
+            else:
+                _obj[_sk] = str(e.get("productName") or e.get("名称")
+                                or e.get("name") or "New Name")
+        return [_obj]
+
     # 0-a) 布尔参数优先（configs 的 param_bools 显式声明，或 include*/is*/has* 命名）：
     #      必须排在枚举与实体匹配之前，否则会被当成 ID 去实体里取值。
     #      实测（2026-11-09）：query_product_detail_by_id 的 includeCategory
