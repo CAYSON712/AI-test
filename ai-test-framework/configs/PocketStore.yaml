@@ -971,6 +971,35 @@ param_bools:
     删除参数:
       merchId: '{merchId}'
       areaId: '{新实体ID}'
+  - 建工具: add_pickup_time_slot
+    删除工具: delete_pickup_time_slot
+    建参数:
+      merchId: '{merchId}'
+      days:
+      - Sunday
+      openTime: '23:00'
+      closeTime: '23:30'
+      preparationMinutes: 5
+      intervalMinutes: 15
+    删除参数:
+      merchId: '{merchId}'
+      day: Sunday
+      slotIndex: '{删除时取末尾索引}'
+    删除主键: slotIndex
+    按天末尾删除: true
+    备注: 自提时段无独立ID，删除靠 day+slotIndex；建在周日 23:00 且删除取该天最后一个索引，避免误删真实营业时段
+  - 建工具: add_report_subscription
+    删除工具: remove_report_subscription
+    建参数:
+      merchId: '{merchId}'
+      email: autotest_report_del@example.com
+      sendDay: 1
+      isSalesReport: true
+    删除参数:
+      email: autotest_report_del@example.com
+      isSalesReport: true
+    删除主键: id
+    备注: 删除接口 required 为空，用 email+isSalesReport 精确定位，避免误删真实订阅
   能力缺口:
   - 工具: set_store_open_status
     原因: get_store_info 不返回营业状态字段（只有 name/phone/email/address）， 开/关店后无法验证也无法还原
