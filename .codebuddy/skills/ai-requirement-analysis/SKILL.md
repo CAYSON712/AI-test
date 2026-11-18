@@ -196,6 +196,54 @@ python scripts/_check_gaps.py
   跳过并作为**被测系统缺陷**上报，不要硬跑污染环境
 
 > 详细配置格式见 `ai-test-execution` Skill 的「数据生命周期保护」章节。
+> **漏配的典型症状**：跑完发现后台多出一堆测试数据（如 `_AUTOTEST_*`、重复的分类/规格）。
+> 排查用 `python scripts/_validate_lifecycle.py`，逐条列出哪个 create 工具没有删除保护。
+
+### ①¾ 结构型参数必须按 schema 逐层构造（不能拍平）
+
+生成前务必确认这两类参数被正确构造，否则服务端直接 1001 拒绝，而报告会把
+「参数格式错」误判成「AI 系统缺陷」提给开发：
+
+| schema 形态 | 正确值 | 错误值（会 1001）|
+|---|---|---|
+| `array<object>`（如 `localizedNames`）| `[{"languageCode":"zh-TW","name":"午餐"}]` | `["午餐"]`（字符串数组）|
+| `object`（如 `nameLocalization`）| `{"zh-TW":"午餐"}` | `"zh-TW"` |
+| `array<string>` | `["a","b"]` | `"a"` |
+
+校验方式（生成后必跑，会自动按 schema 逐层比对）：
+
+```powershell
+python scripts/_03_validate_dataset.py --dataset <数据集> --ability <能力目录>
+# 输出「参数类型与 schema 不符」即结构错，按提示改生成器而不是改数据
+```
+
+> PocketStore 2026-11-15 事故：`localizedNames` 被写成字符串数组，
+> 波及 item/menu/category/spec 共 41 处，报告显示「79 处 AI 系统缺陷」，
+> **逐个实测后确认 0 处真缺陷，全是数据集问题**。
+
+### ①⅞ 选实体要按「能力所属层级」，不能靠参数名
+
+新建类工具（`category_create` / `spec_create` / `menu_create`）的参数常只有
+`[merchId, name]`，**不含自身 ID**，靠参数名推不出该选哪层实体。若不特殊处理，
+会退到「全量实体轮换」抽到无关实体，`name` 就取到别人的字段值：
+
+| 症状 | 根因 |
+|---|---|
+| 分类名变成 `xxx@gmail.com` | 抽到了订单通知邮箱订阅实体（字段是 email） |
+| 规格名变成 `Delivery Area 6` | 抽到了配送区域实体 |
+| 规格名变成店铺名 | 实体清单里压根没有该层级样本 |
+
+生成前检查：
+
+```powershell
+# 实体清单里是否真的有各层级样本（缺了就得用模板名兜底）
+# 至少要覆盖：商品 / 分类 / 菜单 / 规格 / 税率 / 区域
+```
+
+- 按**工具名前缀**定层级（`category_*`→分类、`spec_*`→规格），不要只看参数名
+- 剔除「子资源实体」（含 `emailId`/`subscriptionId`/`reportId` 的记录）
+- 该层级无样本时用**工具专用模板名**（`TEST_SPEC`/`TEST_TAX`/`TEST_CATEGORY`），
+  绝不让 `name` 落到邮箱、店铺名或别的实体名上
 
 ### ② 枚举取值必须「按工具」核对，不能全局一刀切
 

@@ -258,3 +258,132 @@ python _06_run_test.py --dataset ../datasets/A_某系统.yaml --executor real --
 `--dims` 支持逗号分隔的子串匹配（如 `--dims 性能,调用正确性`）。
 
 之后交给「报告复盘」skill 生成评估报告。
+
+---
+
+## 长任务 / 限流环境执行（全量跑前必读）
+
+> 依据 2026-11-12 ~ 11-15 的 PocketStore 全量实测（1412 条）总结。
+> 单进程连续跑 6.5 小时后 MCP 连接崩掉、**0 条结果落盘**，教训惨重。
+
+### ① 先测限流阈值，再定节流参数
+
+被测系统若有写接口限流，**不要默认 0 间隔直接全量跑**。先用探测器量：
+
+```powershell
+python executors/generic_mcp_executor.py "系统名" --probe-ratelimit `
+    --tool update_store_name --gap 2 --rounds 6 --probe-id "<merchId>"
+```
+
+实测经验值（PocketStore）：写间隔 2s 时几乎每次撞 429、单次耗时飙到 48s；
+**写 20s 可做到全程 0 限流**。
+
+### ② 节流参数（环境变量，写 > 读）
+
+| 变量 | 作用 | PocketStore 实测值 |
+|---|---|---|
+| `WRITE_INTERVAL_MS` | 写操作最小间隔 | `20000` |
+| `REQUEST_INTERVAL_MS` | 读操作最小间隔 | `3000`（读接口也会被限流！）|
+| `WRITE_RATE_LIMIT_MAX_RETRY` | 写 429 重试次数 | `8` |
+| `RATE_LIMIT_MAX_RETRY` | 读 429 重试次数 | `6` |
+| `RATE_LIMIT_MAX_WAIT_MS` | 单次退避上限 | `120000` |
+| `CONN_MAX_RETRY` | 连接层异常重试次数 | `3` |
+| `CONN_BASE_MS` | 连接异常退避基数 | `3000` |
+
+> ⚠️ **读操作也必须设间隔**。实测 `list_store_users` 被对账用例密集当作快照工具调用，
+> 读间隔 0 时把读额度打满，退避到 180s 仍 429，最终拖垮整个 SSE 连接。
+
+### ③ 必须分段跑（按维度拆）
+
+单进程跑全量风险极高——一旦崩，已跑数据全部丢失。**按维度拆成多个独立进程**：
+
+```powershell
+# 每段一个进程，跑一段落一份结果
+python scripts/_06_run_test.py --req-type A --dataset <数据集> `
+    --executor real --runs 1 --trace --report --dims 参数校验
+```
+
+好处：一段崩了只损失该段，其余结果已落盘。
+
+### ④ 断点续跑（`RESUME`，默认开）
+
+框架每完成一条用例就追加写入 `results/_progress_<类型>_<系统>_<数据集>.jsonl`，
+重启时自动跳过已完成用例。
+
+```powershell
+$env:RESUME="1"     # 默认即为 1，断点续跑
+$env:RESUME="0"     # 关闭，强制从头跑
+```
+
+强制重跑：删掉对应的 `_progress_*.jsonl`。
+
+> 进度文件名带「系统 + 数据集」指纹——只按需求类型命名会让同为 A 类的
+> PocketStore 与 POS Local 串台，续跑时把别人的记录回填进来。
+
+### ⑤ 跑完必查的两件事
+
+```powershell
+# 1) 有没有因限流耗尽导致的失败（这类要按环境问题剔除，不能当系统缺陷）
+Select-String -Path <log> -Pattern "限流未恢复|连接异常未恢复"
+
+# 2) 结果里失败用例的归因分布（ai_system / dataset / environment）
+#    报告里 dataset 和 environment 的失分不是被测系统的锅
+```
+
+---
+
+## 数据生命周期配置的常见漏配（踩过的坑）
+
+写用例「建了却没删」会持续污染被测环境，排查时按这个顺序看：
+
+### ① 每个 create/add 工具都要有清理声明
+
+```powershell
+# 审计：哪些 create 类工具没有删除保护
+python scripts/_validate_lifecycle.py
+```
+
+**典型漏配**（PocketStore 实际发生过）：
+- `add_pickup_time_slot` → 有 `delete_pickup_time_slot`，但没配「自建自删」
+- `add_report_subscription` → 有 `remove_report_subscription`，但没配
+
+结果：单轮测试往后台留了 18 条垃圾时段/订阅。
+
+### ② 无删除接口的工具，登记「能力缺口」并限制真实执行条数
+
+系统只提供 create 不给 delete 时（如 `create_discount_campaign` / `create_reward_campaign`）：
+
+- 登记到 `能力缺口`，说明「无删除接口，创建后无法清理」
+- **不要为同一个工具生成十几条真实执行用例**——每条都会永久留下一条数据
+- 建议：1~2 条真实执行验证可用性，其余走 `block=true`（只验参数/协议，不写库）
+
+### ③ 删除依据不是 ID 时，要写清定位方式
+
+有些删除接口靠「自然键」定位而非实体 ID：
+
+```yaml
+# 自提时段：删除靠 day + slotIndex（0-based），没有独立 ID
+- 建工具: add_pickup_time_slot
+  删除工具: delete_pickup_time_slot
+  建参数: {days: ["Sunday"], openTime: "23:00", closeTime: "23:30", ...}
+  删除参数: {day: "Sunday", slotIndex: "{删除时取末尾索引}"}
+  按天末尾删除: true    # 建在该天末尾，删时取最后一个索引，避免误删真实时段
+```
+
+```yaml
+# 报表订阅：删除接口 required 为空，必须用 email + 报告类型精确定位
+- 建工具: add_report_subscription
+  删除工具: remove_report_subscription
+  建参数: {email: "autotest_report_del@example.com", isSalesReport: true}
+  删除参数: {email: "autotest_report_del@example.com", isSalesReport: true}
+```
+
+> 只传 email 不传 `isSalesReport` / `isPayoutReport` 可能删错订阅。
+
+### ④ 写用例前跑一遍门禁
+
+```powershell
+python scripts/_validate_lifecycle.py
+# 期望：通过 N | 失败 0 | 警告 0
+# 有失败项说明声明不完整，真跑会改脏数据
+```
