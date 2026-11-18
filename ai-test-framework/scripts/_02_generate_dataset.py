@@ -485,6 +485,31 @@ def _raw_entity_value(param, e):
     return None
 
 
+# 实体清单里没有该层级样本时，名称类参数用的「工具专用模板名」。
+# 目的：绝不能让 name 落到店铺名/邮箱/配送区域名上（2026-11-17 事故：
+# 后台出现「944600294qq@gmail.com」分类、「Delivery Area 6」规格）。
+_TOOL_TEMPLATE_NAME = {
+    "spec_create": "TEST_SPEC",
+    "spec_update": "TEST_SPEC",
+    "tax_create": "TEST_TAX",
+    "tax_update": "TEST_TAX",
+    "category_create": "TEST_CATEGORY",
+    "category_update": "TEST_CATEGORY",
+    "menu_create": "TEST_MENU",
+    "menu_update": "TEST_MENU",
+    "add_delivery_area": "TEST_AREA",
+    "create_discount_campaign": "TEST_CAMPAIGN",
+    "create_reward_campaign": "TEST_CAMPAIGN",
+    "update_discount_campaign": "TEST_CAMPAIGN",
+    "update_reward_campaign": "TEST_CAMPAIGN",
+}
+
+
+def _template_name_for(tool):
+    """按工具返回通用测试名；非命名类工具返回 None。"""
+    return _TOOL_TEMPLATE_NAME.get(str(tool or "").lower())
+
+
 def _param_value(param, e, tool=None):
     """为一个参数名从实体数据生成值（语义匹配，不绑定任何业务字段名）。
 
@@ -582,6 +607,17 @@ def _param_value(param, e, tool=None):
     _enum = _enum_for(param, tool)
     if _enum:
         return _as_param_value(_enum[0], pl)
+
+    # 0.5) 名称类参数 + 实体缺该层级样本 → 用工具专用模板名。
+    #      必须早于实体字段匹配，否则会从店铺实体取到 email/店铺名。
+    if pl in ("name", "newname", "categoryname", "specname", "menuname"):
+        _tpl = _template_name_for(tool)
+        # 实体里若有干净的 name 字段（非邮箱）则仍优先用实体值
+        _en = e.get("name")
+        _clean = isinstance(_en, str) and _en.strip() and "@" not in _en
+        if _tpl and not _clean:
+            return _as_param_value(_tpl, pl)
+
     # 1) 实体字段匹配：先精确匹配（防止 "id" 等短 key 抢先命中 merchantId/terminalIds
     #    等长参数名，取错实体自身 id），无精确命中再做包含匹配
     for k, v in e.items():
@@ -1796,6 +1832,11 @@ _ENTITY_ROLE_KEYS = {
     "menu": ["menuId", "menuIds"],
     "category": ["categoryId", "categoryIds"],
     "product": ["productId", "itemId", "goodsId", "dishId", "skuId"],
+    # 以下层级用于「新建类工具」选实体：需要一条干净的、同类型的实体做模板，
+    # 否则会落到全量回退抽到无关实体（如邮箱订阅）导致参数串值。
+    "spec": ["specId", "specIds"],
+    "tax": ["taxId", "taxIds"],
+    "area": ["areaId", "areaIds"],
 }
 
 
@@ -1813,6 +1854,28 @@ def _entity_role_of(cap):
     name = cap.get("能力") or ""
     if tool == "query_companies" or "公司" in name:
         return "company"
+
+    # 新建类工具按「工具名」定层级 —— 必须放在参数匹配之前。
+    # 事故（2026-11-17）：category_create 的参数只有 [merchId, name]，不含 categoryId，
+    # 无法靠参数名推断出 category 层，于是落到 _pick_entity_for 的全量回退轮换，
+    # 抽到「订单通知邮箱订阅」实体（字段 emailId/subscriptionId/email，被误判为 store 层），
+    # name 参数就取到了 email 字段值 —— 后台因此出现一堆
+    # 「944600294qq@gmail.com」分类。spec_create 同理会拿到配送区域名。
+    # 这里按工具名前缀直接定层，create 类工具无需依赖参数里是否带 ID。
+    _tl = tool.lower()
+    if any(_tl.startswith(p) for p in ("category_", "categorycreate")):
+        return "category"
+    if _tl.startswith("menu_"):
+        return "menu"
+    if any(_tl.startswith(p) for p in ("item_", "food_", "product_", "sku_")):
+        return "product"
+    if _tl.startswith("spec_"):
+        return "spec"
+    if _tl.startswith("tax_"):
+        return "tax"
+    if any(_tl.startswith(p) for p in ("delivery_area", "add_delivery_area",
+                                       "update_delivery_area")):
+        return "area"
     if "categoryname" in pl or "categoryids" in pl or "categoryid" in pl:
         return "category"
     # 商品类实体：不同系统叫法不同（product / item / goods / dish / food / sku），
@@ -1860,6 +1923,30 @@ def _pick_entity_for(cap, P, fallback_idx=0, idx=None):
 
     role = _entity_role_of(cap)
     pl = " ".join(str(p) for p in (cap.get("参数") or [])).lower()
+
+    # 剔除「子资源类」实体：它们不是业务主实体，字段结构也不同名（只有 email/
+    # subscriptionId 等），一旦被选中当模板，name 参数就会取到 email 值。
+    # 事故（2026-11-17）：订单通知邮箱订阅实体被当成通用实体轮换，
+    # 生成出「944600294qq@gmail.com」这个分类名。
+    _SUB_RESOURCE_KEYS = ("emailId", "subscriptionId", "subscriberId",
+                          "reportId", "notificationId")
+    _clean_P = [x for x in P
+                if not any(k in x for k in _SUB_RESOURCE_KEYS)]
+    if _clean_P:
+        P = _clean_P
+
+    # 该层级在实体清单里压根没有样本（如 PocketStore 无 specId 实体）时，
+    # 不能退到「全量轮换」——那样会拿店铺名/商品名当规格名，
+    # 后台就出现「Delivery Area 6」「cayson店鋪3」这类规格。
+    # 改为返回空 dict，让调用方用工具专用模板名（见 _template_name_for）。
+    if role and role not in ("store", "company"):
+        has_role = any(any(k in x for k in
+                           (v if isinstance(v, list) else [v]))
+                       for x in P
+                       for v in [_ENTITY_ROLE_KEYS.get(role)])
+        if not has_role:
+            return {}
+
     if idx is None:
         idx = _ENTITY_ROTATE["cursor"]
         _ENTITY_ROTATE["cursor"] += 1

@@ -2462,7 +2462,7 @@
     tool_name: menu_create
     tool_params: &id100
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: DeliConnect Area 1
+      name: TEST_MENU
   期望:
     intent: 新建菜单
     params: *id100
@@ -2764,7 +2764,7 @@
     tool_name: category_create
     tool_params: &id114
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
   期望:
     intent: 新建分类
     params: *id114
@@ -2779,7 +2779,7 @@
   输入:
     tool_name: category_create
     tool_params: &id115
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
   期望:
     intent: 新建分类
     params: *id115
@@ -2800,7 +2800,7 @@
     tool_name: category_create
     tool_params: &id116
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       categoryId: 08df3403-9017-494e-81df-c3e704bf30f4
       sort: 1
       localizedNames:
@@ -2832,7 +2832,7 @@
     tool_name: category_create
     tool_params: &id117
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       categoryId: 08df3403-9017-494e-81df-c3e704bf30f4
       sort: 1
       menuIds: &id738
@@ -2855,7 +2855,7 @@
     tool_name: category_create
     tool_params:
       merchId: '0'
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
   期望:
     intent: 新建分类
     params: *id114
@@ -2876,7 +2876,7 @@
     tool_name: category_create
     tool_params: &id118
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
   期望:
     intent: 新建分类
     params: *id118
@@ -2892,7 +2892,7 @@
     tool_name: category_update
     tool_params: &id119
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
   期望:
     intent: 修改分类
     params: *id119
@@ -2908,7 +2908,7 @@
   输入:
     tool_name: category_update
     tool_params: &id120
-      newName: all
+      newName: TEST_CATEGORY
   期望:
     intent: 修改分类
     params: *id120
@@ -2930,7 +2930,7 @@
     tool_name: category_update
     tool_params: &id121
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       sort: 1
       localizedNames:
       - languageCode: zh-TW
@@ -2963,7 +2963,7 @@
     tool_name: category_update
     tool_params: &id122
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       sort: 1
       menuIds:
       - 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
@@ -2997,7 +2997,7 @@
     tool_name: category_update
     tool_params: &id123
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       sort: 1
       menuIds: &id698
       - 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
@@ -3021,7 +3021,7 @@
     tool_name: category_update
     tool_params:
       categoryId: '0'
-      newName: all
+      newName: TEST_CATEGORY
   期望:
     intent: 修改分类
     params: *id119
@@ -3043,7 +3043,7 @@
     tool_name: category_update
     tool_params: &id124
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: 午餐
+      newName: TEST_CATEGORY
   期望:
     intent: 修改分类
     params: *id124
@@ -3338,7 +3338,7 @@
     tool_name: tax_create
     tool_params: &id136
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 1.0
   期望:
     intent: 新建税率
@@ -3354,7 +3354,7 @@
   输入:
     tool_name: tax_create
     tool_params: &id137
-      name: probe
+      name: TEST_TAX
       tax: 1.0
   期望:
     intent: 新建税率
@@ -3376,7 +3376,7 @@
     tool_name: tax_create
     tool_params: &id138
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 1.0
       taxId: 3e14c847-6d90-4add-9480-74bb4646b387
       type: Percentage
@@ -3396,7 +3396,7 @@
     tool_name: tax_create
     tool_params:
       merchId: '0'
-      name: probe
+      name: TEST_TAX
       tax: 1.0
   期望:
     intent: 新建税率
@@ -3418,7 +3418,7 @@
     tool_name: tax_create
     tool_params: &id139
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: all
+      name: TEST_TAX
       tax: 1.0
   期望:
     intent: 新建税率
@@ -3611,7 +3611,7 @@
     tool_name: spec_create
     tool_params: &id148
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
   期望:
     intent: 新建规格组
     params: *id148
@@ -3626,7 +3626,7 @@
   输入:
     tool_name: spec_create
     tool_params: &id149
-      name: Delivery Area 6
+      name: TEST_SPEC
   期望:
     intent: 新建规格组
     params: *id149
@@ -3647,7 +3647,7 @@
     tool_name: spec_create
     tool_params: &id150
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       specId: d0390a71-1263-4bd1-b23f-b26702ac3b44
       minimumSelection: 1
       maximumSelection: 1
@@ -3670,7 +3670,7 @@
     tool_name: spec_create
     tool_params:
       merchId: '0'
-      name: Delivery Area 6
+      name: TEST_SPEC
   期望:
     intent: 新建规格组
     params: *id148
@@ -5680,7 +5680,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id231
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
   期望:
@@ -5720,7 +5720,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id233
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
       id: 08df3403-9017-494e-81df-c3e704bf30f4
@@ -5768,7 +5768,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id234
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
   期望:
@@ -11484,7 +11484,7 @@
     tool_name: menu_create
     tool_params: &id401
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: DeliConnect Area 1
+      name: TEST_MENU
   期望:
     intent: 新建菜单
     params: *id401
@@ -12048,7 +12048,7 @@
     tool_name: category_create
     tool_params: &id414
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
   期望:
     intent: 新建分类
     params: *id414
@@ -12064,7 +12064,7 @@
     tool_name: category_create
     tool_params: &id415
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
   期望:
     intent: 新建分类
     params: *id415
@@ -12117,7 +12117,7 @@
     tool_name: category_create
     tool_params: &id416
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       confirm: true
   期望:
     intent: 新建分类
@@ -12181,7 +12181,7 @@
     tool_name: category_update
     tool_params: &id418
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: probe
+      newName: TEST_CATEGORY
   期望:
     intent: 修改分类
     params: *id418
@@ -12198,7 +12198,7 @@
     tool_name: category_update
     tool_params: &id419
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: 晚餐
+      newName: TEST_CATEGORY
   期望:
     intent: 修改分类
     params: *id419
@@ -12634,7 +12634,7 @@
     tool_name: tax_create
     tool_params: &id428
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 1.0
   期望:
     intent: 新建税率
@@ -12651,7 +12651,7 @@
     tool_name: tax_create
     tool_params: &id429
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: all
+      name: TEST_TAX
       tax: 1.0
   期望:
     intent: 新建税率
@@ -12705,7 +12705,7 @@
     tool_name: tax_create
     tool_params: &id430
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 1.0
       confirm: true
   期望:
@@ -12985,7 +12985,7 @@
     tool_name: spec_create
     tool_params: &id436
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
   期望:
     intent: 新建规格组
     params: *id436
@@ -13054,7 +13054,7 @@
     tool_name: spec_create
     tool_params: &id438
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       confirm: true
   期望:
     intent: 新建规格组
@@ -15851,7 +15851,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id501
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
   期望:
@@ -15869,7 +15869,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id502
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
   期望:
@@ -20074,7 +20074,7 @@
     tool_name: category_update
     tool_params: &id588
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       confirm: true
   对账:
     read_tool: category_list
@@ -20676,7 +20676,7 @@
     tool_name: category_create
     tool_params: &id607
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       confirm: true
   对账:
     read_tool: category_list
@@ -20764,7 +20764,7 @@
     tool_name: tax_create
     tool_params: &id610
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 1.0
       confirm: true
   对账:
@@ -20794,7 +20794,7 @@
     tool_name: spec_create
     tool_params: &id611
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       confirm: true
   对账:
     read_tool: spec_detail
@@ -20853,7 +20853,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id613
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
       confirm: true
@@ -21504,7 +21504,7 @@
     tool_name: tax_create
     tool_params: &id628
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 0
       taxId: 3e14c847-6d90-4add-9480-74bb4646b387
       type: Percentage
@@ -22122,7 +22122,7 @@
     tool_name: tax_create
     tool_params: &id648
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 9999999999999999
       taxId: 3e14c847-6d90-4add-9480-74bb4646b387
       type: Percentage
@@ -22308,7 +22308,7 @@
     tool_name: tax_create
     tool_params: &id653
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 9999999999999999
   期望:
     intent: 新建税率
@@ -22832,7 +22832,7 @@
     tool_name: category_create
     tool_params: &id669
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       unknown_param: x
   期望:
     intent: 新建分类
@@ -23295,7 +23295,7 @@
     tool_name: spec_create
     tool_params: &id683
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       specId: d0390a71-1263-4bd1-b23f-b26702ac3b44
       minimumSelection: abc
       maximumSelection: 1
@@ -23322,7 +23322,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id684
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
       id: 08df3403-9017-494e-81df-c3e704bf30f4
@@ -23509,7 +23509,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id687
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
       id: 08df3403-9017-494e-81df-c3e704bf30f4
@@ -23852,7 +23852,7 @@
     tool_name: category_update
     tool_params: &id699
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       sort: 9999999999999999
       menuIds: *id698
       localizedNames:
@@ -24444,7 +24444,7 @@
     tool_name: category_update
     tool_params: &id711
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       sort: -1
       menuIds: *id698
       localizedNames:
@@ -25294,7 +25294,7 @@
     tool_name: category_update
     tool_params: &id732
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       sort: 0
       menuIds: *id698
       localizedNames:
@@ -25476,7 +25476,7 @@
     tool_name: tax_create
     tool_params: &id737
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 1.0
       unknown_param: x
   期望:
@@ -25514,7 +25514,7 @@
     tool_name: category_create
     tool_params: &id739
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       categoryId: 08df3403-9017-494e-81df-c3e704bf30f4
       sort: abc
       menuIds: *id738
@@ -25717,7 +25717,7 @@
     tool_name: spec_create
     tool_params: &id745
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       unknown_param: x
   期望:
     intent: 新建规格组
@@ -25936,7 +25936,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id749
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
       unknown_param: x
@@ -26038,7 +26038,7 @@
     tool_name: spec_create
     tool_params: &id752
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       specId: d0390a71-1263-4bd1-b23f-b26702ac3b44
       minimumSelection: 0
       maximumSelection: 1
@@ -26299,7 +26299,7 @@
     tool_name: tax_create
     tool_params: &id760
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 1.0
       taxId: 3e14c847-6d90-4add-9480-74bb4646b387
       type: Percentage
@@ -27091,7 +27091,7 @@
     tool_name: spec_create
     tool_params: &id782
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       specId: d0390a71-1263-4bd1-b23f-b26702ac3b44
       minimumSelection: -1
       maximumSelection: 1
@@ -27311,7 +27311,7 @@
     tool_name: spec_create
     tool_params: &id788
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       specId: d0390a71-1263-4bd1-b23f-b26702ac3b44
       minimumSelection: 1
       maximumSelection: 1
@@ -27539,7 +27539,7 @@
   输入:
     tool_name: category_update
     tool_params: &id794
-      newName: all
+      newName: TEST_CATEGORY
       sort: 1
       menuIds: *id698
       localizedNames:
@@ -27967,7 +27967,7 @@
     tool_name: category_update
     tool_params: &id806
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       unknown_param: x
   期望:
     intent: 修改分类
@@ -28165,7 +28165,7 @@
   输入:
     tool_name: category_create
     tool_params: &id811
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       categoryId: 08df3403-9017-494e-81df-c3e704bf30f4
       sort: 1
       menuIds: *id738
@@ -28278,7 +28278,7 @@
   输入:
     tool_name: spec_create
     tool_params: &id814
-      name: Delivery Area 6
+      name: TEST_SPEC
       specId: d0390a71-1263-4bd1-b23f-b26702ac3b44
       minimumSelection: 1
       maximumSelection: 1
@@ -28802,7 +28802,7 @@
     tool_name: tax_create
     tool_params: &id828
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: abc
   期望:
     intent: 新建税率
@@ -29250,7 +29250,7 @@
     tool_name: category_create
     tool_params: &id842
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       categoryId: 08df3403-9017-494e-81df-c3e704bf30f4
       sort: -1
       menuIds: *id738
@@ -29570,7 +29570,7 @@
     tool_name: spec_create
     tool_params: &id852
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: Delivery Area 6
+      name: TEST_SPEC
       specId: d0390a71-1263-4bd1-b23f-b26702ac3b44
       minimumSelection: 9999999999999999
       maximumSelection: 1
@@ -29722,7 +29722,7 @@
   输入:
     tool_name: create_reward_campaign
     tool_params: &id856
-      name: 944600294qq@gmail.com
+      name: TEST_CAMPAIGN
       startDate: '2026-01-01'
       endDate: '2026-01-08'
       id: 08df3403-9017-494e-81df-c3e704bf30f4
@@ -29969,7 +29969,7 @@
     tool_name: category_update
     tool_params: &id862
       categoryId: 39819ca5-95aa-4156-96ff-dc3a0da3cdfd
-      newName: all
+      newName: TEST_CATEGORY
       sort: abc
       menuIds: *id698
       localizedNames:
@@ -31038,7 +31038,7 @@
   输入:
     tool_name: tax_create
     tool_params: &id891
-      name: probe
+      name: TEST_TAX
       tax: 1.0
       taxId: 3e14c847-6d90-4add-9480-74bb4646b387
       type: Percentage
@@ -31298,7 +31298,7 @@
     tool_name: tax_create
     tool_params: &id898
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: probe
+      name: TEST_TAX
       tax: 0
   期望:
     intent: 新建税率
@@ -31518,7 +31518,7 @@
     tool_name: category_create
     tool_params: &id904
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       categoryId: 08df3403-9017-494e-81df-c3e704bf30f4
       sort: 0
       menuIds: *id738
@@ -31567,7 +31567,7 @@
     tool_name: category_create
     tool_params: &id905
       merchId: d87a750e-88a9-4f6e-8a33-2f81cf6d38ed
-      name: 944600294qq@gmail.com
+      name: TEST_CATEGORY
       categoryId: 08df3403-9017-494e-81df-c3e704bf30f4
       sort: 9999999999999999
       menuIds: *id738
