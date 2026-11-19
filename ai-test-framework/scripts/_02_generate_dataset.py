@@ -510,6 +510,479 @@ def _template_name_for(tool):
     return _TOOL_TEMPLATE_NAME.get(str(tool or "").lower())
 
 
+# =====================================================================
+# 按 schema 造值（参数取值的唯一权威来源）
+# =====================================================================
+# 设计原则（2026-11-18 重构）：
+#   MCP 的 tools/list 已经返回了每个工具的完整 inputSchema —— 参数名、类型、
+#   必填、枚举、数值范围、format 全都在里面。数据集应**直接照 schema 生成**，
+#   而不是从实体清单里按字段名模糊匹配。
+#
+#   历史做法（模糊匹配实体字段）造成的问题：
+#     add_delivery_area.latitude   (number) 被匹配成字面量 'Latitude'
+#     tax_create.tax               (number) 被匹配成 UUID 字符串
+#     add_pickup_time_slot.days    (array)  被匹配成 'Monday'
+#     category_create.name                  被匹配成邮箱 'xxx@gmail.com'
+#     spec_create.name                      被匹配成配送区域名 'Delivery Area 6'
+#
+#   正确的取值规则（按参数语义分三类，不是一刀切）：
+#     ① 引用类：format=uuid 或 参数名以 Id/Ids 结尾 → **必须用真实值**
+#        （捏造 UUID 会让服务端报“实体不存在”，且这类值无业务语义，只是引用）
+#     ② 搜索类：keyword/search/query → **用真实值**
+#        （用捏造关键字搜不到任何结果，验证不了筛选能力）
+#     ③ 其余：按 schema 造值 → **用 AUTOTEST_* 捏造值 + schema 区间内数值**
+#        （name/description 这类是“要写入的新值”，捏造即可；
+#         且便于识别测试数据、批量清理、不污染业务）
+#
+#   实测验证（2026-11-18）：
+#     add_delivery_area(name="AUTOTEST_AREA", latitude=22.5175)
+#       → code=0, isExecuted=true，回读可见，删除成功（完整闭环）
+#     category_update(categoryId=<真实ID>, name="AUTOTEST_RENAMED")
+#       → code=0，正确按真实ID定位、按捏造名更新
+# =====================================================================
+
+# 这些参数名的语义是「搜索/过滤条件」，必须用真实值才有意义
+_SEARCH_PARAMS = ("keyword", "search", "query", "q", "searchtext",
+                  "filter", "namekeyword")
+
+# 这些参数名的语义是「要写入的新值/描述」，用捏造值最安全
+_FREE_TEXT_PARAMS = ("name", "newname", "description", "desc", "title",
+                     "note", "notes", "remark", "comment", "label",
+                     "categoryname", "specname", "menuname", "areaname",
+                     "transactiondescriptor", "bannerurl", "logourl")
+
+# 已知语义参数的合理取值（schema 只给 min/max，但这些有业务习惯值）
+_SEMANTIC_NUMERIC = {
+    "latitude": 22.5175, "lat": 22.5175,
+    "longitude": 113.3926, "lng": 113.3926, "lon": 113.3926,
+    "deliveryradiusmiles": 2, "radius": 2,
+    "deliveryfee": 0, "minimumamountfordelivery": 0,
+    "deliveryfeetaxable": False, "allowasap": True,
+}
+
+
+def _main_type(decl):
+    """取 schema 的「主类型」（忽略 null）。"""
+    t = (decl or {}).get("type")
+    types = t if isinstance(t, list) else [t]
+    for x in types:
+        if x and x != "null":
+            return str(x)
+    return None
+
+
+def _numeric_in_range(decl, param_lower=""):
+    """按 schema 的 minimum/maximum 取一个合法数值。
+
+    优先用已知语义值（经纬度等），否则取区间内的安全点。
+    """
+    if param_lower in _SEMANTIC_NUMERIC \
+            and isinstance(_SEMANTIC_NUMERIC[param_lower], (int, float)):
+        return _SEMANTIC_NUMERIC[param_lower]
+
+    lo = decl.get("minimum")
+    hi = decl.get("maximum")
+    is_int = _main_type(decl) == "integer"
+
+    # 上限常被写成 1.7976931348623157e+308（double max），当作无上限
+    if hi is not None and hi > 1e30:
+        hi = None
+
+    if lo is not None and hi is not None:
+        val = lo + (hi - lo) * 0.5
+    elif lo is not None:
+        val = lo + 1 if lo < 0 else max(lo, 1)
+    elif hi is not None:
+        val = min(hi, 1)
+    else:
+        val = 1
+
+    if is_int:
+        return int(val)
+    return float(val) if isinstance(val, float) else val
+
+
+def _bool_in_schema(decl, param_lower=""):
+    """按 schema 的 boolean 造值。"""
+    if param_lower in _SEMANTIC_NUMERIC:
+        v = _SEMANTIC_NUMERIC[param_lower]
+        if isinstance(v, bool):
+            return v
+    return True
+
+
+def _build_object_from_schema(decl, ctx):
+    """按 object 的 properties 递归构造对象值。
+
+    properties 里每个子项可能是：
+      - 完整的 schema dict（从 _RAW_DECL 拿到的原始声明）
+      - 只有 type 字符串（从 _TOOL_PARAM_TYPES 扁平化的 properties）
+    两种都要兼容。
+    """
+    props = (decl or {}).get("properties") or {}
+    if not props:
+        return {}
+    out = {}
+    for k, sub in props.items():
+        if isinstance(sub, dict):
+            out[k] = _value_by_schema(k, sub, ctx)
+        else:
+            # 只有类型字符串：包成 {type: ...} 继续走同一套规则
+            out[k] = _value_by_schema(k, {"type": sub}, ctx)
+    return out
+
+
+def _value_by_schema(param, decl, ctx):
+    """★ 核心：完全按 schema 声明为单个参数造值。
+
+    这是生成器取值的**唯一权威入口**。除「引用类 ID」外，不再访问实体清单。
+    """
+    if not isinstance(decl, dict):
+        return None
+    pl = str(param).lower()
+    main = _main_type(decl)
+    fmt = decl.get("format")
+
+    # ---------- ① 引用类：必须用真实值 ----------
+    if fmt == "uuid":
+        # merchId 等上下文参数由执行器补齐；其余按参数层级从实体清单取
+        v = ctx.real_id_for(param) if ctx else None
+        if v:
+            return v
+        # 取不到真实 ID 时返回 None（宁可不传，也不捏造 UUID 制造假失败）
+        return None
+
+    if pl.endswith("id") or pl.endswith("ids"):
+        # 未标 format 但名字是 ID 类：同样按引用处理。
+        # ⚠ `xxIds`（复数）在 schema 里是 array 类型，必须返回**数组**，
+        #   否则服务端 type 校验失败（实测 batch_item_price.merchFoodIds
+        #   声明 array 却收到 str）。
+        is_plural = (pl.endswith("ids")
+                     or main == "array")
+        # 只有「店铺自身的 ID」才用上下文 merchantId。
+        # ⚠ 不能用 startswith("merch")：merchManagerId（员工）也以 merch 开头，
+        #   会被误判成店铺 ID（实测 userId → 返回了 merchId）。
+        if pl in ("merchid", "merchantid", "storeid", "shopid"):
+            v = ctx.merchant_id() if ctx else None
+            return v or None
+        v = ctx.real_id_for(param) if ctx else None
+        if v:
+            return [v] if is_plural else v
+        # 复数 ID 且拿不到真实值：返回空数组比返回 None 更安全
+        # （空数组是合法值，表示「没有关联」；None 会被整个剔除导致必填缺失）
+        return [] if is_plural else None
+
+    # ---------- ② 枚举（必须早于搜索类判断）----------
+    #    否则 days/status 这类参数名可能误入搜索分支，被塞进实体名
+    if decl.get("enum"):
+        return decl["enum"][0]
+
+    # 描述里显式列了候选值的（如 areaType: "circle" = ...）
+    # ⚠ 只对 **标量** 参数生效；array 类型的 days 也有一堆候选值，
+    #   但必须返回列表而不是单值，交给下面的 array 分支处理。
+    if main == "string":
+        _desc_enum = _enum_from_description(decl.get("description") or "", param)
+        if _desc_enum:
+            return _desc_enum[0]
+
+    # ---------- ③ 搜索类：用真实值才有意义 ----------
+    if main == "string" and any(s == pl or s in pl for s in _SEARCH_PARAMS):
+        v = ctx.real_sample_for(param) if ctx else None
+        return v if v else None
+
+    # ---------- ③ 枚举 ----------
+
+    # ---------- ④ 按类型造值 ----------
+    if main in ("number", "integer"):
+        return _numeric_in_range(decl, pl)
+
+    if main == "boolean":
+        return _bool_in_schema(decl, pl)
+
+    if main == "array":
+        items = decl.get("items") or {}
+        it_type = items.get("type")
+        it_types = it_type if isinstance(it_type, list) else [it_type]
+        it_main = next((x for x in it_types if x and x != "null"), None)
+        if it_main == "object":
+            return [_build_object_from_schema(items, ctx)]
+        if it_main == "string" and items.get("enum"):
+            return [items["enum"][0]]
+        if it_main in ("number", "integer"):
+            return [_numeric_in_range(items, "")]
+        if it_main == "boolean":
+            return [True]
+        # array<string> 无正式枚举：先看描述里的候选值（days 的 ["Monday",...]），
+        # 再按参数语义取真实样本，最后才捏造。
+        _de = _enum_from_description(decl.get("description") or "", param)
+        if _de:
+            return [_de[0]]
+        if any(s in pl for s in _SEARCH_PARAMS):
+            sample = ctx.real_sample_for(param) if ctx else None
+            return [sample] if sample else [_test_string(param)]
+        return [_test_string(param)]
+
+    if main == "object":
+        return _build_object_from_schema(decl, ctx)
+
+    # ---------- ⑤ string ----------
+    if fmt == "date-time":
+        return ctx.now_iso() if ctx else "2026-01-01T00:00:00Z"
+    if fmt == "date":
+        return "2026-01-01"
+    if fmt == "time":
+        return "12:00"
+    if fmt == "email":
+        return "autotest@example.com"
+    if fmt == "uri" or fmt == "url":
+        return "https://example.com/autotest.png"
+
+    # 时间/日期的常见参数名（未标 format）
+    if any(k in pl for k in ("time", "hour")) and "days" not in pl:
+        if "open" in pl or "start" in pl:
+            return "10:00"
+        if "close" in pl or "end" in pl:
+            return "20:00"
+        return "12:00"
+
+    # days 类参数交给下面的 array 分支统一处理（那里会按 items 构造列表）；
+    # 这里只处理「单个 day」的标量参数。
+    if "day" in pl and main != "array":
+        return "Monday"
+
+    # 名称/描述类 → 统一捏造名，便于识别与清理
+    return _test_string(param)
+
+
+def _test_string(param):
+    """捏造一个可识别的测试字符串值。"""
+    return "AUTOTEST_" + str(param).upper().replace(" ", "_")[:24]
+
+
+# 描述里「候选值」的常见写法： "circle" = ... / Allowed: a, b, c / Valid: xxx
+_DESC_ENUM_PATTERNS = (
+    # "circle" = draw a circle ... / "polygon" = ...
+    re.compile(r'"([A-Za-z][A-Za-z0-9_\- ]{1,24})"\s*='),
+    # Valid: Monday, Tuesday / Allowed values: a, b
+    re.compile(r'(?:Valid|Allowed|Supported|可选|合法)[^:：]*[:：]\s*'
+               r'([A-Za-z][A-Za-z0-9_\-]*(?:\s*[,，]\s*[A-Za-z][A-Za-z0-9_\-]*)*)'),
+)
+
+
+def _enum_from_description(desc, param=""):
+    """从参数 description 里提取候选值列表。
+
+    schema 里只有 12 个参数带正式 enum，但大量参数的 description 写了可用值，
+    例如：
+        areaType: 'The type of delivery area. "circle" = draw a circle ...'
+        days    : 'E.g., ["Monday", "Tuesday", "Wednesday"]'
+    这些是最贴合服务端真实取值的信息，比捏造值可靠得多。
+    """
+    if not desc or len(desc) < 5:
+        return None
+    pl = str(param).lower()
+
+    # 星期类参数：直接给 Monday（服务端通常接受单天）
+    if "day" in pl:
+        m = re.search(r'\[?\s*"(Monday)"', desc)
+        if m:
+            return [m.group(1)]
+        if "day" in desc.lower():
+            return ["Monday"]
+
+    for pat in _DESC_ENUM_PATTERNS:
+        vals = []
+        for m in pat.finditer(desc):
+            raw = m.group(1)
+            for x in re.split(r"\s*[,，]\s*", raw):
+                x = x.strip()
+                # 过滤掉明显不是取值的东西（句子片段）
+                if 2 <= len(x) <= 24 and x.isascii() and " " not in x.strip():
+                    vals.append(x)
+        if vals:
+            # 去掉重复，保持原序
+            seen = set()
+            out = []
+            for v in vals:
+                if v not in seen:
+                    seen.add(v)
+                    out.append(v)
+            return out[:6]
+    return None
+
+
+class _SchemaCtx:
+    """按 schema 造值时需要的「真实值」上下文（仅引用类/搜索类会用到）。
+
+    刻意只暴露三个方法，避免又变成“到处从实体取值”。
+    """
+
+    def __init__(self, entity=None, pool=None, merchant_id=None):
+        self.entity = entity or {}
+        self.pool = pool or []
+        self._merchant_id = merchant_id
+
+    def merchant_id(self):
+        return self._merchant_id
+
+    def real_id_for(self, param):
+        """按参数层级，从实体池里取一个真实 ID。
+
+        ⚠ 取不到就返回 None，**绝不回退到 merchantId**。
+        事故（2026-11-18 小样本验证暴露）：
+          update_discount_campaign.campaignId 在实体清单里没有活动数据，
+          却没被任何分支覆盖 → want=None → 外层兜底逻辑把它填成了 merchId，
+          调用变成 update_discount_campaign(campaignId=<merchId>) → 服务端 1006。
+          ID 类参数填错实体 ID 比「不传」危险得多：不传会被 schema 校验拦住，
+          填错则会真的去操作一个错误的实体。
+        """
+        pl = str(param).lower()
+        # 参数名 → 需要的实体层级
+        want = None
+        if "categor" in pl:
+            want = ("categoryId", "categoryIds")
+        elif "menu" in pl:
+            want = ("menuId", "menuIds")
+        elif "spec" in pl:
+            want = ("specId", "specIds")
+        elif "tax" in pl:
+            want = ("taxId", "taxIds")
+        elif "area" in pl:
+            want = ("areaId", "areaIds")
+        elif "campaign" in pl:
+            # 活动类：折扣活动 / 奖励活动。实体清单里通常没有活动样本，
+            # 取不到就返回 None（由调用方决定跳过），不能拿别的 ID 顶替。
+            want = ("campaignId", "campaignIds", "discountCampaignId",
+                    "rewardCampaignId")
+        elif any(k in pl for k in ("item", "food", "product")):
+            want = ("itemId", "itemIds", "foodId", "merchFoodIds")
+        elif any(k in pl for k in ("user", "manager", "employee")):
+            # ⚠ 必须放在 merchant 判断之前：merchManagerId 也以 merch 开头，
+            #   若先判 merchant 会把它当成店铺 ID 返回 merchId（实测踩到）。
+            want = ("merchManagerId", "userId")
+        elif any(k in pl for k in ("merchant", "store", "shop")):
+            # 只有「确实是 merchant/store/shop 的 ID」才用上下文 ID
+            return self._merchant_id
+
+        if not want:
+            return None
+
+        for ent in self.pool:
+            if not isinstance(ent, dict):
+                continue
+            for k in want:
+                if ent.get(k):
+                    v = ent[k]
+                    if isinstance(v, str) and len(v) >= 8:
+                        return v
+                    if isinstance(v, list) and v and isinstance(v[0], str):
+                        return v[0]
+        return None
+
+    def real_sample_for(self, param):
+        """搜索/过滤类参数：取实体里的真实样本值。"""
+        pl = str(param).lower()
+        keys = []
+        if "keyword" in pl or "search" in pl or "query" in pl:
+            keys = ("name", "email", "phone", "categoryName")
+        elif "status" in pl:
+            keys = ("status", "salesStatus")
+        else:
+            keys = ("name",)
+        for ent in [self.entity] + list(self.pool):
+            if not isinstance(ent, dict):
+                continue
+            for k in keys:
+                v = ent.get(k)
+                if isinstance(v, str) and v.strip() and "@" not in v:
+                    return v
+        return None
+
+    def now_iso(self):
+        import datetime as _dt
+        return _dt.datetime.now().replace(microsecond=0).isoformat() + "Z"
+
+
+# 当前跑批的实体全集（由 build() 设置，供 _SchemaCtx 取引用类 ID）
+_CURRENT_POOL = []
+
+
+def _current_merchant_id():
+    """从实体池里找出 merchant/shop 的 ID（用于 merchId 类参数）。"""
+    for ent in _CURRENT_POOL:
+        if not isinstance(ent, dict):
+            continue
+        for k in ("merchId", "merchantId", "storeId", "shopId"):
+            v = ent.get(k)
+            if isinstance(v, str) and len(v) >= 8:
+                return v
+    return None
+
+
+# schema 声明缓存：{(tool, param): decl}，避免每次取值都遍历
+_DECL_CACHE = {}
+
+# 原始参数声明：{工具名: {参数名: 原始 schema dict}}，由 load_param_types 填充。
+# 「按 schema 造值」直接读这里，保证拿到 format/minimum/maximum/items.properties
+# 等完整信息（_TOOL_PARAM_TYPES 是扁平版，会丢掉这些）。
+_RAW_DECL = {}
+
+
+def _decl_for(tool, param):
+    """取某工具某参数的**原始 schema 声明**（dict）；无声明返回 None。
+
+    直接从 _RAW_DECL 拿完整声明，而不是从 _TOOL_PARAM_TYPES 的扁平记录还原 ——
+    扁平记录只保留了 type/items_type/enum/properties，会丢掉
+    format/minimum/maximum/items.properties 等「按 schema 造值」必需的信息。
+    """
+    if not tool:
+        return None
+    key = (str(tool), str(param))
+    if key in _DECL_CACHE:
+        return _DECL_CACHE[key]
+
+    out = None
+    props = _RAW_DECL.get(str(tool)) or {}
+    decl = props.get(str(param))
+    if decl is None and props:
+        pl = str(param).lower()
+        for k, v in props.items():
+            if str(k).lower() == pl:
+                decl = v
+                break
+    if isinstance(decl, dict):
+        out = decl
+
+    # 原始 schema 未加载到时，退回扁平记录（尽力而为，至少类型是对的）
+    if out is None:
+        bag = _TOOL_PARAM_TYPES.get(str(tool)) or {}
+        flat = bag.get(str(param))
+        if isinstance(flat, dict):
+            out = {
+                "type": flat.get("type"),
+                "format": flat.get("format"),
+                "enum": flat.get("enum"),
+                "minimum": flat.get("minimum"),
+                "maximum": flat.get("maximum"),
+            }
+            it = {}
+            if flat.get("items_type"):
+                it["type"] = flat["items_type"]
+            if flat.get("items_enum"):
+                it["enum"] = flat["items_enum"]
+            if flat.get("items_properties"):
+                it["type"] = "object"
+                it["properties"] = flat["items_properties"]
+            if it:
+                out["items"] = it
+            if flat.get("properties"):
+                out["properties"] = flat["properties"]
+            out = {k: v for k, v in out.items() if v is not None}
+
+    _DECL_CACHE[key] = out
+    return out
+
+
 def _param_value(param, e, tool=None):
     """为一个参数名从实体数据生成值（语义匹配，不绑定任何业务字段名）。
 
@@ -522,6 +995,55 @@ def _param_value(param, e, tool=None):
     （见 _enum_for 的 2026-10-30 事故说明）。省略时退化为旧行为。
     """
     pl = str(param).lower()
+
+    # ★ 0-0-0) 按 schema 造值 —— 现在的**第一优先级**。
+    #    只要该工具该参数在 schema 里有声明，就完全按 type/format/enum/min/max
+    #    推导，不再进入下面的「实体字段模糊匹配」。
+    #    这是 2026-11-18 重构的核心：schema 就是参数契约，实体只提供引用类 ID。
+    #    模糊匹配是大量脏值的根源（latitude→'Latitude'、tax→UUID、
+    #    category_create.name→邮箱、spec_create.name→配送区域名）。
+    _decl_full = _decl_for(tool, param)
+
+    # ★ schema 里根本没有这个参数 → 说明能力目录写错了（拼写/命名与工具不符）。
+    #   此时**不能**走下面的实体模糊匹配——那会拿一个「名字看着像」的字段值
+    #   顶替，产生「参数不属于该工具」的非法调用。
+    #   事故（2026-11-18）：能力目录若把 merchManagerId 写成 userId，
+    #   旧逻辑会从店铺实体取到 merchId 填进去。
+    #   正确做法：返回 None（该参数会被剔除），并在校验阶段由
+    #   「参数不属于该工具」规则报出来，促使修能力目录。
+    if tool and _TOOL_PARAM_TYPES:
+        _bag = _TOOL_PARAM_TYPES.get(str(tool)) or {}
+        if _bag and _decl_full is None:
+            _pl_low2 = str(param).lower()
+            _known = any(str(k).lower() == _pl_low2 for k in _bag)
+            if not _known:
+                return None
+
+    if _decl_full:
+        _ctx = _SchemaCtx(entity=e, pool=_CURRENT_POOL,
+                          merchant_id=_current_merchant_id())
+        _v = _value_by_schema(param, _decl_full, _ctx)
+        if _v is not None and _v != "":
+            return _v
+        # ★ ID / 引用类参数：schema 已判定「拿不到真实值」时，必须就此打住。
+        #   若继续走下面的旧兜底逻辑，会把 merchantId 之类的上下文值填进去，
+        #   造成「用错误实体的 ID 去操作」——比缺参危险得多。
+        #   事故（2026-11-18）：update_discount_campaign.campaignId 被填成 merchId
+        #   → 服务端 1006。
+        _pl_low = str(param).lower()
+        # 上下文 ID：只要店铺自己的 ID。注意 merchManagerId（员工）也以 merch 开头，
+        # 必须排除，否则员工 ID 会被当成店铺 ID。
+        _is_context_id = _pl_low in ("merchid", "merchantid", "storeid", "shopid")
+        _ptype_main = _main_type(_decl_full)
+        if not _is_context_id and (
+                _decl_full.get("format") == "uuid"
+                or _pl_low.endswith(("id", "ids"))
+                or (_ptype_main == "array" and _pl_low.endswith("ids"))):
+            return None
+        # 返回 None 表示「无合法值可造」→ 交给旧逻辑兜底
+        # 返回 None 表示「该参数无合法值可造」（如引用类 ID 但实体池里没有）
+        # → 交给下面的旧逻辑兜底（可能从实体拿到），最终仍为空则会被剔除。
+
     # 0-0) 多语言名称对象（nameLocalization 等）必须**最优先**，早于枚举/实体匹配。
     #      原因（2026-11-09 实测 A-L1-048）：该参数的 description 里写着示例
     #      { "zh-CN": "新商品名", "en-US": "New Product Name" }，
@@ -617,6 +1139,29 @@ def _param_value(param, e, tool=None):
         _clean = isinstance(_en, str) and _en.strip() and "@" not in _en
         if _tpl and not _clean:
             return _as_param_value(_tpl, pl)
+
+    # 0.6) **标量类型参数优先按 schema 造值，早于实体模糊匹配**。
+    #      事故（2026-11-18 统一 schema 加载后暴露）：
+    #        add_delivery_area.latitude  (number) 被实体模糊匹配成字面量 'Latitude'
+    #        tax_create.tax              (number) 被匹配成 UUID 字符串
+    #        add_pickup_time_slot.days   (array)  被匹配成 'Monday'（字符串）
+    #      模糊匹配（pl in kl or kl in pl）太宽，实体里只要有个名字相近的字段
+    #      就会串值。number/integer/boolean/array 这类结构型参数绝不该走模糊匹配，
+    #      只认「精确同名字段」，否则一律按类型造值。
+    _ptype_info = _param_type_of(tool, param) or {}
+    _ptype_main = _ptype_info.get("type")
+    if isinstance(_ptype_main, list):
+        _ptype_main = next((x for x in _ptype_main if x and x != "null"), None)
+    if _ptype_main in ("number", "integer", "boolean", "array"):
+        # 仅当实体里存在**完全相同名字**的字段时才取实体值
+        for k, v in e.items():
+            if pl == str(k).lower():
+                _cv = _coerce_to_type(tool, param, v)
+                if _cv is not None:
+                    return _cv
+        _v = _default_for_type(tool, param, e)
+        if _v is not None:
+            return _v
 
     # 1) 实体字段匹配：先精确匹配（防止 "id" 等短 key 抢先命中 merchantId/terminalIds
     #    等长参数名，取错实体自身 id），无精确命中再做包含匹配
@@ -851,8 +1396,10 @@ def load_param_types(schema_json_path):
     遍历 inputSchema（含参数外壳），记录每个参数的 type 与数组元素类型。
     缺失/异常返回空（此时生成器退回按参数名猜，行为与改动前一致）。
     """
-    global _TOOL_PARAM_TYPES
+    global _TOOL_PARAM_TYPES, _RAW_DECL, _DECL_CACHE
     _TOOL_PARAM_TYPES = {}
+    _RAW_DECL = {}
+    _DECL_CACHE.clear()
     if not schema_json_path or not os.path.exists(schema_json_path):
         return 0
     try:
@@ -914,10 +1461,39 @@ def load_param_types(schema_json_path):
                 if isinstance(_sp, dict):
                     _sub = {str(k): (v or {}).get("type") if isinstance(v, dict)
                             else None for k, v in _sp.items()}
-            bag[str(pname)] = {"type": tp, "items_type": items_type,
-                               "enum": enum_vals, "properties": _sub}
+            # 除类型/枚举外，还要记录「按 schema 造值」必需的元信息：
+            #   format          —— 区分 uuid（引用类，必须真实ID）/ email / date-time
+            #   minimum/maximum —— 数值参数的合法区间（latitude 必须是 -90~90）
+            #   items_properties—— array<object> 的元素结构（localizedNames 等）
+            #   items_enum      —— array<string> 的元素枚举
+            # 2026-11-18：这些字段缺失时，生成器只能退回「实体字段模糊匹配」，
+            # 结果把 latitude 填成字面量 'Latitude'、tax 填成 UUID。
+            _items_props = None
+            _items_enum = None
+            if isinstance(items, dict):
+                _ip = items.get("properties")
+                if isinstance(_ip, dict):
+                    _items_props = _ip
+                _ie = items.get("enum")
+                if isinstance(_ie, list):
+                    _ie_vals = [str(x) for x in _ie if x is not None]
+                    if _ie_vals:
+                        _items_enum = _ie_vals
+            bag[str(pname)] = {
+                "type": tp, "items_type": items_type,
+                "enum": enum_vals, "properties": _sub,
+                "format": pspec.get("format"),
+                "minimum": pspec.get("minimum"),
+                "maximum": pspec.get("maximum"),
+                "items_properties": _items_props,
+                "items_enum": _items_enum,
+                "description": pspec.get("description"),
+            }
         if bag:
             _TOOL_PARAM_TYPES[name] = bag
+            # 同时保留原始声明，供「按 schema 造值」读取完整信息
+            _RAW_DECL[name] = {str(k): v for k, v in props.items()
+                               if isinstance(v, dict)}
     return len(_TOOL_PARAM_TYPES)
 
 
@@ -1426,16 +2002,23 @@ def _pick_key_optional_params(tool, tp):
     # （能力目录只声明必填），遍历 tp 会永远找不到它们 → 用例生成不出来。
     cands = []
     for p in spec:
-        if p in required or str(p).lower() == "confirm":
+        if p in required or str(p).lower() in ("confirm", "merchid", "merchantid"):
             continue
         pl = str(p).lower()
-        score = 0
+        # 打分只用于「排序优先级」，不再用于「是否入选」。
+        # 事故（2026-11-18）：原先 score==0 的参数被直接丢弃，
+        # 于是 spec_create 的 repeatSelection（单选项可重复选择次数）
+        # 因为不在 _KEY_PARAM_HINTS 关键词里而被静默漏测；
+        # 全量审计发现有 34 个工具、73 个参数同样因“名字不眼熟”被漏掉，
+        # 其中 update_reward_campaign 漏了 11 个（等于没测更新活动）。
+        # 关键词白名单永远不可能穷举业务参数，改为「默认全部入选，仅排序加权」。
         if p in explicit:
             score = 3
         elif any(h in pl for h in _KEY_PARAM_HINTS):
             score = 2
-        if score:
-            cands.append((score, p))
+        else:
+            score = 1
+        cands.append((score, p))
     # 稳定排序：同分时保持 schema 顺序（避免不同 Python 版本结果漂移）
     cands.sort(key=lambda x: -x[0])
     limit = int(_PARAM_COMPLETENESS.get("最大单缺数") or 3)
@@ -4726,29 +5309,34 @@ def main():
     # 为什么分两处：results/ 整体被 .gitignore 忽略（里面全是运行结果），
     # 但 raw schema 是生成器/校验器的**必需输入**，必须入库，否则别人拉代码后
     # 类型推断与 schema 契约检查会整体静默失效（很难发现）。
-    _sch_dirs = [os.path.join(_ROOT, "schemas"),
-                 os.path.join(_ROOT, "results", "mcp_schemas")]
-    _sch_dir = _sch_dirs[0]
-    _raw_sch = None
+    # schema 快照定位统一走 _schema_loader（与校验器共用同一口径）：
+    # 同名多份取 mtime 最新，避免入库旧快照压住刚刷新的新版。
+    # 2026-11-18 事故：schemas/PocketStore.raw.json 是 10-08 的旧版，
+    # 与 11-18 的新版并存 → 生成器读到旧版 → localizedNames 的 items.type
+    # 丢失（又生成字符串数组）、repeatSelection 完全看不见。
+    import _schema_loader as _sl
     try:
         _cfg_doc = yaml.safe_load(open(_cfg_path, encoding="utf-8")) or {}
     except Exception:
         _cfg_doc = {}
     _decl = _cfg_doc.get("原始schema") or _cfg_doc.get("schema_snapshot")
-    if _decl:
-        _cand = None
-        for _d in _sch_dirs:
-            _p = os.path.join(_d, str(_decl))
-            if os.path.exists(_p):
-                _cand = _p
-                _sch_dir = _d
-                break
-        if _cand is None:
-            _cand = os.path.join(_sch_dir, str(_decl))
-        if os.path.exists(_cand):
-            _raw_sch = _cand
+    # 系统名来源：config 的「系统」字段 → 命令行 --system → 从 config 文件名反推。
+    # ⚠ 很多 configs 压根没写「系统」字段（PocketStore.yaml 就是），
+    #   若只用 _cfg_doc.get("系统")，find_schema 会拿到 None 直接返回 None，
+    #   于是 load_param_types(None) 返回 0 → _TOOL_PARAM_TYPES 全空
+    #   → 「按 schema 造值」完全失效，生成器又退回实体模糊匹配。
+    #   2026-11-18 就是在这里被静默卡住的（types=0 的诊断打了半天才定位到）。
+    _sys_name = (_cfg_doc.get("系统")
+                 or args.system
+                 or os.path.splitext(os.path.basename(_cfg_path or ""))[0]
+                 or None)
+    _raw_sch = _sl.find_schema(system=_sys_name, declared=_decl, root=_ROOT)
+    # 显式声明名也找不到时，再按「系统名 + 兜底 stem」找一次
     if not _raw_sch:
-        _raw_sch = os.path.join(_sch_dir, f"{_stem}.raw.json")
+        _raw_sch = _sl.find_schema(system=_sys_name or _stem, declared=None,
+                                   root=_ROOT)
+    _sch_dir = (os.path.dirname(_raw_sch) if _raw_sch
+                else os.path.join(_ROOT, "results", "mcp_schemas"))
     _n_typ = load_param_types(_raw_sch)
     if _n_typ:
         print(f"参数类型: {_n_typ} 个工具（来源 {os.path.basename(_raw_sch)}，"

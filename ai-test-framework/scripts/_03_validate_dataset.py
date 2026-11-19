@@ -1012,29 +1012,35 @@ class Checker:
         得到仓库根。用 importlib 动态加载时 __file__ 可能不是绝对路径，
         会算错目录导致静默返回 {}（校验形同虚设），故多路兜底。
         """
-        base = _repo_root()
-        if not base:
-            return {}
-        out = {}
-        for dd in (os.path.join(base, "schemas"),
-                   os.path.join(base, "results", "mcp_schemas")):
-            if not os.path.isdir(dd):
-                continue
-            for p in glob.glob(os.path.join(dd, "*.raw.json")):
-                try:
-                    with open(p, encoding="utf-8") as f:
-                        j = json.load(f)
-                except Exception:
-                    continue
-                for t in (j.get("tools") or []):
-                    nm = t.get("name")
-                    sch = t.get("inputSchema") or {}
-                    props = sch.get("properties") or {}
-                    if set(props) == {"parameters"}:
-                        props = (props.get("parameters") or {}).get("properties") or {}
-                    if nm and props:
-                        out[nm] = props
-        return out
+        # 统一走 _schema_loader：与生成器共用同一份「取最新快照 + 剥壳」口径。
+        # 2026-11-18 事故：本文件里 3 处 schema 读取各自实现，只有一处修了
+        # 「取最新」，其余仍是「按目录顺序取第一个」→ 入库旧快照压住新版
+        # → 数据集实际有 76 处 localizedNames 类型错误，校验器却报 0 错误。
+        try:
+            import _schema_loader as _sl
+        except ImportError:                       # 直接跑脚本时 sys.path 已含 scripts/
+            import importlib.util as _iu
+            _p = os.path.join(_repo_root() or "", "scripts", "_schema_loader.py")
+            _spec = _iu.spec_from_file_location("_schema_loader", _p)
+            _sl = _iu.module_from_spec(_spec)
+            _spec.loader.exec_module(_sl)
+        sys_name = str((self.dataset or {}).get("系统") or "")
+        # configs 的「原始schema」可能显式指定文件名（应对系统名≠文件名，
+        # 如 POS Local路由 ↔ roosterpos），从该系统的 config 里读。
+        declared = None
+        try:
+            for _c in glob.glob(os.path.join(_repo_root() or "", "configs", "*.yaml")):
+                _stem = os.path.splitext(os.path.basename(_c))[0]
+                if sys_name and (_stem in sys_name or sys_name in _stem):
+                    _d = yaml.safe_load(open(_c, encoding="utf-8")) or {}
+                    declared = (_d.get("原始schema") or _d.get("schema_snapshot")
+                                or None)
+                    break
+        except Exception:
+            declared = None
+        return _sl.param_props_by_tool(system=sys_name or None,
+                                       declared=declared,
+                                       root=_repo_root() or None)
 
     def check_param_types(self):
         """参数值与 schema 声明类型的一致性校验（含嵌套 array<object>）。
@@ -1404,6 +1410,86 @@ class Checker:
                     self.error(f"{uid}: 存在性检查的「目标ID」({tid}) {why}，"
                                f"探针查不到真实实体，存在性对账失效")
 
+    def check_param_coverage(self):
+        """检查「schema 里的参数是否都被数据集覆盖到」。
+
+        事故（2026-11-18）：spec_create 的 repeatSelection（单选项可重复选择次数）
+        在 schema 里一直存在且可用，但 18 条用例 0 条传它 —— 因为这个参数名
+        不在生成器的 _KEY_PARAM_HINTS 关键词白名单里，被静默跳过。
+
+        全量审计后发现有 34 个工具、75 个参数同样漏测，其中
+        update_reward_campaign 漏了 10 个（几乎等于没测更新活动）。
+
+        根因是「靠手工维护的关键词列表判断参数重要性」，不可能穷举。
+        本检查把口径反过来：**以 schema 为准**，逐个工具统计覆盖率，
+        低于阈值就报出来，让漏测在生成阶段即暴露，而不是靠人肉发现。
+        """
+        props_by_tool = self._tool_param_props()
+        if not props_by_tool:
+            return
+
+        # 这些参数由框架/协议层处理，不要求数据集显式覆盖：
+        #   confirm —— 框架的干跑开关，执行器统一注入
+        #   merchId 等 —— 上下文参数，执行器按 config 自动补
+        SKIP = {"confirm", "merchid", "merchantid", "merchantids",
+                "storeid", "shopid"}
+
+        # 统计每个工具实际用到的参数
+        used = {}
+        case_cnt = {}
+        for c in self.cases:
+            inp = c.get("输入") or {}
+            if not isinstance(inp, dict):
+                continue
+            tool = inp.get("tool_name")
+            tp = inp.get("tool_params")
+            if not tool or not isinstance(tp, dict):
+                continue
+            # 故意拼错的工具名（工具错配维度）不算覆盖
+            if str(tool).endswith("_typo"):
+                continue
+            case_cnt[tool] = case_cnt.get(tool, 0) + 1
+            used.setdefault(tool, set()).update(str(k) for k in tp)
+
+        rows = []
+        for tool, props in props_by_tool.items():
+            if tool not in case_cnt:
+                continue          # 该工具整体没被数据集用到，由 coverage 检查负责
+            want = [p for p in props if str(p).lower() not in SKIP]
+            if not want:
+                continue
+            got = used.get(tool, set())
+            missing = [p for p in want if p not in got]
+            if not missing:
+                continue
+            rate = (len(want) - len(missing)) / len(want)
+            rows.append((tool, case_cnt[tool], want, missing, rate))
+
+        if not rows:
+            return
+
+        # 按「漏得最多」排序，便于优先处理
+        rows.sort(key=lambda r: (r[4], -len(r[3])))
+        total_missing = sum(len(r[3]) for r in rows)
+
+        # 阈值：覆盖率低于 60% 视为「基本没测」，按错误报；其余按警告
+        hard = [r for r in rows if r[4] < 0.6]
+        soft = [r for r in rows if r[4] >= 0.6]
+
+        for tool, n, want, missing, rate in hard[:15]:
+            self.error(
+                "参数覆盖不足 %s：%d 个参数只覆盖 %d 个（%.0f%%），"
+                "漏测 %s" % (tool, len(want), len(want) - len(missing),
+                             rate * 100, ", ".join(str(x) for x in missing[:8])))
+        for tool, n, want, missing, rate in soft[:20]:
+            self.warn(
+                "参数未全覆盖 %s（%.0f%%）：漏 %s"
+                % (tool, rate * 100, ", ".join(str(x) for x in missing[:8])))
+
+        self.info(
+            "参数覆盖统计：%d 个工具存在未覆盖参数，累计 %d 个参数漏测"
+            % (len(rows), total_missing))
+
     def check_entities(self, products_path, names=None):
         if not products_path:
             return
@@ -1468,6 +1554,9 @@ class Checker:
         # 事故 2026-11-15：localizedNames 写成 ['午餐菜单'] → 服务端 1001 拒绝，
         # 10 处用例被报告误判为「AI 系统缺陷」。
         self.check_param_types()
+        # 参数覆盖率：以 schema 为准反向核查，防止某个参数名不在生成器关键词
+        # 白名单里就被静默漏测（2026-11-18 repeatSelection 事故，全量审计漏 75 个）。
+        self.check_param_coverage()
         self.check_block_semantic()
         self.check_intent_param_consistency()
         self.check_sample_extra()
